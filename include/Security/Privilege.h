@@ -1,0 +1,430 @@
+/*++
+
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    Privilege.h
+
+Abstract:
+
+    This Module implements the privilege procedures.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
+
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+#include <stdlib.h>
+
+#include "Internel\misc.h"
+#include "Token.h"
+
+inline PTOKEN_PRIVILEGES GetTokenPrivileges(_In_ HANDLE TokenHandle)
+{
+    return (PTOKEN_PRIVILEGES)GetTokenInfo(TokenHandle, TokenPrivileges, NULL);
+}
+
+inline VOID FreeTokenPrivileges(_In_ PTOKEN_PRIVILEGES TokenPrivileges)
+{
+    HeapFree(GetProcessHeap(), 0, TokenPrivileges);
+}
+
+inline BOOL LookupPrivilegesValue(_In_ DWORD NumberOfPrivilegeNames, _In_ CONST LPCTSTR PrivilegeNames[],
+                                  _Inout_ LUID Luids[])
+{
+    for (DWORD i = 0; i < NumberOfPrivilegeNames; ++i)
+    {
+        if (!LookupPrivilegeValue(NULL, PrivilegeNames[i], &Luids[i]))
+            return FALSE;
+    }
+    return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//               NT Defined Privileges                                //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+#ifdef UNICODE
+#define SE_ASSIGNPRIMARYTOKEN_NAME_W SE_ASSIGNPRIMARYTOKEN_NAME
+#define SE_INCREASE_QUOTA_NAME_W SE_INCREASE_QUOTA_NAME
+#define SE_TCB_NAME_W SE_SE_TCB_NAME
+#define SE_LOAD_DRIVER_NAME_W SE_LOAD_DRIVER_NAME
+#define SE_BACKUP_NAME_W SE_BACKUP_NAME
+#define SE_RESTORE_NAME_W SE_RESTORE_NAME
+#define SE_SHUTDOWN_NAME_W SE_SHUTDOWN_NAME
+#define SE_DEBUG_NAME_W SE_DEBUG_NAME
+#define SE_AUDIT_NAME_W SE_AUDIT_NAME
+#define SE_SYSTEM_ENVIRONMENT_NAME_W SE_SYSTEM_ENVIRONMENT_NAME
+#define SE_CHANGE_NOTIFY_NAME_W SE_CHANGE_NOTIFY_NAME
+#define SE_REMOTE_SHUTDOWN_NAME_W SE_REMOTE_SHUTDOWN_NAME
+#define SE_IMPERSONATE_NAME_W SE_IMPERSONATE_NAME
+#define SE_CREATE_GLOBAL_NAME_W SE_CREATE_GLOBAL_NAME
+#else
+#define SE_ASSIGNPRIMARYTOKEN_NAME_W _W(SE_ASSIGNPRIMARYTOKEN_NAME)
+#define SE_INCREASE_QUOTA_NAME_W _W(SE_INCREASE_QUOTA_NAME)
+#define SE_TCB_NAME_W _W(SE_SE_TCB_NAME
+#define SE_LOAD_DRIVER_NAME_W _W(SE_LOAD_DRIVER_NAME)
+#define SE_BACKUP_NAME_W _W(SE_BACKUP_NAME)
+#define SE_RESTORE_NAME_W _W(SE_RESTORE_NAME)
+#define SE_SHUTDOWN_NAME_W _W(SE_SHUTDOWN_NAME)
+#define SE_DEBUG_NAME_W _W(SE_DEBUG_NAME)
+#define SE_AUDIT_NAME_W _W(SE_AUDIT_NAME)
+#define SE_SYSTEM_ENVIRONMENT_NAME_W _W(SE_SYSTEM_ENVIRONMENT_NAME)
+#define SE_CHANGE_NOTIFY_NAME_W _W(SE_CHANGE_NOTIFY_NAME)
+#define SE_REMOTE_SHUTDOWN_NAME_W _W(SE_REMOTE_SHUTDOWN_NAME)
+#define SE_IMPERSONATE_NAME_W _W(SE_IMPERSONATE_NAME)
+#define SE_CREATE_GLOBAL_NAME_W _W(SE_CREATE_GLOBAL_NAME)
+#endif
+
+#ifndef SE_MIN_WELL_KNOWN_PRIVILEGE
+#define SE_MIN_WELL_KNOWN_PRIVILEGE (2L)
+#define SE_MIN_WELL_KNOWN_PRIVILEGE_DEFINED
+#endif
+#ifndef SE_MAX_WELL_KNOWN_PRIVILEGE
+#define SE_MAX_WELL_KNOWN_PRIVILEGE (36L)
+#define SE_MAX_WELL_KNOWN_PRIVILEGE_DEFINED
+#endif
+
+typedef struct _PREVIOUS_TOKEN_PRIVILEGES
+{
+    HANDLE TokenHandle;
+    PTOKEN_PRIVILEGES PreviousState;
+    DWORD PreviousStateLength;
+} PREVIOUS_TOKEN_PRIVILEGES, *PPREVIOUS_TOKEN_PRIVILEGES;
+
+inline BOOL EnableAvailablePrivileges(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                      _In_opt_ HANDLE TokenHandle)
+{
+    PTOKEN_PRIVILEGES tokenPrivileges;
+    DWORD tokenPrivilegesLength =
+        sizeof(TOKEN_PRIVILEGES) +
+        (sizeof(LUID_AND_ATTRIBUTES) * (SE_MAX_WELL_KNOWN_PRIVILEGE - SE_MIN_WELL_KNOWN_PRIVILEGE));
+    BOOL bCloseToken = FALSE;
+    DWORD i;
+    PTOKEN_PRIVILEGES previousState = NULL;
+    DWORD previousStateLength;
+    BOOL bRet;
+
+    tokenPrivileges = (PTOKEN_PRIVILEGES)HeapAlloc(GetProcessHeap(), 0, tokenPrivilegesLength);
+    if (!tokenPrivileges)
+        return FALSE;
+
+    if (TokenHandle == NULL)
+    {
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &TokenHandle))
+        {
+            HeapFree(GetProcessHeap(), 0, tokenPrivileges);
+            return FALSE;
+        }
+        bCloseToken = TRUE;
+    }
+
+    tokenPrivileges->PrivilegeCount = SE_MAX_WELL_KNOWN_PRIVILEGE - SE_MIN_WELL_KNOWN_PRIVILEGE + 1;
+
+    for (i = 0; i < tokenPrivileges->PrivilegeCount; i++)
+    {
+        tokenPrivileges->Privileges[i].Luid.HighPart = 0;
+        tokenPrivileges->Privileges[i].Luid.LowPart = i + SE_MIN_WELL_KNOWN_PRIVILEGE;
+        tokenPrivileges->Privileges[i].Attributes = Enabled ? SE_PRIVILEGE_ENABLED : 0;
+    }
+
+    if (PreviousPrivileges)
+    {
+        PreviousPrivileges->PreviousState = previousState = tokenPrivileges;
+        PreviousPrivileges->PreviousStateLength = tokenPrivilegesLength;
+        if (bCloseToken)
+        {
+            PreviousPrivileges->TokenHandle = TokenHandle;
+            bCloseToken = FALSE;
+        }
+        else
+        {
+            if (!DuplicateHandle(GetCurrentProcess(), TokenHandle, GetCurrentProcess(),
+                                 &PreviousPrivileges->TokenHandle, 0, FALSE, DUPLICATE_SAME_ACCESS))
+            {
+                PreviousPrivileges = NULL;
+            }
+        }
+    }
+
+    bRet = AdjustTokenPrivileges(TokenHandle, FALSE, tokenPrivileges, tokenPrivilegesLength, previousState,
+                                 &previousStateLength);
+
+    if (!bRet)
+    {
+        if (PreviousPrivileges)
+        {
+            CloseHandle(PreviousPrivileges->TokenHandle);
+            PreviousPrivileges = NULL;
+        }
+    }
+
+    if (!PreviousPrivileges)
+        HeapFree(GetProcessHeap(), 0, tokenPrivileges);
+
+    if (bCloseToken)
+        CloseHandle(TokenHandle);
+
+    return bRet;
+}
+
+#ifdef SE_MIN_WELL_KNOWN_PRIVILEGE_DEFINED
+#undef SE_MIN_WELL_KNOWN_PRIVILEGE
+#undef SE_MIN_WELL_KNOWN_PRIVILEGE_DEFINED
+#endif
+#ifndef SE_MAX_WELL_KNOWN_PRIVILEGE_DEFINED
+#undef SE_MAX_WELL_KNOWN_PRIVILEGE
+#undef SE_MAX_WELL_KNOWN_PRIVILEGE_DEFINED
+#endif
+
+inline BOOL EnablePrivilegesEx(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivileges, _In_ CONST LUID Privileges[],
+                               _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+{
+    PTOKEN_PRIVILEGES tokenPrivileges;
+    DWORD tokenPrivilegesLength = sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * (NumberOfPrivileges - 1));
+    BOOL bCloseToken = FALSE;
+
+    PTOKEN_PRIVILEGES previousState = NULL;
+    DWORD previousStateLength;
+    DWORD i;
+    BOOL bRet;
+
+    tokenPrivileges = (PTOKEN_PRIVILEGES)HeapAlloc(GetProcessHeap(), 0, tokenPrivilegesLength);
+    if (!tokenPrivileges)
+        return FALSE;
+
+    if (TokenHandle == NULL)
+    {
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &TokenHandle))
+        {
+            HeapFree(GetProcessHeap(), 0, tokenPrivileges);
+            return FALSE;
+        }
+        bCloseToken = TRUE;
+    }
+
+    tokenPrivileges->PrivilegeCount = NumberOfPrivileges;
+
+    for (i = 0; i < NumberOfPrivileges; i++)
+    {
+        tokenPrivileges->Privileges[i].Luid = Privileges[i];
+        tokenPrivileges->Privileges[i].Attributes = Enabled ? SE_PRIVILEGE_ENABLED : 0;
+    }
+
+    if (PreviousPrivileges)
+    {
+        PreviousPrivileges->PreviousState = previousState = tokenPrivileges;
+        PreviousPrivileges->PreviousStateLength = tokenPrivilegesLength;
+        if (bCloseToken)
+        {
+            PreviousPrivileges->TokenHandle = TokenHandle;
+            bCloseToken = FALSE;
+        }
+        else
+        {
+            if (!DuplicateHandle(GetCurrentProcess(), TokenHandle, GetCurrentProcess(),
+                                 &PreviousPrivileges->TokenHandle, 0, FALSE, DUPLICATE_SAME_ACCESS))
+            {
+                PreviousPrivileges = NULL;
+            }
+        }
+    }
+
+    bRet = AdjustTokenPrivileges(TokenHandle, FALSE, tokenPrivileges, tokenPrivilegesLength, previousState,
+                                 &previousStateLength);
+
+    if (!(bRet && previousState && ((previousState->PrivilegeCount > 0))))
+    {
+        if (PreviousPrivileges)
+        {
+            if (PreviousPrivileges->TokenHandle)
+            {
+                CloseHandle(PreviousPrivileges->TokenHandle);
+                PreviousPrivileges->TokenHandle = NULL;
+            }
+            PreviousPrivileges->PreviousState = NULL;
+            PreviousPrivileges->PreviousStateLength = 0;
+            PreviousPrivileges = NULL;
+        }
+    }
+
+    if (!PreviousPrivileges)
+        HeapFree(GetProcessHeap(), 0, tokenPrivileges);
+
+    if (bCloseToken)
+        CloseHandle(TokenHandle);
+
+    return bRet;
+}
+
+inline BOOL EnablePrivilegesExV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges, /* LUID Privileges... */...)
+{
+    va_list va;
+    va_start(va, NumberOfPrivileges);
+    return EnablePrivilegesEx(Enabled, NumberOfPrivileges, (LUID *)va, PreviousPrivileges, TokenHandle);
+}
+
+inline BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivilegeNames, _In_ CONST LPCTSTR PrivilegeNames[],
+                             _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+{
+    PLUID luids = (PLUID)HeapAlloc(GetProcessHeap(), 0, sizeof(LUID) * NumberOfPrivilegeNames);
+    if (luids == NULL)
+        return FALSE;
+
+    BOOL ret = FALSE;
+    if (LookupPrivilegesValue(NumberOfPrivilegeNames, PrivilegeNames, luids))
+        ret = EnablePrivilegesEx(Enabled, NumberOfPrivilegeNames, luids, PreviousPrivileges, TokenHandle);
+
+    HeapFree(GetProcessHeap(), 0, luids);
+    return ret;
+}
+
+inline BOOL EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                              _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                              /* LPCTSTR PrivilegeNames... */...)
+{
+    va_list va;
+    va_start(va, NumberOfPrivilegeNames);
+    return EnablePrivileges(Enabled, NumberOfPrivilegeNames, (PCTSTR *)va, PreviousPrivileges, TokenHandle);
+}
+
+inline BOOL EnablePrivilege(_In_ BOOL Enabled, _In_ LPCTSTR PrivilegeName,
+                            _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+{
+    return EnablePrivileges(Enabled, 1, &PrivilegeName, PreviousPrivileges, TokenHandle);
+}
+
+inline BOOL EnablePrivilegeEx(_In_ BOOL Enabled, _In_ LUID Privilege,
+                              _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+{
+    return EnablePrivilegesEx(Enabled, 1, &Privilege, PreviousPrivileges, TokenHandle);
+}
+
+inline BOOL RevertPrivileges(_In_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivilege)
+{
+    HANDLE TokenHandle = PreviousPrivilege->TokenHandle;
+    PTOKEN_PRIVILEGES previousState = PreviousPrivilege->PreviousState;
+    DWORD previousStateLength = PreviousPrivilege->PreviousStateLength;
+    BOOL bRet = TRUE;
+
+    if (previousState)
+    {
+        bRet = AdjustTokenPrivileges(TokenHandle, FALSE, previousState, previousStateLength, NULL, NULL);
+        HeapFree(GetProcessHeap(), 0, previousState);
+        PreviousPrivilege->PreviousState = NULL;
+        PreviousPrivilege->PreviousStateLength = 0;
+    }
+
+    if (TokenHandle)
+    {
+        CloseHandle(TokenHandle);
+        PreviousPrivilege->TokenHandle = NULL;
+    }
+
+    return bRet;
+}
+
+inline BOOL IsPrivilegeEnabledEx(_In_ LUID Privilege, _In_opt_ HANDLE TokenHandle)
+{
+    if (!TokenHandle)
+        TokenHandle = GetCurrentProcessToken();
+
+    PTOKEN_PRIVILEGES privs = GetTokenPrivileges(TokenHandle);
+    if (privs)
+    {
+        for (DWORD j = 0; j < privs->PrivilegeCount; ++j)
+        {
+            if ((Privilege.HighPart == privs->Privileges[j].Luid.HighPart &&
+                 Privilege.LowPart == privs->Privileges[j].Luid.LowPart) &&
+                (privs->Privileges[j].Attributes & SE_PRIVILEGE_ENABLED))
+            {
+                FreeTokenPrivileges(privs);
+                return TRUE;
+            }
+        }
+
+        FreeTokenPrivileges(privs);
+    }
+    return FALSE;
+}
+
+inline BOOL IsPrivilegeEnabled(_In_ LPCTSTR PrivilegeName, _In_opt_ HANDLE TokenHandle)
+{
+    LUID Privilege;
+    if (!LookupPrivilegeValue(NULL, PrivilegeName, &Privilege))
+        return FALSE;
+    return IsPrivilegeEnabledEx(Privilege, TokenHandle);
+}
+
+inline BOOL IsPrivilegesEnabledEx(_In_ DWORD NumberOfPrivileges, _In_ LUID Privileges[], _In_opt_ HANDLE TokenHandle)
+{
+    if (!TokenHandle)
+        TokenHandle = GetCurrentProcessToken();
+
+    size_t matched = 0;
+    PTOKEN_PRIVILEGES privs = GetTokenPrivileges(TokenHandle);
+    if (privs)
+    {
+        for (DWORD i = 0; i < NumberOfPrivileges; ++i)
+        {
+            PLUID Privilege = &Privileges[i];
+            for (DWORD j = 0; j < privs->PrivilegeCount; ++j)
+            {
+                if ((Privilege->HighPart == privs->Privileges[j].Luid.HighPart &&
+                     Privilege->LowPart == privs->Privileges[j].Luid.LowPart) &&
+                    (privs->Privileges[j].Attributes & SE_PRIVILEGE_ENABLED))
+                {
+                    matched++;
+                    break;
+                }
+            }
+        }
+        FreeTokenPrivileges(privs);
+        return matched == NumberOfPrivileges;
+    }
+    return FALSE;
+}
+
+inline BOOL IsPrivilegesEnabled(_In_ DWORD NumberOfPrivilegeNames, _In_ LPCTSTR PrivilegeNames[],
+                                _In_opt_ HANDLE TokenHandle)
+{
+    PLUID luids = (PLUID)HeapAlloc(GetProcessHeap(), 0, sizeof(LUID) * NumberOfPrivilegeNames);
+    if (luids == NULL)
+        return FALSE;
+
+    BOOL ret = FALSE;
+    if (LookupPrivilegesValue(NumberOfPrivilegeNames, PrivilegeNames, luids))
+        ret = IsPrivilegesEnabledEx(NumberOfPrivilegeNames, luids, TokenHandle);
+
+    HeapFree(GetProcessHeap(), 0, luids);
+    return ret;
+}
+
+inline BOOL IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                                 /* LPCTSTR PrivilegeName... */...)
+{
+    va_list va;
+    va_start(va, NumberOfPrivilegeNames);
+    return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)va, TokenHandle);
+}
+
+inline BOOL IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                                   /* LUID Privileges... */...)
+{
+    va_list va;
+    va_start(va, NumberOfPrivileges);
+    return IsPrivilegesEnabledEx(NumberOfPrivileges, (LUID *)va, TokenHandle);
+}
