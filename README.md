@@ -1,6 +1,6 @@
 # win32api-ex
 
-Win32 API Experiment(or Extension) features
+Win32 API Experimental(or Extension) features
 
 ## Contents
 - [win32api-ex](#win32api-ex)
