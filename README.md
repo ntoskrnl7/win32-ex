@@ -28,13 +28,13 @@ Win32 API Experimental(or Extension) features
 ## Features
 ### System Services
 ####  Windows System Information [Handles and Objects]
-**Link :** https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects
-**Headers :** System\Object.h
+- **Link :** https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects
+- **Headers :** System\Object.h
 ##### Reference
 ###### Functions
-MakePermanentObject
-MakeTemporaryObject
-IsPermanentObject
+- MakePermanentObject
+- MakeTemporaryObject
+- IsPermanentObject
 
 ###### Example
 ```C
@@ -50,34 +50,31 @@ MakeTemporaryObject(handle);
 ### Security and Identity
 
 #### Authorization [Privileges]
-**Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges
-**Headers :** Security\Privilege.h
-Security\Privilege.hpp
+- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges
+- **Headers :** Security\Privilege.h, Security\Privilege.hpp
 
 ##### Reference
 ###### Functions
-GetTokenPrivileges
-FreeTokenPrivileges
-LookupPrivilegesValue
-
-EnableAvailablePrivileges
-EnablePrivilege
-EnablePrivilegeEx
-EnablePrivileges
-EnablePrivilegesV
-EnablePrivilegesEx
-EnablePrivilegesExV
-
-IsPrivilegeEnabled
-IsPrivilegeEnabledEx
-IsPrivilegesEnabled
-IsPrivilegesEnabledV
-IsPrivilegesEnabledEx
-IsPrivilegesEnabledExV
+- GetTokenPrivileges
+- FreeTokenPrivileges
+- LookupPrivilegesValue
+- EnableAvailablePrivileges
+- EnablePrivilege
+- EnablePrivilegeEx
+- EnablePrivileges
+- EnablePrivilegesV
+- EnablePrivilegesEx
+- EnablePrivilegesExV
+- IsPrivilegeEnabled
+- IsPrivilegeEnabledEx
+- IsPrivilegesEnabled
+- IsPrivilegesEnabledV
+- IsPrivilegesEnabledEx
+- IsPrivilegesEnabledExV
 
 ###### Macros
-SE_MIN_WELL_KNOWN_PRIVILEGE
-SE_MAX_WELL_KNOWN_PRIVILEGE
+- SE_MIN_WELL_KNOWN_PRIVILEGE
+- SE_MAX_WELL_KNOWN_PRIVILEGE
 
 ###### Example
 ```C++
@@ -122,46 +119,45 @@ using namespace Win32Ex;
 ```
 
 #### Authorization [Access Tokens]
-https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens
-Security\Token.h
-Security\Token.hpp
+- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens
+- **Headers :** Security\Token.h, Security\Token.hpp
 ##### Reference
 ###### Functions
-GetTokenInfo
-FreeTokenInfo
-GetTokenUser
-FreeTokenUser
-GetTokenGroups
-FreeTokenGroups
-
-GetProcessTokenUserSid
-DuplicateTokenUserSid
-FreeTokenUserSid
-IsUserAdmin (https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership)
-EqualTokenUserSid
-IsNetworkServiceToken
-IsLocalServiceToken
-IsLocalSystemToken
-LookupToken
-LookupToken2
-LookupTokenEx
-LookupTokenEx2
-GetLocalSystemToken
+- GetTokenInfo
+- FreeTokenInfo
+- GetTokenUser
+- FreeTokenUser
+- GetTokenGroups
+- FreeTokenGroups
+- GetProcessTokenUserSid
+- DuplicateTokenUserSid
+- FreeTokenUserSid
+- IsUserAdmin (https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership)
+- EqualTokenUserSid
+- IsNetworkServiceToken
+- IsLocalServiceToken
+- IsLocalSystemToken
+- LookupToken
+- LookupToken2
+- LookupTokenEx
+- LookupTokenEx2
+- GetLocalSystemToken
 
 #### Authorization [Security Identifiers]
-https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers
-Security\Sid.h
+- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers
+- **Headers :** Security\Sid.h
+
 ##### Reference
 ###### Variables
-EveryoneSid
-ConsoleLogonSid
-LocalSid
-CreatorOwnerSid
-CreatorGroupSid
-ServiceSid
-LocalSystemSid
-LocalServiceSid
-NetworkServiceSid
+- EveryoneSid
+- ConsoleLogonSid
+- LocalSid
+- CreatorOwnerSid
+- CreatorGroupSid
+- ServiceSid
+- LocalSystemSid
+- LocalServiceSid
+- NetworkServiceSid
 
 # Test
 1. cd test
