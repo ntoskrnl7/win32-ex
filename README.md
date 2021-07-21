@@ -35,6 +35,7 @@ Win32 API Experimental(or Extension) features
 - MakePermanentObject
 - MakeTemporaryObject
 - IsPermanentObject
+- IsTemporaryObject
 
 ###### Example
 ```C
@@ -44,6 +45,7 @@ HANDLE handle = ....
 MakePermanentObject(handle); // Administrator privilege required
 IsPermanentObject(handle); // == TRUE
 MakeTemporaryObject(handle);
+IsTemporaryObject(handle); // == TRUE
 ```
 ---
 

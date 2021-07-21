@@ -14,10 +14,14 @@ BOOL MakePermanentObjectTestC()
                 return FALSE;
             if (!IsPermanentObject(handle))
                 return FALSE;
+            if (IsTemporaryObject(handle))
+                return FALSE;
         }
         if (!MakeTemporaryObject(handle))
             return FALSE;
         if (IsPermanentObject(handle))
+            return FALSE;
+        if (!IsTemporaryObject(handle))
             return FALSE;
         CloseHandle(handle);
         return TRUE;

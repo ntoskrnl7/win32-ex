@@ -9,11 +9,14 @@ TEST(ObjectTest, MakePermanentObjectTest)
         if (IsUserAdmin())
         {
             EXPECT_FALSE(IsPermanentObject(handle));
+            EXPECT_TRUE(IsTemporaryObject(handle));
             EXPECT_TRUE(MakePermanentObject(handle));
             EXPECT_TRUE(IsPermanentObject(handle));
+            EXPECT_FALSE(IsTemporaryObject(handle));
         }
         EXPECT_TRUE(MakeTemporaryObject(handle));
         EXPECT_FALSE(IsPermanentObject(handle));
+        EXPECT_TRUE(IsTemporaryObject(handle));
         CloseHandle(handle);
     }
 }
