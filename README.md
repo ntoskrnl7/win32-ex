@@ -1,9 +1,9 @@
-# win32api-ex
+# win32-ex
 
 Win32 API Experimental(or Extension) features
 
 ## Contents
-- [win32api-ex](#win32api-ex)
+- [win32-ex](#win32-ex)
   - [Contents](#contents)
   - [Features](#features)
     - [System Services](#system-services)
