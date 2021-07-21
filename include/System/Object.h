@@ -20,7 +20,7 @@ inline BOOL IsPermanentObject(_In_ HANDLE Handle)
 
 inline BOOL IsTemporaryObject(_In_ HANDLE Handle)
 {
-    return IsPermanentObject(Handle);
+    return IsPermanentObject(Handle) == FALSE;
 }
 
 inline BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)

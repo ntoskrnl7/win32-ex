@@ -85,9 +85,11 @@ class Token
         if (groups_)
             groups_ = GetTokenGroups(tokenHandle_);
 
-        for (DWORD i = 0; i < groups_->GroupCount; ++i)
-            ret.push_back(groups_->Groups[i]);
-
+        if (groups_)
+        {
+            for (DWORD i = 0; i < groups_->GroupCount; ++i)
+                ret.push_back(groups_->Groups[i]);
+        }
         return ret;
     }
 
