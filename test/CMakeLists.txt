@@ -54,3 +54,5 @@ endif()
 set_property(TARGET unittest PROPERTY CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
+
+add_test(NAME unittest COMMAND unittest)
