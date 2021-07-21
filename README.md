@@ -1,5 +1,7 @@
 # win32-ex
 
+[![CMake](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml/badge.svg)](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml)
+
 Win32 API Experimental(or Extension) features
 
 ## Contents
