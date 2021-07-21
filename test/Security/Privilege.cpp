@@ -1,4 +1,4 @@
-#include <Security\Privilege.hpp>
+﻿#include <Security\Privilege.hpp>
 
 #include <gtest\gtest.h>
 

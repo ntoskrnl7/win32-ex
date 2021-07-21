@@ -1,4 +1,4 @@
-#include <System/Object.h>
+﻿#include <System/Object.h>
 #include <Windows.h>
 
 BOOL MakePermanentObjectTestC()

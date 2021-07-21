@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Internel\misc.hpp"
 #include "Privilege.hpp"
@@ -83,13 +83,11 @@ class Token
     {
         std::vector<SID_AND_ATTRIBUTES> ret;
         if (groups_)
-            groups_ = GetTokenGroups(tokenHandle_);
-
+            FreeTokenGroups(groups_);
+        groups_ = GetTokenGroups(tokenHandle_);
         if (groups_)
-        {
             for (DWORD i = 0; i < groups_->GroupCount; ++i)
                 ret.push_back(groups_->Groups[i]);
-        }
         return ret;
     }
 

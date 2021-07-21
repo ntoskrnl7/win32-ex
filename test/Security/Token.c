@@ -1,4 +1,4 @@
-#include <Security\Token.h>
+﻿#include <Security\Token.h>
 
 BOOL LookupTokenTestC()
 {

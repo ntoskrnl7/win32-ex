@@ -1,4 +1,4 @@
-/*++
+﻿/*++
 
 Copyright (c) Win32Ex Authors. All rights reserved.
 
@@ -34,7 +34,7 @@ inline PVOID GetTokenInfo(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS 
                           _Out_opt_ PDWORD ReturnLength)
 {
     DWORD returnedLength = 0;
-    DWORD bufferSize = sizeof(TOKEN_USER) + sizeof(SID);
+    DWORD bufferSize = 128;
     PVOID buffer = HeapAlloc(GetProcessHeap(), 0, bufferSize);
     if (!buffer)
     {

@@ -1,4 +1,4 @@
-/*++
+﻿/*++
 
 Copyright (c) Win32Ex Authors. All rights reserved.
 
