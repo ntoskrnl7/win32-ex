@@ -22,8 +22,12 @@ Win32 API Experimental(or Extension) features
       - [Authorization [Access Tokens]](#authorization-access-tokens)
         - [Reference](#reference-2)
           - [Functions](#functions-2)
-      - [Authorization [Security Identifiers]](#authorization-security-identifiers)
+      - [Authorization [Security Descriptors]](#authorization-security-descriptors)
         - [Reference](#reference-3)
+          - [Functions](#functions-3)
+      - [Authorization [Security Identifiers]](#authorization-security-identifiers)
+        - [Reference](#reference-4)
+          - [Functions](#functions-4)
           - [Variables](#variables)
 - [Test](#test)
 
@@ -147,11 +151,25 @@ using namespace Win32Ex;
 - LookupTokenEx2
 - GetLocalSystemToken
 
+
+#### Authorization [Security Descriptors]
+- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors
+- **Headers :** Security\Descriptor.h
+##### Reference
+###### Functions
+ - AllocateAndInitializeSecurityDescriptor
+ - FreeSecurityDescriptor
+
 #### Authorization [Security Identifiers]
 - **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers
 - **Headers :** Security\Sid.h
 
 ##### Reference
+###### Functions
+ - GetAdministratorsSid
+ - GetLogonSid
+ - FreeLogonSid
+
 ###### Variables
 - EveryoneSid
 - ConsoleLogonSid
