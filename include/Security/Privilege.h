@@ -27,7 +27,7 @@ Environment:
 
 #include <stdlib.h>
 
-#include "Internel\misc.h"
+#include "..\Internel\misc.h"
 #include "Token.h"
 
 inline PTOKEN_PRIVILEGES GetTokenPrivileges(_In_ HANDLE TokenHandle)

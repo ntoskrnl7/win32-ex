@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Internel\misc.hpp"
+#include "..\Internel\misc.hpp"
 #include "Privilege.hpp"
 #include "Token.h"
 

@@ -1,9 +1,9 @@
 ﻿#pragma once
 
 #ifdef __cplusplus
-#include <Security/Privilege.hpp>
+#include "..\Security/Privilege.hpp"
 #else
-#include <Security/Privilege.h>
+#include "..\Security/Privilege.h"
 #endif
 
 #include "Ntdll.h"
