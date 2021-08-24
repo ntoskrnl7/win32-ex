@@ -13,7 +13,7 @@ FORCEINLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
     PUBLIC_OBJECT_BASIC_INFORMATION basicInfo;
     if (NT_SUCCESS(NtQueryObject(Handle, ObjectBasicInformation, &basicInfo, sizeof(basicInfo), NULL)))
     {
-        return (basicInfo.Attributes & OBJ_PERMANENT);
+        return (basicInfo.Attributes & OBJ_PERMANENT) != 0;
     }
     return FALSE;
 }
