@@ -22,7 +22,7 @@ Environment:
 
 #pragma once
 
-#include "..\Internel\misc.hpp"
+#include "..\Internal\misc.hpp"
 #include "Privilege.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -35,6 +35,7 @@ Environment:
 #pragma comment(lib, "psapi.lib")
 
 #include <functional>
+#include <vector>
 
 namespace Win32Ex
 {
@@ -73,7 +74,7 @@ inline TString ToPrivilegeName(LUID luid)
     {
         return name;
     }
-    return {};
+    return TString();
 }
 
 inline LUID FromPrivilegeName(PCTSTR PrivilegeName)
@@ -86,10 +87,10 @@ inline LUID FromPrivilegeName(PCTSTR PrivilegeName)
 inline std::vector<LUID> FromPrivilegeNames(const std::vector<LPCTSTR> &PrivilegeNames)
 {
     std::vector<LUID> luids;
-    for (auto PrivilegeName : PrivilegeNames)
+    for (std::vector<LPCTSTR>::const_iterator it = PrivilegeNames.begin(); it != PrivilegeNames.end(); ++it)
     {
         LUID luid;
-        LookupPrivilegeValue(NULL, PrivilegeName, &luid);
+        LookupPrivilegeValue(NULL, *it, &luid);
         luids.push_back(luid);
     }
     return luids;
@@ -130,8 +131,10 @@ DECLSPEC_SELECTANY LUID SeRelabelPrivilege = FromPrivilegeName(SE_RELABEL_NAME);
 DECLSPEC_SELECTANY LUID SeIncreaseWorkingSetPrivilege = FromPrivilegeName(SE_INC_WORKING_SET_NAME);
 DECLSPEC_SELECTANY LUID SeTimeZonePrivilege = FromPrivilegeName(SE_TIME_ZONE_NAME);
 DECLSPEC_SELECTANY LUID SeCreateSymbolicLinkPrivilege = FromPrivilegeName(SE_CREATE_SYMBOLIC_LINK_NAME);
+#ifdef SE_DELEGATE_SESSION_USER_IMPERSONATE_NAME
 DECLSPEC_SELECTANY LUID SeDelegateSessionUserImpersonatePrivilege =
     FromPrivilegeName(SE_DELEGATE_SESSION_USER_IMPERSONATE_NAME);
+#endif
 
 class TokenPrivileges
 {
@@ -145,10 +148,11 @@ class TokenPrivileges
         PTOKEN_PRIVILEGES priv = GetTokenPrivileges(TokenHandle);
         if (priv)
         {
-            for (auto Privilege : Privileges)
+            for (std::vector<LUID>::const_iterator it = Privileges.begin(); it != Privileges.end(); ++it)
             {
                 for (DWORD j = 0; j < priv->PrivilegeCount; ++j)
                 {
+                    const LUID &Privilege = *it;
                     if ((Privilege.HighPart == priv->Privileges[j].Luid.HighPart &&
                          Privilege.LowPart == priv->Privileges[j].Luid.LowPart) &&
                         (priv->Privileges[j].Attributes & SE_PRIVILEGE_ENABLED))
@@ -181,8 +185,13 @@ class TokenPrivileges
     TokenPrivileges(const LUID Privilege, HANDLE TokenHandle = NULL) : isPermanent_(false)
     {
         enabled_ = EnablePrivilegesEx(TRUE, 1, &Privilege, &previousPrivileges_, TokenHandle) == TRUE;
-
+#ifdef __cpp_initializer_lists
         isAcquired_ = IsAcquired_(TokenHandle, {Privilege});
+#else
+        std::vector<LUID> Privileges;
+        Privileges.push_back(Privilege);
+        isAcquired_ = IsAcquired_(TokenHandle, Privileges);
+#endif
     }
 
     TokenPrivileges(const PCTSTR Privilege, HANDLE TokenHandle = NULL) : isPermanent_(false)

@@ -3,8 +3,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include "../Internel/misc.h"
-#include "./Sid.h"
+#include "..\Internal\misc.h"
+#include ".\Sid.h"
 
 inline void FreeSecurityDescriptor(PSECURITY_DESCRIPTOR SecurityDescriptor)
 {

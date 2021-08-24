@@ -5,6 +5,10 @@
 #include <Windows.h>
 #include <ntstatus.h>
 
+#ifndef STATUS_ENTRYPOINT_NOT_FOUND
+#define STATUS_ENTRYPOINT_NOT_FOUND ((DWORD)0xC0000139L)
+#endif
+
 ////
 //// 미리 USE_NTDLL_STATIC_LINK가 정의되있지 않았다면,
 //// Visual Studio 2010 이상일때는 ntdll.lib를 기본으로 정적 링크하도록 합니다.
@@ -294,14 +298,15 @@ static NTSTATUS(NTAPI *_NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS Syste
                                                   PULONG ReturnLength) = NULL;
 #endif
 
-inline ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
+FORCEINLINE ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
 {
+    HMODULE hModule;
     if (_RtlNtStatusToDosError)
     {
         return _RtlNtStatusToDosError(Status);
     }
 
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
         return STATUS_ENTRYPOINT_NOT_FOUND;
 
@@ -310,14 +315,15 @@ inline ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
     return (_RtlNtStatusToDosError ? _RtlNtStatusToDosError(Status) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-inline NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
+FORCEINLINE NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
 {
+    HMODULE hModule;
     if (_NtMakeTemporaryObject)
     {
         return _NtMakeTemporaryObject(Handle);
     }
 
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
         return STATUS_ENTRYPOINT_NOT_FOUND;
 
@@ -326,14 +332,15 @@ inline NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
     return (_NtMakeTemporaryObject ? _NtMakeTemporaryObject(Handle) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-inline NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
+FORCEINLINE NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
 {
+    HMODULE hModule;
     if (_NtMakePermanentObject)
     {
         return _NtMakePermanentObject(Handle);
     }
 
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
         return STATUS_ENTRYPOINT_NOT_FOUND;
 
@@ -342,16 +349,17 @@ inline NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
     return (_NtMakePermanentObject ? _NtMakePermanentObject(Handle) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-inline NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle, _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
-                                    _Out_opt_ PVOID ObjectInformation, _In_ ULONG ObjectInformationLength,
-                                    _Out_opt_ PULONG ReturnLength)
+FORCEINLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle, _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
+                                         _Out_opt_ PVOID ObjectInformation, _In_ ULONG ObjectInformationLength,
+                                         _Out_opt_ PULONG ReturnLength)
 {
+    HMODULE hModule;
     if (_NtQueryObject)
     {
         return _NtQueryObject(Handle, ObjectInformationClass, ObjectInformation, ObjectInformationLength, ReturnLength);
     }
 
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
         return STATUS_ENTRYPOINT_NOT_FOUND;
 
@@ -363,17 +371,18 @@ inline NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle, _In_ OBJECT_INFORMAT
                            : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-inline NTSTATUS NTAPI NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
-                                               _Out_ PVOID SystemInformation, _In_ ULONG SystemInformationLength,
-                                               _Out_opt_ PULONG ReturnLength)
+FORCEINLINE NTSTATUS NTAPI NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
+                                                    _Out_ PVOID SystemInformation, _In_ ULONG SystemInformationLength,
+                                                    _Out_opt_ PULONG ReturnLength)
 {
+    HMODULE hModule;
     if (_NtQuerySystemInformation)
     {
         return _NtQuerySystemInformation(SystemInformationClass, SystemInformation, SystemInformationLength,
                                          ReturnLength);
     }
 
-    HMODULE hModule = GetModuleHandleA("ntdll.dll");
+    hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
         return STATUS_ENTRYPOINT_NOT_FOUND;
 

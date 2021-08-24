@@ -5,24 +5,24 @@
 TEST(PrivilegeTest, EnableAvailablePrivilegesTest)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
-    EXPECT_TRUE(EnableAvailablePrivileges(TRUE, &prev, NULL));
-    EXPECT_TRUE(RevertPrivileges(&prev));
+    EXPECT_TRUE(EnableAvailablePrivileges(TRUE, &prev, NULL) == TRUE);
+    EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
 TEST(PrivilegeTest, EnablePrivilegesVTest)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
-    EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME));
-    EXPECT_TRUE(IsPrivilegesEnabledV(NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME));
-    EXPECT_TRUE(RevertPrivileges(&prev));
+    EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
+    EXPECT_TRUE(IsPrivilegesEnabledV(NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
+    EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
 TEST(PrivilegeTest, EnablePrivilegesExVTest)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
-    EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME));
-    EXPECT_TRUE(IsPrivilegesEnabledV(NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME));
-    EXPECT_TRUE(RevertPrivileges(&prev));
+    EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
+    EXPECT_TRUE(IsPrivilegesEnabledV(NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
+    EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
 using namespace Win32Ex;
@@ -33,8 +33,16 @@ TEST(PrivilegeTest, PrivilegeClassTest)
     EXPECT_EQ(priv.AcquiredPrivileges().size(), 1);
 
     {
+#ifdef __cpp_initializer_lists
         Security::TokenPrivileges priv(
             {Security::SeDebugPrivilege, Security::SeShutdownPrivilege, Security::SeChangeNotifyPrivilege});
+#else
+        std::vector<LUID> args;
+        args.push_back(Security::SeDebugPrivilege);
+        args.push_back(Security::SeShutdownPrivilege);
+        args.push_back(Security::SeChangeNotifyPrivilege);
+        Security::TokenPrivileges priv(args);
+#endif
         if (IsUserAdmin())
         {
             EXPECT_TRUE(priv.IsAcquired());
@@ -51,8 +59,17 @@ TEST(PrivilegeTest, PrivilegeClassTest)
     EXPECT_TRUE(priv2.IsAcquired());
     EXPECT_EQ(priv2.AcquiredPrivileges().size(), 1);
     {
+
+#ifdef __cpp_initializer_lists
         Security::TokenPrivileges priv(
             Security::FromPrivilegeNames({SE_DEBUG_NAME, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME}));
+#else
+        std::vector<LPCTSTR> args;
+        args.push_back(SE_DEBUG_NAME);
+        args.push_back(SE_SHUTDOWN_NAME);
+        args.push_back(SE_CHANGE_NOTIFY_NAME);
+        Security::TokenPrivileges priv(Security::FromPrivilegeNames(args));
+#endif
         if (IsUserAdmin())
         {
             EXPECT_TRUE(priv.IsAcquired());
@@ -65,7 +82,16 @@ TEST(PrivilegeTest, PrivilegeClassTest)
         }
     }
     {
+
+#ifdef __cpp_initializer_lists
         Security::TokenPrivileges priv({SE_DEBUG_NAME, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME});
+#else
+        std::vector<PCTSTR> args;
+        args.push_back(SE_DEBUG_NAME);
+        args.push_back(SE_SHUTDOWN_NAME);
+        args.push_back(SE_CHANGE_NOTIFY_NAME);
+        Security::TokenPrivileges priv(args);
+#endif
         if (IsUserAdmin())
         {
             EXPECT_TRUE(priv.IsAcquired());
@@ -104,14 +130,14 @@ extern "C"
 }
 TEST(PrivilegeTest, EnableAvailablePrivilegesTestC)
 {
-    EXPECT_TRUE(EnableAvailablePrivilegesTestC());
+    EXPECT_TRUE(EnableAvailablePrivilegesTestC() == TRUE);
 }
 TEST(PrivilegeTest, IsPrivilegeEnabledTestC)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     if (EnablePrivilege(TRUE, SE_SHUTDOWN_NAME, &prev, NULL))
     {
-        EXPECT_TRUE(IsPrivilegeEnabledTestC(SE_SHUTDOWN_NAME));
+        EXPECT_TRUE(IsPrivilegeEnabledTestC(SE_SHUTDOWN_NAME) == TRUE);
         RevertPrivileges(&prev);
     }
 }
@@ -120,7 +146,7 @@ TEST(PrivilegeTest, IsPrivilegesEnabledTestC)
     PREVIOUS_TOKEN_PRIVILEGES prev;
     if (EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME))
     {
-        EXPECT_TRUE(IsPrivilegesEnabledTestC(2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME));
+        EXPECT_TRUE(IsPrivilegesEnabledTestC(2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME) == TRUE);
         RevertPrivileges(&prev);
     }
 }

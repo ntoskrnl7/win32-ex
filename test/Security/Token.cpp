@@ -31,15 +31,38 @@ TEST(TokenTest, GetTokenPrivilegesTest)
         FreeTokenPrivileges(priv);
 }
 
+#ifndef __cpp_lambdas
+BOOL HasGroupLogonID(HANDLE TokenHandle)
+{
+    Security::Token token(TokenHandle, false);
+    std::vector<SID_AND_ATTRIBUTES> groups = token.GetGroups();
+    for (std::vector<SID_AND_ATTRIBUTES>::const_iterator it = groups.begin(); it != groups.end(); ++it)
+    {
+        const SID_AND_ATTRIBUTES &group = *it;
+        if ((group.Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
+            return TRUE;
+    }
+    return FALSE;
+}
+#endif
+
 TEST(TokenTest, LookupTokenTest)
 {
-    HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) {
+#ifdef __cpp_lambdas
+    HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) -> BOOL {
         Security::Token token(TokenHandle, false);
-        for (auto group : token.GetGroups())
+        std::vector<SID_AND_ATTRIBUTES> groups = token.GetGroups();
+        for (std::vector<SID_AND_ATTRIBUTES>::const_iterator it = groups.begin(); it != groups.end(); ++it)
+        {
+            const SID_AND_ATTRIBUTES &group = *it;
             if ((group.Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
                 return TRUE;
+        }
         return FALSE;
     });
+#else
+    HANDLE token = LookupToken(TOKEN_QUERY, HasGroupLogonID);
+#endif
     EXPECT_NE(token, (HANDLE)NULL);
     if (token)
         CloseHandle(token);
@@ -61,12 +84,12 @@ extern "C"
 
 TEST(TokenTest, LookupTokenTestC)
 {
-    EXPECT_TRUE(LookupTokenTestC());
+    EXPECT_TRUE(LookupTokenTestC() == TRUE);
 }
 
 TEST(TokenTest, LookupToken2TestC)
 {
-    EXPECT_TRUE(LookupToken2TestC());
+    EXPECT_TRUE(LookupToken2TestC() == TRUE);
 }
 
 using namespace Win32Ex;
@@ -86,8 +109,16 @@ TEST(TokenTest, GetLocalSystemTokenTest)
             HANDLE newToken;
             if (DuplicateTokenEx(token, MAXIMUM_ALLOWED, NULL, SecurityImpersonation, TokenPrimary, &newToken))
             {
+#ifdef __cpp_initializer_lists
                 Security::TokenPrivileges priv(
                     Security::FromPrivilegeNames({SE_INCREASE_QUOTA_NAME, SE_ASSIGNPRIMARYTOKEN_NAME}));
+#else
+                std::vector<LPCTSTR> args;
+                args.push_back(SE_INCREASE_QUOTA_NAME);
+                args.push_back(SE_ASSIGNPRIMARYTOKEN_NAME);
+                Security::TokenPrivileges priv(Security::FromPrivilegeNames(args));
+#endif
+
                 if (priv.IsAcquired() && ImpersonateLoggedOnUser(newToken))
                 {
                     DWORD origSessionId = 0;
@@ -98,7 +129,7 @@ TEST(TokenTest, GetLocalSystemTokenTest)
                         DWORD sessionId = 0;
                         if (SetTokenInformation(newToken, TokenSessionId, &sessionId, sizeof(sessionId)))
                         {
-                            EXPECT_TRUE(IsLocalSystemToken(GetCurrentProcessToken()));
+                            EXPECT_TRUE(IsLocalSystemToken(GetCurrentProcessToken()) == TRUE);
                             RevertToSelf();
                             SetTokenInformation(newToken, TokenSessionId, &origSessionId, sizeof(origSessionId));
                         }
@@ -112,15 +143,46 @@ TEST(TokenTest, GetLocalSystemTokenTest)
     }
 }
 
+#ifndef __cpp_lambdas
+BOOL HasCreatePermanentPrivilege(DWORD /*ProcessId*/, HANDLE TokenHandle)
+{
+    PRIVILEGE_SET privilegeSet;
+    privilegeSet.PrivilegeCount = 1;
+    privilegeSet.Control = PRIVILEGE_SET_ALL_NECESSARY;
+    privilegeSet.Privilege[0].Attributes = SE_PRIVILEGE_ENABLED;
+    privilegeSet.Privilege[0].Luid = Security::SeCreatePermanentPrivilege;
+    BOOL result = FALSE;
+    return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
+}
+
+BOOL HasChangeNotifyPrivilege(DWORD /*ProcessId*/, HANDLE TokenHandle)
+{
+    PRIVILEGE_SET privilegeSet;
+    privilegeSet.PrivilegeCount = 1;
+    privilegeSet.Control = PRIVILEGE_SET_ALL_NECESSARY;
+    privilegeSet.Privilege[0].Attributes = SE_PRIVILEGE_ENABLED;
+    privilegeSet.Privilege[0].Luid = Security::SeChangeNotifyPrivilege;
+    BOOL result = FALSE;
+    return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
+}
+#endif
+
 TEST(TokenTest, TokenClassTest)
 {
     Security::Token token = Security::Token::Current();
-    auto ctx = token.AdjustPrivileges({Security::SeShutdownPrivilege});
-    auto privs = token.GetPrivileges();
+#ifdef __cpp_initializer_lists
+    Security::TokenPrivileges ctx = token.AdjustPrivileges({Security::SeShutdownPrivilege});
+#else
+    std::vector<LUID> args;
+    args.push_back(Security::SeShutdownPrivilege);
+    Security::TokenPrivileges ctx = token.AdjustPrivileges(args);
+#endif
+    std::vector<LUID_AND_ATTRIBUTES> privs = token.GetPrivileges();
 
     bool acquired = false;
-    for (auto priv : privs)
+    for (std::vector<LUID_AND_ATTRIBUTES>::const_iterator it = privs.begin(); it != privs.end(); ++it)
     {
+        const LUID_AND_ATTRIBUTES &priv = *it;
         if ((priv.Luid == Security::SeShutdownPrivilege) && (priv.Attributes & SE_PRIVILEGE_ENABLED))
         {
             acquired = true;
@@ -130,11 +192,12 @@ TEST(TokenTest, TokenClassTest)
     EXPECT_TRUE(acquired);
 
     ctx.Release();
-    auto privs2 = token.GetPrivileges();
+    std::vector<LUID_AND_ATTRIBUTES> privs2 = token.GetPrivileges();
 
     acquired = false;
-    for (auto priv : privs2)
+    for (std::vector<LUID_AND_ATTRIBUTES>::const_iterator it = privs2.begin(); it != privs2.end(); ++it)
     {
+        const LUID_AND_ATTRIBUTES &priv = *it;
         if ((priv.Luid == Security::SeShutdownPrivilege) && (priv.Attributes & SE_PRIVILEGE_ENABLED))
         {
             acquired = true;
@@ -153,25 +216,37 @@ TEST(TokenTest, TokenClassTest)
         if (!priv.IsAcquired())
             return;
         privilegeSet.Privilege[0].Luid = Security::SeCreatePermanentPrivilege;
-        Security::Token token([&privilegeSet](DWORD /*ProcessId*/, HANDLE TokenHandle) {
+#ifdef __cpp_lambdas
+        Security::Token token([&privilegeSet](DWORD /*ProcessId*/, HANDLE TokenHandle) -> BOOL {
             BOOL result = FALSE;
             return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
         });
-        EXPECT_TRUE(token.IsValid());
+#else
+        Security::Token token(HasCreatePermanentPrivilege);
+#endif
+        EXPECT_TRUE(token.IsValid() == TRUE);
+#ifdef __cpp_rvalue_references
         Security::Token token2 = std::move(token);
-        EXPECT_FALSE(token.IsValid());
-        EXPECT_TRUE(token2.IsValid());
+        EXPECT_FALSE(token.IsValid() == TRUE);
+        EXPECT_TRUE(token2.IsValid() == TRUE);
+#endif
     }
     else
     {
         privilegeSet.Privilege[0].Luid = Security::SeChangeNotifyPrivilege;
-        Security::Token token([&privilegeSet](DWORD /*ProcessId*/, HANDLE TokenHandle) {
+#ifdef __cpp_lambdas
+        Security::Token token([&privilegeSet](DWORD /*ProcessId*/, HANDLE TokenHandle) -> BOOL {
             BOOL result = FALSE;
             return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
         });
-        EXPECT_TRUE(token.IsValid());
+#else
+        Security::Token token(HasChangeNotifyPrivilege);
+#endif
+        EXPECT_TRUE(token.IsValid() == TRUE);
+#ifdef __cpp_rvalue_references
         Security::Token token2 = std::move(token);
-        EXPECT_FALSE(token.IsValid());
-        EXPECT_TRUE(token2.IsValid());
+        EXPECT_FALSE(token.IsValid() == TRUE);
+        EXPECT_TRUE(token2.IsValid() == TRUE);
+#endif
     }
 }

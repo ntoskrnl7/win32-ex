@@ -18,7 +18,7 @@ DECLSPEC_SELECTANY SID LocalSystemSid = {SID_REVISION, 1, SECURITY_NT_AUTHORITY,
 DECLSPEC_SELECTANY SID LocalServiceSid = {SID_REVISION, 1, SECURITY_NT_AUTHORITY, SECURITY_LOCAL_SERVICE_RID};
 DECLSPEC_SELECTANY SID NetworkServiceSid = {SID_REVISION, 1, SECURITY_NT_AUTHORITY, SECURITY_NETWORK_SERVICE_RID};
 
-inline PSID GetAdministratorsSid()
+FORCEINLINE PSID GetAdministratorsSid()
 {
     PSID sid;
     SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
@@ -32,12 +32,12 @@ inline PSID GetAdministratorsSid()
     return sid;
 }
 
-inline VOID FreeLogonSid(PSID *ppsid)
+FORCEINLINE VOID FreeLogonSid(PSID *ppsid)
 {
     HeapFree(GetProcessHeap(), 0, (LPVOID)*ppsid);
 }
 
-inline BOOL GetLogonSid(HANDLE hToken, PSID *ppsid, PDWORD pdwsidLength)
+FORCEINLINE BOOL GetLogonSid(HANDLE hToken, PSID *ppsid, PDWORD pdwsidLength)
 {
     BOOL bSuccess = FALSE;
     DWORD dwIndex;

@@ -1,14 +1,14 @@
 ﻿#pragma once
 
 #ifdef __cplusplus
-#include "..\Security/Privilege.hpp"
+#include "..\Security\Privilege.hpp"
 #else
-#include "..\Security/Privilege.h"
+#include "..\Security\Privilege.h"
 #endif
 
 #include "Ntdll.h"
 
-inline BOOL IsPermanentObject(_In_ HANDLE Handle)
+FORCEINLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
 {
     PUBLIC_OBJECT_BASIC_INFORMATION basicInfo;
     if (NT_SUCCESS(NtQueryObject(Handle, ObjectBasicInformation, &basicInfo, sizeof(basicInfo), NULL)))
@@ -18,12 +18,12 @@ inline BOOL IsPermanentObject(_In_ HANDLE Handle)
     return FALSE;
 }
 
-inline BOOL IsTemporaryObject(_In_ HANDLE Handle)
+FORCEINLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
 {
     return IsPermanentObject(Handle) == FALSE;
 }
 
-inline BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
+FORCEINLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
 {
     BOOL result = FALSE;
     PPRIVILEGE_SET privilegeSet = (PPRIVILEGE_SET)Context;
@@ -31,15 +31,15 @@ inline BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ 
     return result;
 }
 
-inline BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
-                                                                     _In_ PVOID Context)
+FORCEINLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
+                                                                          _In_ PVOID Context)
 {
     if (!IsLocalSystemToken(hToken))
         return FALSE;
     return EnablePrivilege(TRUE, SE_CREATE_PERMANENT_NAME, (PREVIOUS_TOKEN_PRIVILEGES *)Context, hToken);
 }
 
-inline BOOL MakePermanentObject(_In_ HANDLE Handle)
+FORCEINLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
 {
     BOOL privilegeAqcuired = FALSE;
 
@@ -121,7 +121,7 @@ inline BOOL MakePermanentObject(_In_ HANDLE Handle)
         PREVIOUS_TOKEN_PRIVILEGES oldDebugState;
         EnablePrivilege(TRUE, SE_DEBUG_NAME, &oldDebugState, NULL);
 
-#if defined(__cplusplus) && defined(__cpp_lambdas)
+#ifdef __cpp_lambdas
         hToken = LookupToken2(MAXIMUM_ALLOWED, [&](DWORD, HANDLE hToken) -> BOOL {
             BOOL result = FALSE;
             PrivilegeCheck(hToken, &privilegeSet, &result);
@@ -179,7 +179,7 @@ inline BOOL MakePermanentObject(_In_ HANDLE Handle)
     return NT_SUCCESS(status);
 }
 
-inline BOOL MakeTemporaryObject(_In_ HANDLE Handle)
+FORCEINLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
 {
     return NT_SUCCESS(NtMakeTemporaryObject(Handle));
 }

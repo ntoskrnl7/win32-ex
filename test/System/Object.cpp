@@ -8,15 +8,15 @@ TEST(ObjectTest, MakePermanentObjectTest)
     {
         if (IsUserAdmin())
         {
-            EXPECT_FALSE(IsPermanentObject(handle));
-            EXPECT_TRUE(IsTemporaryObject(handle));
-            EXPECT_TRUE(MakePermanentObject(handle));
-            EXPECT_TRUE(IsPermanentObject(handle));
-            EXPECT_FALSE(IsTemporaryObject(handle));
+            EXPECT_FALSE(IsPermanentObject(handle) == TRUE);
+            EXPECT_TRUE(IsTemporaryObject(handle) == TRUE);
+            EXPECT_TRUE(MakePermanentObject(handle) == TRUE);
+            EXPECT_TRUE(IsPermanentObject(handle) == TRUE);
+            EXPECT_FALSE(IsTemporaryObject(handle) == TRUE);
         }
-        EXPECT_TRUE(MakeTemporaryObject(handle));
-        EXPECT_FALSE(IsPermanentObject(handle));
-        EXPECT_TRUE(IsTemporaryObject(handle));
+        EXPECT_TRUE(MakeTemporaryObject(handle) == TRUE);
+        EXPECT_FALSE(IsPermanentObject(handle) == TRUE);
+        EXPECT_TRUE(IsTemporaryObject(handle) == TRUE);
         CloseHandle(handle);
     }
 }
@@ -32,5 +32,5 @@ extern "C"
 
 TEST(ObjectTest, MakePermanentObjectTestC)
 {
-    EXPECT_TRUE(MakePermanentObjectTestC());
+    EXPECT_TRUE(MakePermanentObjectTestC() == TRUE);
 }

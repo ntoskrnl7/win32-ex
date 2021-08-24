@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "..\Internel\misc.hpp"
+#include "..\Internal\misc.hpp"
 #include "Privilege.hpp"
 #include "Token.h"
 
@@ -16,25 +16,31 @@ namespace Security
 class Token
 {
   public:
-    Token(HANDLE TokenHandle, bool autoClose = true) : autoClose_(autoClose), tokenHandle_(TokenHandle)
+    Token(HANDLE TokenHandle, bool autoClose = true) : autoClose_(autoClose), tokenHandle_(TokenHandle), groups_(NULL)
     {
     }
 
-    Token(std::function<bool(DWORD, HANDLE)> condition)
+    Token(std::function<BOOL(DWORD, HANDLE)> condition) : autoClose_(true), groups_(NULL)
     {
         tokenHandle_ = LookupToken2(MAXIMUM_ALLOWED, condition);
     }
-
+#ifdef __cpp_rvalue_references
     Token(Token &&Other) noexcept
     {
         tokenHandle_ = Other.tokenHandle_;
         Other.tokenHandle_ = NULL;
+        groups_ = Other.groups_;
+        Other.groups_ = NULL;
+        autoClose_ = Other.autoClose_;
+        Other.autoClose_ = false;
     }
-
+#endif
     ~Token()
     {
         if (IsValid() && autoClose_)
             CloseHandle(tokenHandle_);
+        if (groups_)
+            FreeTokenGroups(groups_);
     }
 
     BOOL IsValid()
@@ -49,15 +55,15 @@ class Token
 
     TokenPrivileges AdjustPrivileges(const std::vector<LUID> &Privileges)
     {
-        return {Privileges, tokenHandle_};
+        return TokenPrivileges(Privileges, tokenHandle_);
     }
 
     std::vector<LUID_AND_ATTRIBUTES> GetPrivileges()
     {
         std::vector<LUID_AND_ATTRIBUTES> luids;
-        auto privs = GetTokenPrivileges(tokenHandle_);
+        PTOKEN_PRIVILEGES privs = GetTokenPrivileges(tokenHandle_);
         if (!privs)
-            return {};
+            return std::vector<LUID_AND_ATTRIBUTES>();
         for (DWORD i = 0; i < privs->PrivilegeCount; ++i)
             luids.push_back(privs->Privileges[i]);
         return luids;
@@ -94,53 +100,51 @@ class Token
   public:
     static Token Lookup(std::function<bool(HANDLE)> condition)
     {
-        return {LookupToken(MAXIMUM_ALLOWED, condition)};
+        return Token(LookupToken(MAXIMUM_ALLOWED, condition));
     }
 
     static Token Lookup(DWORD DesireAccess, std::function<bool(HANDLE)> condition)
     {
-        return {LookupToken(DesireAccess, condition)};
+        return Token(LookupToken(DesireAccess, condition));
     }
 
-    static Token Lookup(std::function<bool(HANDLE, PVOID)> condition, _In_opt_ PVOID Context = nullptr)
+    static Token Lookup(std::function<bool(HANDLE, PVOID)> condition, _In_opt_ PVOID Context = NULL)
     {
-        return {LookupTokenEx(MAXIMUM_ALLOWED, condition, Context)};
+        return Token(LookupTokenEx(MAXIMUM_ALLOWED, condition, Context));
     }
 
-    static Token Lookup(DWORD DesireAccess, std::function<bool(HANDLE, PVOID)> condition,
-                        _In_opt_ PVOID Context = nullptr)
+    static Token Lookup(DWORD DesireAccess, std::function<bool(HANDLE, PVOID)> condition, _In_opt_ PVOID Context = NULL)
     {
-        return {LookupTokenEx(DesireAccess, condition, Context)};
+        return Token(LookupTokenEx(DesireAccess, condition, Context));
     }
 
     static Token Lookup(std::function<bool(DWORD, HANDLE)> condition)
     {
-        return {LookupToken2(MAXIMUM_ALLOWED, condition)};
+        return Token(LookupToken2(MAXIMUM_ALLOWED, condition));
     }
 
     static Token Lookup(DWORD DesireAccess, std::function<bool(DWORD, HANDLE)> condition)
     {
-        return {LookupToken2(DesireAccess, condition)};
+        return Token(LookupToken2(DesireAccess, condition));
     }
 
-    static Token Lookup(std::function<bool(DWORD, HANDLE, PVOID)> condition, _In_opt_ PVOID Context = nullptr)
+    static Token Lookup(std::function<bool(DWORD, HANDLE, PVOID)> condition, _In_opt_ PVOID Context = NULL)
     {
-        return {LookupTokenEx2(MAXIMUM_ALLOWED, condition, Context)};
+        return Token(LookupTokenEx2(MAXIMUM_ALLOWED, condition, Context));
     }
 
     static Token Lookup(DWORD DesireAccess, std::function<bool(DWORD, HANDLE, PVOID)> condition,
-                        _In_opt_ PVOID Context = nullptr)
+                        _In_opt_ PVOID Context = NULL)
     {
-        return {LookupTokenEx2(DesireAccess, condition, Context)};
+        return Token(LookupTokenEx2(DesireAccess, condition, Context));
     }
 
     static Token Current()
     {
         HANDLE handle;
         if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &handle))
-            return {handle};
-
-        return {NULL};
+            return Token(handle);
+        return Token(NULL);
     }
 
   private:
