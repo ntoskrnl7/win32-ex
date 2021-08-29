@@ -201,7 +201,7 @@ TEST(ProcessTest, UserAccountProcessClassTest)
             ret = process.Run();
             if (!ret)
             {
-                printf("Failed to UserAccountProcess::Run : %d\n", GetLastError());
+                printf("Failed to UserAccountProcess::Run(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
             }
 
             if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
@@ -246,7 +246,7 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
                 ret = process.Run();
                 if (!ret)
                 {
-                    printf("Failed to SystemAccountProcess::Run : %d\n", GetLastError());
+                    printf("Failed to SystemAccountProcess::Run(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
                 }
                 EXPECT_EQ(ret, TRUE);
             }
@@ -302,7 +302,7 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
                 }
                 else
                 {
-                    printf("Failed to CreateUserAccountProcess : %d\n", GetLastError());
+                    printf("Failed to CreateUserAccountProcess(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
                 }
 
                 if (isLocalSystem || assignPrimaryTokenAcquired ||
@@ -360,7 +360,8 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
                     }
                     else
                     {
-                        printf("Failed to CreateSystemAccountProcess : %d\n", GetLastError());
+                        printf("Failed to CreateSystemAccountProcess(%d) : %d\n", sessionInfo[i].SessionId,
+                               GetLastError());
                     }
                     EXPECT_EQ(ret, TRUE);
                 }
