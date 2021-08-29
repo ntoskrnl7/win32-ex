@@ -50,6 +50,9 @@ TEST(ProcessTest, RunSystemAccountProcess)
 {
     if (Win32Ex::ThisProcess::IsSystemAccount())
     {
+        Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C WHOAMI /ALL");
+        EXPECT_TRUE(process.Run());
+
         PSTR cmd = new CHAR[1024];
         if (cmd)
         {
@@ -86,6 +89,9 @@ TEST(ProcessTest, RunSystemAccountProcess)
 
 TEST(ProcessTest, RunUserAccountProcess)
 {
+    Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C WHOAMI /ALL");
+    EXPECT_TRUE(process.Run());
+
     PSTR cmd = new CHAR[1024];
     if (cmd)
     {
