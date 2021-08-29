@@ -67,7 +67,7 @@ Win32 API Experimental(or Extension) features
 
 ###### Example
 
-C
+C/C++
 ```C
 #include <System\Process.h>
 
@@ -76,9 +76,9 @@ CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, "CMD /C QUERY SES
 CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL,"CMD /C QUERY SESSION", /* ... */);
 ```
 
-C/C++
+C++
 ```CPP
-#include <System\Process.h>
+#include <System\Process.hpp>
 
 Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C QUERY SESSION");
 process.Run();
