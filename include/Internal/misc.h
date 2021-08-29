@@ -1,4 +1,26 @@
-﻿#pragma once
+﻿/*++
+
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    misc.h
+
+Abstract:
+
+    This Module implements the C helper macros.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
 
 #define __W(x) L##x
 #define _W(x) __W(x)

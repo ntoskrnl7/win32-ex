@@ -1,4 +1,26 @@
-﻿#pragma once
+﻿/*++
+
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    Sid.h
+
+Abstract:
+
+    This Module implements the SID variables and procedures.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
 
 #define WIN32_LEAN_AND_MEAN
 #include <AclAPI.h>

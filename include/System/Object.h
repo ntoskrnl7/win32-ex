@@ -1,4 +1,26 @@
-﻿#pragma once
+﻿/*++
+
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    Ntdll.h
+
+Abstract:
+
+    This Module implements the object helper procedures.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
 
 #ifdef __cplusplus
 #include "..\Security\Privilege.hpp"
@@ -27,6 +49,7 @@ FORCEINLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, 
 {
     BOOL result = FALSE;
     PPRIVILEGE_SET privilegeSet = (PPRIVILEGE_SET)Context;
+    privilegeSet->Control = PRIVILEGE_SET_ALL_NECESSARY;
     PrivilegeCheck(hToken, privilegeSet, &result);
     return result;
 }

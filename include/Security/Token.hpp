@@ -1,9 +1,32 @@
-﻿#pragma once
+﻿/*++
+
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    Token.hpp
+
+Abstract:
+
+    This Module implements the Token class.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
 
 #include "..\Internal\misc.hpp"
 #include "Privilege.hpp"
 #include "Token.h"
 
+#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -67,6 +90,40 @@ class Token
         for (DWORD i = 0; i < privs->PrivilegeCount; ++i)
             luids.push_back(privs->Privileges[i]);
         return luids;
+    }
+
+    bool IsAcquired(const LUID &Privilege)
+    {
+        PRIVILEGE_SET set;
+        set.Control = PRIVILEGE_SET_ALL_NECESSARY;
+        set.PrivilegeCount = 1;
+        set.Privilege[0].Luid = Privilege;
+        set.Privilege[0].Attributes = SE_PRIVILEGE_ENABLED;
+        BOOL result;
+        PrivilegeCheck(tokenHandle_, &set, &result);
+        return result == TRUE;
+    }
+
+    bool IsAcquired(const std::vector<LUID> &Privileges)
+    {
+        PPRIVILEGE_SET set =
+            (PPRIVILEGE_SET)malloc(sizeof(PRIVILEGE_SET) + (sizeof(LUID_AND_ATTRIBUTES) * (Privileges.size() - 1)));
+        if (!set)
+        {
+            return false;
+        }
+        set->Control = PRIVILEGE_SET_ALL_NECESSARY;
+        set->PrivilegeCount = (DWORD)Privileges.size();
+        PLUID_AND_ATTRIBUTES priv = set->Privilege;
+        for (std::vector<LUID>::const_iterator it = Privileges.begin(); it != Privileges.end(); ++it, ++priv)
+        {
+            priv->Luid = *it;
+            priv->Attributes = SE_PRIVILEGE_ENABLED;
+        }
+        BOOL result;
+        PrivilegeCheck(tokenHandle_, set, &result);
+        free(set);
+        return result == TRUE;
     }
 
     class Group

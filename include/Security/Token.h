@@ -4,7 +4,7 @@ Copyright (c) Win32Ex Authors. All rights reserved.
 
 Module Name:
 
-    Privilege.h
+    Token.h
 
 Abstract:
 
@@ -22,6 +22,7 @@ Environment:
 
 #pragma once
 
+#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -152,7 +153,11 @@ FORCEINLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
 }
 
 /// https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
-FORCEINLINE BOOL IsUserAdmin(VOID)
+#ifdef __cplusplus
+FORCEINLINE BOOL IsUserAdmin(HANDLE hToken = NULL)
+#else
+FORCEINLINE BOOL IsUserAdmin(HANDLE hToken)
+#endif
 /*++
 Routine Description: This routine returns TRUE if the caller's
 process is a member of the Administrators local group. Caller is NOT
@@ -171,7 +176,7 @@ Return Value:
                                  0, &AdministratorsGroup);
     if (b)
     {
-        if (!CheckTokenMembership(NULL, AdministratorsGroup, &b))
+        if (!CheckTokenMembership(hToken, AdministratorsGroup, &b))
         {
             b = FALSE;
         }
@@ -240,10 +245,9 @@ FORCEINLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION
         if (hProcess)
         {
             HANDLE TokenHandle = NULL;
-            if (OpenProcessToken(hProcess, DesireAccess, &TokenHandle))
+            if (OpenProcessToken(hProcess, DesireAccess | TOKEN_DUPLICATE | TOKEN_QUERY, &TokenHandle))
             {
                 CloseHandle(hProcess);
-
                 if (TokenCondition)
                 {
                     if (TokenCondition(processId, TokenHandle, Context))
@@ -257,9 +261,8 @@ FORCEINLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION
                     HeapFree(GetProcessHeap(), 0, processIdList);
                     return TokenHandle;
                 }
+                CloseHandle(TokenHandle);
             }
-
-            CloseHandle(TokenHandle);
         }
     }
 

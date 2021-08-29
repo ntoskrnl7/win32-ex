@@ -5,7 +5,7 @@ BOOL MakePermanentObjectTestC()
     HANDLE handle = CreateMutex(NULL, FALSE, TEXT("Test"));
     if (handle != NULL)
     {
-        if (IsUserAdmin())
+        if (IsUserAdmin(NULL))
         {
             if (IsPermanentObject(handle))
                 return FALSE;

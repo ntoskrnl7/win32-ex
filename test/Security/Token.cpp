@@ -190,11 +190,12 @@ TEST(TokenTest, TokenClassTest)
         }
     }
     EXPECT_TRUE(acquired);
+    EXPECT_TRUE(token.IsAcquired(Security::SeShutdownPrivilege));
 
     ctx.Release();
-    std::vector<LUID_AND_ATTRIBUTES> privs2 = token.GetPrivileges();
 
     acquired = false;
+    std::vector<LUID_AND_ATTRIBUTES> privs2 = token.GetPrivileges();
     for (std::vector<LUID_AND_ATTRIBUTES>::const_iterator it = privs2.begin(); it != privs2.end(); ++it)
     {
         const LUID_AND_ATTRIBUTES &priv = *it;
@@ -203,8 +204,9 @@ TEST(TokenTest, TokenClassTest)
             acquired = true;
             break;
         }
-    }
+    };
     EXPECT_FALSE(acquired);
+    EXPECT_FALSE(token.IsAcquired(Security::SeShutdownPrivilege));
 
     PRIVILEGE_SET privilegeSet;
     privilegeSet.PrivilegeCount = 1;

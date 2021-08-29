@@ -1,5 +1,28 @@
-﻿#pragma once
+﻿/*++
 
+Copyright (c) Win32Ex Authors. All rights reserved.
+
+Module Name:
+
+    Ntdll.h
+
+Abstract:
+
+    This Module implements the ntdll helper procedures.
+
+Author:
+
+    Jung Kwang Lee (ntoskrnl7@gmail.com)
+
+Environment:
+
+    User mode
+
+--*/
+
+#pragma once
+
+#define NOMINMAX
 #define WIN32_NO_STATUS
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
