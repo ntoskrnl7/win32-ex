@@ -22,9 +22,15 @@ Environment:
 
 #pragma once
 
-#define NOMINMAX
-#define WIN32_NO_STATUS
+#if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
+#endif
+#if !defined(NOMINMAX)
+#define NOMINMAX
+#endif
+#if !defined(WIN32_NO_STATUS)
+#define WIN32_NO_STATUS
+#endif
 #include <Windows.h>
 #include <ntstatus.h>
 

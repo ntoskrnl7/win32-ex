@@ -25,8 +25,12 @@ Environment:
 #include "..\Internal\misc.hpp"
 #include "Privilege.h"
 
-#define NOMINMAX
+#if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
+#endif
+#if !defined(NOMINMAX)
+#define NOMINMAX
+#endif
 #include <Windows.h>
 
 #include <sddl.h>
