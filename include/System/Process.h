@@ -36,16 +36,17 @@ Environment:
 #include <UserEnv.h>
 #pragma comment(lib, "Userenv.lib")
 
-#include "Security\Privilege.h"
-#include "Security\Token.h"
+#include "Security/Privilege.h"
+#include "Security/Token.h"
 
-FORCEINLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
-                                          _Inout_opt_ LPTSTR lpCommandLine,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                          _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
-                                          _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
-                                          _In_opt_ LPCTSTR lpCurrentDirectory, _In_ LPSTARTUPINFO lpStartupInfo,
-                                          _Out_ LPPROCESS_INFORMATION lpProcessInformation)
+STATIC_OR_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
+                                               _Inout_opt_ LPTSTR lpCommandLine,
+                                               _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                                               _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                                               _In_ BOOL bInheritHandles, _In_ DWORD dwCreationFlags,
+                                               _In_opt_ LPVOID lpEnvironment, _In_opt_ LPCTSTR lpCurrentDirectory,
+                                               _In_ LPSTARTUPINFO lpStartupInfo,
+                                               _Out_ LPPROCESS_INFORMATION lpProcessInformation)
 {
     BOOL bRet = FALSE;
     HANDLE hToken = NULL;
@@ -219,14 +220,14 @@ FORCEINLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ L
     return bRet;
 }
 
-FORCEINLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
-                                            _Inout_opt_ LPTSTR lpCommandLine,
-                                            _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                            _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                            _In_ BOOL bInheritHandles, _In_ DWORD dwCreationFlags,
-                                            _In_opt_ LPVOID lpEnvironment, _In_opt_ LPCTSTR lpCurrentDirectory,
-                                            _In_ LPSTARTUPINFO lpStartupInfo,
-                                            _Out_ LPPROCESS_INFORMATION lpProcessInformation)
+STATIC_OR_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
+                                                 _Inout_opt_ LPTSTR lpCommandLine,
+                                                 _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                                                 _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                                                 _In_ BOOL bInheritHandles, _In_ DWORD dwCreationFlags,
+                                                 _In_opt_ LPVOID lpEnvironment, _In_opt_ LPCTSTR lpCurrentDirectory,
+                                                 _In_ LPSTARTUPINFO lpStartupInfo,
+                                                 _Out_ LPPROCESS_INFORMATION lpProcessInformation)
 {
     HANDLE hToken;
     HANDLE hNewToken = NULL;

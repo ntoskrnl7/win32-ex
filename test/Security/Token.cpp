@@ -1,7 +1,7 @@
-﻿#include <Security\Privilege.hpp>
-#include <Security\Token.hpp>
+﻿#include <Security/Privilege.hpp>
+#include <Security/Token.hpp>
 
-#include <gtest\gtest.h>
+#include <gtest/gtest.h>
 
 using namespace Win32Ex;
 

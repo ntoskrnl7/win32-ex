@@ -32,7 +32,7 @@ Environment:
 
 #include <stdlib.h>
 
-#include "..\Internal\misc.h"
+#include "../Internal/misc.h"
 #include "Token.h"
 
 FORCEINLINE PTOKEN_PRIVILEGES GetTokenPrivileges(_In_ HANDLE TokenHandle)
@@ -276,18 +276,18 @@ FORCEINLINE BOOL EnablePrivilegesEx(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivil
     return bRet;
 }
 
-FORCEINLINE BOOL EnablePrivilegesExV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
-                                     _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
-                                     /* LUID Privileges... */...)
+VA_FN_INLINE BOOL EnablePrivilegesExV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                      _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                                      /* LUID Privileges... */...)
 {
-    va_list va;
-    va_start(va, NumberOfPrivileges);
-    return EnablePrivilegesEx(Enabled, NumberOfPrivileges, (LUID *)va, PreviousPrivileges, TokenHandle);
+    va_list Privileges;
+    va_start(Privileges, NumberOfPrivileges);
+    return EnablePrivilegesEx(Enabled, NumberOfPrivileges, (LUID *)Privileges, PreviousPrivileges, TokenHandle);
 }
 
-FORCEINLINE BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivilegeNames,
-                                  _In_ CONST LPCTSTR PrivilegeNames[],
-                                  _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+VA_FN_INLINE BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivilegeNames,
+                                   _In_ CONST LPCTSTR PrivilegeNames[],
+                                   _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
 {
     BOOL ret = FALSE;
     PLUID luids = (PLUID)HeapAlloc(GetProcessHeap(), 0, sizeof(LUID) * NumberOfPrivilegeNames);
@@ -301,29 +301,26 @@ FORCEINLINE BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivileg
     return ret;
 }
 
-#if defined(__GNUC__)
-static
-#else
-FORCEINLINE
-#endif
-    BOOL
-    EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
-                      _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                      /* LPCTSTR PrivilegeNames... */...)
+VA_FN_INLINE
+BOOL EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                       _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                       /* LPCTSTR PrivilegeNames... */...)
 {
-    va_list va;
-    va_start(va, NumberOfPrivilegeNames);
-    return EnablePrivileges(Enabled, NumberOfPrivilegeNames, (PCTSTR *)va, PreviousPrivileges, TokenHandle);
+    va_list PrivilegeNames;
+    va_start(PrivilegeNames, NumberOfPrivilegeNames);
+    return EnablePrivileges(Enabled, NumberOfPrivilegeNames, (PCTSTR *)PrivilegeNames, PreviousPrivileges, TokenHandle);
 }
 
-FORCEINLINE BOOL EnablePrivilege(_In_ BOOL Enabled, _In_ LPCTSTR PrivilegeName,
-                                 _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+STATIC_OR_INLINE BOOL EnablePrivilege(_In_ BOOL Enabled, _In_ LPCTSTR PrivilegeName,
+                                      _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                      _In_opt_ HANDLE TokenHandle)
 {
     return EnablePrivileges(Enabled, 1, &PrivilegeName, PreviousPrivileges, TokenHandle);
 }
 
-FORCEINLINE BOOL EnablePrivilegeEx(_In_ BOOL Enabled, _In_ LUID Privilege,
-                                   _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges, _In_opt_ HANDLE TokenHandle)
+STATIC_OR_INLINE BOOL EnablePrivilegeEx(_In_ BOOL Enabled, _In_ LUID Privilege,
+                                        _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                        _In_opt_ HANDLE TokenHandle)
 {
     return EnablePrivilegesEx(Enabled, 1, &Privilege, PreviousPrivileges, TokenHandle);
 }
@@ -435,30 +432,20 @@ FORCEINLINE BOOL IsPrivilegesEnabled(_In_ DWORD NumberOfPrivilegeNames, _In_ LPC
     return ret;
 }
 
-#if defined(__GNUC__)
-static
-#else
-FORCEINLINE
-#endif
-    BOOL
-    IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                         /* LPCTSTR PrivilegeName... */...)
+VA_FN_INLINE BOOL IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                                       /* LPCTSTR PrivilegeName... */...)
 {
-    va_list va;
-    va_start(va, NumberOfPrivilegeNames);
-    return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)va, TokenHandle);
+    va_list PrivilegeName;
+    va_start(PrivilegeName, NumberOfPrivilegeNames);
+    return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)PrivilegeName, TokenHandle);
 }
 
-#if defined(__GNUC__)
-static
-#else
-FORCEINLINE
-#endif
-    BOOL
-    IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
-                           /* LUID Privileges... */...)
+VA_FN_INLINE
+
+BOOL IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                            /* LUID Privileges... */...)
 {
-    va_list va;
-    va_start(va, NumberOfPrivileges);
-    return IsPrivilegesEnabledEx(NumberOfPrivileges, (LUID *)va, TokenHandle);
+    va_list Privileges;
+    va_start(Privileges, NumberOfPrivileges);
+    return IsPrivilegesEnabledEx(NumberOfPrivileges, (LUID *)Privileges, TokenHandle);
 }

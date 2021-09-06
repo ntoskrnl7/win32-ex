@@ -1,7 +1,16 @@
-﻿#include <System\Process.hpp>
-#include <gtest\gtest.h>
+﻿#include <System/Process.hpp>
+#include <gtest/gtest.h>
 #include <stdio.h>
 #include <tchar.h>
+
+// for MSYS2 (MSYS)
+#ifndef _tcsdup
+#ifdef UNICODE
+#define _tcsdup wcsdup
+#else
+#define _tcsdup strdup
+#endif
+#endif
 
 TEST(ProcessTest, ThisProcess)
 {
@@ -82,7 +91,7 @@ TEST(ProcessTest, RunSystemAccountProcess)
 #endif
                 EXPECT_TRUE(terminated);
             }
-            delete cmd;
+            delete[] cmd;
         }
     }
 }
@@ -118,7 +127,7 @@ TEST(ProcessTest, RunUserAccountProcess)
             EXPECT_TRUE(process.Run());
             EXPECT_TRUE(terminated);
         }
-        delete cmd;
+        delete[] cmd;
     }
 }
 
@@ -173,7 +182,7 @@ TEST(ProcessTest, RunAsyncUserAccountProcess)
             SleepConditionVariableCS(&cv, &cs, INFINITE);
             EXPECT_TRUE(terminated);
         }
-        delete cmd;
+        delete[] cmd;
     }
 }
 
@@ -193,12 +202,12 @@ TEST(ProcessTest, UserAccountProcessClassTest)
             if (sessionInfo[i].State == WTSListen)
                 continue;
 #if _MSC_VER > 1600
-            printf("UserAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+            printf("UserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-            wprintf(L"UserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+            wprintf(L"UserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-            printf("UserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+            printf("UserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -207,7 +216,7 @@ TEST(ProcessTest, UserAccountProcessClassTest)
             ret = process.Run();
             if (!ret)
             {
-                printf("Failed to UserAccountProcess::Run(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
+                printf("Failed to UserAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
             }
 
             if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
@@ -238,12 +247,12 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
                 if (sessionInfo[i].State == WTSListen)
                     continue;
 #if _MSC_VER > 1600
-                printf("SystemAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+                printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-                wprintf(L"SystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                printf("SystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                        sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -252,7 +261,8 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
                 ret = process.Run();
                 if (!ret)
                 {
-                    printf("Failed to SystemAccountProcess::Run(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
+                    printf("Failed to SystemAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId,
+                           GetLastError());
                 }
 
                 // GitHub Action의 Windows 운영체제에서는 세션0으로 System Process를 생성하는 것이 실패합니다.
@@ -269,7 +279,7 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
     }
 }
 
-#include <Security\Token.hpp>
+#include <Security/Token.hpp>
 
 TEST(ProcessTest, CreateUserAccountProcessTest)
 {
@@ -297,12 +307,12 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
                 if (sessionInfo[i].State == WTSListen)
                     continue;
 #if _MSC_VER > 1600
-                printf("CreateUserAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+                printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-                wprintf(L"CreateUserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                printf("CreateUserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                        sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -314,7 +324,7 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
                 }
                 else
                 {
-                    printf("Failed to CreateUserAccountProcess(%d) : %d\n", sessionInfo[i].SessionId, GetLastError());
+                    printf("Failed to CreateUserAccountProcess(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
                 }
 
                 if (isLocalSystem || assignPrimaryTokenAcquired ||
@@ -355,12 +365,12 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
                     if (sessionInfo[i].State == WTSListen)
                         continue;
 #if _MSC_VER > 1600
-                    printf("CreateSystemAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+                    printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-                    wprintf(L"CreateSystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                    wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                    printf("CreateSystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                    printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                            sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -372,7 +382,7 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
                     }
                     else
                     {
-                        printf("Failed to CreateSystemAccountProcess(%d) : %d\n", sessionInfo[i].SessionId,
+                        printf("Failed to CreateSystemAccountProcess(%lu) : %lu\n", sessionInfo[i].SessionId,
                                GetLastError());
                     }
 

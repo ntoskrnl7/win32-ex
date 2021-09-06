@@ -1,6 +1,15 @@
-#include <System\Process.h>
+#include <System/Process.h>
 #include <stdio.h>
 #include <tchar.h>
+
+// for MSYS2 (MSYS)
+#ifndef _tcsdup
+#ifdef UNICODE
+#define _tcsdup wcsdup
+#else
+#define _tcsdup strdup
+#endif
+#endif
 
 BOOL CreateUserAccountProcessTestC()
 {
@@ -27,12 +36,12 @@ BOOL CreateUserAccountProcessTestC()
                     if (sessionInfo[i].State == WTSListen)
                         continue;
 #if _MSC_VER > 1600
-                    printf("CreateUserAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+                    printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-                    wprintf(L"CreateUserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                    wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                    printf("CreateUserAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                    printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                            sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -44,7 +53,7 @@ BOOL CreateUserAccountProcessTestC()
                     }
                     else
                     {
-                        printf("Failed to CreateUserAccountProcess : %d\n", GetLastError());
+                        printf("Failed to CreateUserAccountProcess : %lu\n", GetLastError());
                     }
 
                     if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
@@ -90,12 +99,12 @@ BOOL CreateSystemAccountProcessTestC()
                         if (sessionInfo[i].State == WTSListen)
                             continue;
 #if _MSC_VER > 1600
-                        printf("CreateSystemAccountProcess (SessionId: %d, pWinStationName: %Ts, State: %d)\n",
+                        printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #else
 #ifdef _UNICODE
-                        wprintf(L"CreateSystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                        wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                        printf("CreateSystemAccountProcess (SessionId: %d, pWinStationName: %s, State: %d)\n",
+                        printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
                                sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
@@ -107,7 +116,7 @@ BOOL CreateSystemAccountProcessTestC()
                         }
                         else
                         {
-                            printf("Failed to CreateSystemAccountProcess : %d\n", GetLastError());
+                            printf("Failed to CreateSystemAccountProcess : %lu\n", GetLastError());
                         }
                     }
 

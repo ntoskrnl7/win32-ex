@@ -1,4 +1,4 @@
-﻿#include <Security\Privilege.h>
+﻿#include <Security/Privilege.h>
 
 BOOL IsPrivilegeEnabledTestC(_In_ LPCTSTR PrivilegeName)
 {
@@ -7,9 +7,9 @@ BOOL IsPrivilegeEnabledTestC(_In_ LPCTSTR PrivilegeName)
 
 BOOL IsPrivilegesEnabledTestC(DWORD NumberOfPrivilegeNames, /*LPCTSTR PrivilegeNames[]*/...)
 {
-    LPCTSTR *PrivilegeNames;
-    va_start((va_list)PrivilegeNames, NumberOfPrivilegeNames);
-    return IsPrivilegesEnabled(NumberOfPrivilegeNames, PrivilegeNames, NULL);
+    va_list PrivilegeNames;
+    va_start(PrivilegeNames, NumberOfPrivilegeNames);
+    return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)PrivilegeNames, NULL);
 }
 
 BOOL EnableAvailablePrivilegesTestC()

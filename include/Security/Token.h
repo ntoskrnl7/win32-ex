@@ -22,6 +22,8 @@ Environment:
 
 #pragma once
 
+#include "../Internal/misc.h"
+
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -298,12 +300,12 @@ FORCEINLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ std::function<BOOL
 #else
 typedef BOOL (*PTOKEN_CONDITION_ROUTINE_2)(DWORD ProcessId, HANDLE TokenHandle);
 
-FORCEINLINE BOOL __DefaultLookupTokenCondition2(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+STATIC_OR_INLINE BOOL __DefaultLookupTokenCondition2(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     return (Context) ? ((PTOKEN_CONDITION_ROUTINE_2)Context)(ProcessId, TokenHandle) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_2 TokenCondition)
+STATIC_OR_INLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_2 TokenCondition)
 {
     return LookupTokenEx2(DesireAccess, __DefaultLookupTokenCondition2, TokenCondition);
 }
@@ -348,14 +350,14 @@ typedef struct
     PVOID Context;
 } __DefaultLookupTokenExConditionContext;
 
-FORCEINLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+STATIC_OR_INLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     __DefaultLookupTokenExConditionContext *ctx = (__DefaultLookupTokenExConditionContext *)Context;
     return (ctx->TokenCondition) ? ctx->TokenCondition(TokenHandle, ctx->Context) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX TokenCondition,
-                                 _Inout_opt_ PVOID Context)
+STATIC_OR_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX TokenCondition,
+                                      _Inout_opt_ PVOID Context)
 {
     __DefaultLookupTokenExConditionContext ctx;
     ctx.TokenCondition = TokenCondition;
@@ -384,23 +386,23 @@ FORCEINLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ std::function<BOOL(
 #else
 typedef BOOL (*PTOKEN_CONDITION_ROUTINE)(HANDLE TokenHandle);
 
-FORCEINLINE BOOL __DefaultLookupTokenCondition(HANDLE TokenHandle, PVOID Context)
+STATIC_OR_INLINE BOOL __DefaultLookupTokenCondition(HANDLE TokenHandle, PVOID Context)
 {
     return (Context) ? ((PTOKEN_CONDITION_ROUTINE)Context)(TokenHandle) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE TokenCondition)
+STATIC_OR_INLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE TokenCondition)
 {
     return LookupTokenEx(DesireAccess, __DefaultLookupTokenCondition, TokenCondition);
 }
 #endif
 
-FORCEINLINE BOOL __IsLocalSystemTokenCondition(DWORD ProcessId, HANDLE TokenHandle)
+STATIC_OR_INLINE BOOL __IsLocalSystemTokenCondition(DWORD ProcessId, HANDLE TokenHandle)
 {
     return IsLocalSystemToken(TokenHandle);
 }
 
-FORCEINLINE HANDLE GetLocalSystemToken(_In_ DWORD DesireAccess)
+STATIC_OR_INLINE HANDLE GetLocalSystemToken(_In_ DWORD DesireAccess)
 {
     return LookupToken2(DesireAccess, __IsLocalSystemTokenCondition);
 }

@@ -77,3 +77,15 @@ Environment:
 #define IS_ALIGNED(_pointer, _alignment) ((((ULONG_PTR)(_pointer)) & ((_alignment)-1)) == 0)
 
 #endif
+
+#if defined(__GNUC__)
+#define VA_FN_INLINE static
+#else
+#define VA_FN_INLINE FORCEINLINE
+#endif
+
+#if defined(__cplusplus) || !defined(__GNUC__)
+#define STATIC_OR_INLINE FORCEINLINE
+#else
+#define STATIC_OR_INLINE static
+#endif

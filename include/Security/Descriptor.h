@@ -30,8 +30,8 @@ Environment:
 #endif
 #include <Windows.h>
 
-#include "..\Internal\misc.h"
-#include ".\Sid.h"
+#include "../Internal/misc.h"
+#include "Sid.h"
 
 inline void FreeSecurityDescriptor(PSECURITY_DESCRIPTOR SecurityDescriptor)
 {

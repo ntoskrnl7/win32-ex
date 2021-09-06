@@ -1,5 +1,5 @@
-﻿#include <System\Object.h>
-#include <gtest\gtest.h>
+﻿#include <System/Object.h>
+#include <gtest/gtest.h>
 
 TEST(ObjectTest, MakePermanentObjectTest)
 {

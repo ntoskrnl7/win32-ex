@@ -22,7 +22,7 @@ Environment:
 
 #pragma once
 
-#include "..\Internal\misc.hpp"
+#include "../Internal/misc.hpp"
 #include "Privilege.hpp"
 #include "Token.h"
 

@@ -35,7 +35,18 @@ file(GLOB SOURCE_FILES ./*/*.cpp ./*.cpp)
 file(GLOB C_SOURCE_FILES ./*/*.c ./*.c)
 
 add_executable(unittest ${SOURCE_FILES} ${C_SOURCE_FILES})
+target_link_libraries(unittest gtest gtest_main Wtsapi32 Userenv)
+
+if (MSYS)
+# target_include_directories(unittest PRIVATE ./include)
+endif()
+
+if (MSYS OR MINGW)
+target_link_libraries(unittest gtest gtest_main Wtsapi32 Userenv)
+else()
 target_link_libraries(unittest gtest gtest_main)
+endif()
+
 # SET_TARGET_PROPERTIES(unittest PROPERTIES LINK_FLAGS "/level='asInvoker' /uiAccess='false'")
 
 if (MSVC_VERSION LESS_EQUAL 1600)

@@ -23,14 +23,14 @@ Environment:
 #pragma once
 
 #ifdef __cplusplus
-#include "..\Security\Privilege.hpp"
+#include "../Security/Privilege.hpp"
 #else
-#include "..\Security\Privilege.h"
+#include "../Security/Privilege.h"
 #endif
 
 #include "Ntdll.h"
 
-FORCEINLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
+STATIC_OR_INLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
 {
     PUBLIC_OBJECT_BASIC_INFORMATION basicInfo;
     if (NT_SUCCESS(NtQueryObject(Handle, ObjectBasicInformation, &basicInfo, sizeof(basicInfo), NULL)))
@@ -40,12 +40,12 @@ FORCEINLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
     return FALSE;
 }
 
-FORCEINLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
+STATIC_OR_INLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
 {
     return IsPermanentObject(Handle) == FALSE;
 }
 
-FORCEINLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
+STATIC_OR_INLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
 {
     BOOL result = FALSE;
     PPRIVILEGE_SET privilegeSet = (PPRIVILEGE_SET)Context;
@@ -54,15 +54,15 @@ FORCEINLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, 
     return result;
 }
 
-FORCEINLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
-                                                                          _In_ PVOID Context)
+STATIC_OR_INLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
+                                                                               _In_ PVOID Context)
 {
     if (!IsLocalSystemToken(hToken))
         return FALSE;
     return EnablePrivilege(TRUE, SE_CREATE_PERMANENT_NAME, (PREVIOUS_TOKEN_PRIVILEGES *)Context, hToken);
 }
 
-FORCEINLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
+STATIC_OR_INLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
 {
     BOOL privilegeAqcuired = FALSE;
 
@@ -202,7 +202,7 @@ FORCEINLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
     return NT_SUCCESS(status);
 }
 
-FORCEINLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
+STATIC_OR_INLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
 {
     return NT_SUCCESS(NtMakeTemporaryObject(Handle));
 }

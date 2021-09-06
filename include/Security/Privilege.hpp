@@ -22,7 +22,7 @@ Environment:
 
 #pragma once
 
-#include "..\Internal\misc.hpp"
+#include "../Internal/misc.hpp"
 #include "Privilege.h"
 
 #if !defined(WIN32_LEAN_AND_MEAN)
@@ -224,18 +224,20 @@ class TokenPrivileges
 
     TokenPrivileges(HANDLE TokenHandle, DWORD PrivilegeCount, /* PrivilegeNames */...) : isPermanent_(false)
     {
-        va_list va;
-        va_start(va, PrivilegeCount);
-        enabled_ = (EnablePrivileges(TRUE, PrivilegeCount, (PCTSTR *)va, &previousPrivileges_, TokenHandle) == TRUE);
-        isAcquired_ = IsAcquired_(TokenHandle, PrivilegeCount, (PCTSTR *)va);
+        va_list PrivilegeNames;
+        va_start(PrivilegeNames, PrivilegeCount);
+        enabled_ = (EnablePrivileges(TRUE, PrivilegeCount, (PCTSTR *)PrivilegeNames, &previousPrivileges_,
+                                     TokenHandle) == TRUE);
+        isAcquired_ = IsAcquired_(TokenHandle, PrivilegeCount, (PCTSTR *)PrivilegeNames);
     }
 
     TokenPrivileges(DWORD PrivilegeCount, /* PrivilegeNames */...) : isPermanent_(false)
     {
-        va_list va;
-        va_start(va, PrivilegeCount);
-        enabled_ = (EnablePrivileges(TRUE, PrivilegeCount, (PCTSTR *)va, &previousPrivileges_, NULL) == TRUE);
-        isAcquired_ = IsAcquired_(GetCurrentProcessToken(), PrivilegeCount, (PCTSTR *)va);
+        va_list PrivilegeNames;
+        va_start(PrivilegeNames, PrivilegeCount);
+        enabled_ =
+            (EnablePrivileges(TRUE, PrivilegeCount, (PCTSTR *)PrivilegeNames, &previousPrivileges_, NULL) == TRUE);
+        isAcquired_ = IsAcquired_(GetCurrentProcessToken(), PrivilegeCount, (PCTSTR *)PrivilegeNames);
     }
 
     ~TokenPrivileges()

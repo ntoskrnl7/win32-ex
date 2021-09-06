@@ -1,6 +1,6 @@
-﻿#include <Security\Privilege.hpp>
+﻿#include <Security/Privilege.hpp>
 
-#include <gtest\gtest.h>
+#include <gtest/gtest.h>
 
 TEST(PrivilegeTest, EnableAvailablePrivilegesTest)
 {

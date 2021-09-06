@@ -30,13 +30,18 @@ Environment:
 #endif
 #include <Windows.h>
 
-#include "..\Internal\misc.hpp"
-#include "..\Security\Token.h"
-#include "process.h"
+#include "../Internal/misc.hpp"
+#include "../Security/Token.h"
+#include "Process.h"
+#if defined(_MSC_VER)
 #include <atlconv.h>
+#endif
 #include <functional>
+#include <sstream>
+#include <stdexcept>
+#include <stdlib.h>
 
-#if _MSC_VER < 1600
+#if defined(_MSC_VER) && _MSC_VER < 1600
 #define _STD_NS_ std::tr1
 #else
 #define _STD_NS_ std
@@ -91,7 +96,7 @@ template <ProcessAccountType _Type> class Process
         if (hProcess)
         {
             CHAR processName[4096];
-            DWORD processNameLength = _countof(processName);
+            DWORD processNameLength = sizeof(processName) / sizeof(CHAR);
 
             if (QueryFullProcessImageNameA(hProcess, 0, processName, &processNameLength))
             {
@@ -210,7 +215,7 @@ template <ProcessAccountType _Type> class Process
         if (IsRunning())
         {
             if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, std::exception("Already running"));
+                errorCallbackWithSelf_(*this, std::runtime_error("Already running"));
             return false;
         }
 
@@ -227,14 +232,14 @@ template <ProcessAccountType _Type> class Process
         if (IsRunning())
         {
             if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, std::exception("Already running"));
+                errorCallbackWithSelf_(*this, std::runtime_error("Already running"));
             return *this;
         }
 
         if (name_.empty())
         {
             if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, std::exception("Process image file name is not specified"));
+                errorCallbackWithSelf_(*this, std::runtime_error("Process image file name is not specified"));
             return *this;
         }
 
@@ -271,7 +276,7 @@ template <ProcessAccountType _Type> class Process
                                             currentDir.empty() ? NULL : currentDir.c_str(), &si, &processInfo_))
             {
                 if (errorCallbackWithSelf_)
-                    errorCallbackWithSelf_(*this, std::exception("Failed to CreateSystemAccountProcess"));
+                    errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateSystemAccountProcess"));
                 return *this;
             }
         }
@@ -281,14 +286,14 @@ template <ProcessAccountType _Type> class Process
                                           currentDir.empty() ? NULL : currentDir.c_str(), &si, &processInfo_))
             {
                 if (errorCallbackWithSelf_)
-                    errorCallbackWithSelf_(*this, std::exception("Failed to CreateUserAccountProcess"));
+                    errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateUserAccountProcess"));
                 return *this;
             }
         }
         else
         {
             if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, std::exception("Unknown process type"));
+                errorCallbackWithSelf_(*this, std::runtime_error("Unknown process type"));
             return *this;
         }
 
@@ -313,7 +318,7 @@ template <ProcessAccountType _Type> class Process
         if (hThreadStopEvent_ == NULL)
         {
             if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, std::exception("Failed to CreateEvent"));
+                errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateEvent"));
             return *this;
         }
 
@@ -463,7 +468,7 @@ template <ProcessAccountType _Type> class Process
         default:
             // 실패 시, 에러 콜백을 호출합니다.
             if (self->errorCallback_)
-                self->errorCallbackWithSelf_(*self, std::exception("Failed to WaitForSingleObject"));
+                self->errorCallbackWithSelf_(*self, std::runtime_error("Failed to WaitForSingleObject"));
             break;
         }
 
@@ -510,28 +515,36 @@ namespace ThisProcess
 static std::string &GetExecutablePath()
 {
     static std::string processName_;
+
+#if defined(_MSC_VER)
     USES_CONVERSION;
+#endif
 
     if (!processName_.empty())
         return processName_;
 
-    //
-    //  첫번째 인자가 프로그램 전체 경로라는 조건은 보장되지 않으므로 문제가 된다면 코드를 삭제하십시오.
-    //
-
+        //
+        //  첫번째 인자가 프로그램 전체 경로라는 조건은 보장되지 않으므로 문제가 된다면 코드를 삭제하십시오.
+        //
+#if defined(__argv)
     if (__argv)
     {
         processName_.assign(__argv[0]);
         if (!processName_.empty())
             return processName_;
     }
+#endif
 
+#if defined(__wargv)
     if (__wargv)
     {
+#if defined(_MSC_VER)
         processName_.assign((W2A(std::wstring(__wargv[0]).c_str())));
         if (!processName_.empty())
             return processName_;
+#endif
     }
+#endif
 
     DWORD fileNameSize = MAX_PATH;
     PSTR fileName = new CHAR[fileNameSize + 1];
