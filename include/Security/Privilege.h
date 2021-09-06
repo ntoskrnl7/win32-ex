@@ -301,9 +301,15 @@ FORCEINLINE BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD NumberOfPrivileg
     return ret;
 }
 
-FORCEINLINE BOOL EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
-                                   _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                                   /* LPCTSTR PrivilegeNames... */...)
+#if defined(__GNUC__)
+static
+#else
+FORCEINLINE
+#endif
+    BOOL
+    EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                      _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                      /* LPCTSTR PrivilegeNames... */...)
 {
     va_list va;
     va_start(va, NumberOfPrivilegeNames);
@@ -429,16 +435,28 @@ FORCEINLINE BOOL IsPrivilegesEnabled(_In_ DWORD NumberOfPrivilegeNames, _In_ LPC
     return ret;
 }
 
-FORCEINLINE BOOL IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                                      /* LPCTSTR PrivilegeName... */...)
+#if defined(__GNUC__)
+static
+#else
+FORCEINLINE
+#endif
+    BOOL
+    IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                         /* LPCTSTR PrivilegeName... */...)
 {
     va_list va;
     va_start(va, NumberOfPrivilegeNames);
     return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)va, TokenHandle);
 }
 
-FORCEINLINE BOOL IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
-                                        /* LUID Privileges... */...)
+#if defined(__GNUC__)
+static
+#else
+FORCEINLINE
+#endif
+    BOOL
+    IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                           /* LUID Privileges... */...)
 {
     va_list va;
     va_start(va, NumberOfPrivileges);
