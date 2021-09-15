@@ -12,6 +12,22 @@
 #endif
 #endif
 
+static const std::string &whoami = []() {
+    std::string whoami = "CMD /C \"";
+    whoami.resize(whoami.size() + MAX_PATH, '\0');
+    whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectoryA(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
+    whoami.append("/whoami.exe\" /ALL");
+    return whoami;
+}();
+
+static const Win32Ex::TString &whoami_tstr = []() {
+    Win32Ex::TString whoami = TEXT("CMD /C \"");
+    whoami.resize(whoami.size() + MAX_PATH, '\0');
+    whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
+    whoami.append("/whoami.exe\" /ALL");
+    return whoami;
+}();
+
 TEST(ProcessTest, ThisProcess)
 {
     std::string path = Win32Ex::ThisProcess::GetExecutablePath();
@@ -59,7 +75,7 @@ TEST(ProcessTest, RunSystemAccountProcess)
 {
     if (Win32Ex::ThisProcess::IsSystemAccount())
     {
-        Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C WHOAMI /ALL");
+        Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), whoami.c_str());
         EXPECT_TRUE(process.Run());
 
         PSTR cmd = new CHAR[1024];
@@ -98,7 +114,7 @@ TEST(ProcessTest, RunSystemAccountProcess)
 
 TEST(ProcessTest, RunUserAccountProcess)
 {
-    Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C WHOAMI /ALL");
+    Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), whoami.c_str());
     EXPECT_TRUE(process.Run());
 
     PSTR cmd = new CHAR[1024];
@@ -212,7 +228,7 @@ TEST(ProcessTest, UserAccountProcessClassTest)
 #endif
                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, "CMD /C WHOAMI /ALL");
+            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, whoami.c_str());
             ret = process.Run();
             if (!ret)
             {
@@ -299,7 +315,7 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
         STARTUPINFO si;
         ZeroMemory(&si, sizeof(STARTUPINFO));
         si.cb = sizeof(si);
-        PTSTR cmd = _tcsdup(TEXT("CMD /C WHOAMI /ALL"));
+        PTSTR cmd = _tcsdup(TEXT(whoami_tstr.c_str()));
         if (cmd)
         {
             for (DWORD i = 0; i < count; ++i)
@@ -408,13 +424,13 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
  */
 extern "C"
 {
-    extern BOOL CreateUserAccountProcessTestC();
+    extern BOOL CreateUserAccountProcessTestC(PCTSTR whoami);
     extern BOOL CreateSystemAccountProcessTestC();
 }
 
 TEST(ProcessTest, CreateUserAccountProcessTestC)
 {
-    EXPECT_TRUE(CreateUserAccountProcessTestC() == TRUE);
+    EXPECT_TRUE(CreateUserAccountProcessTestC(whoami_tstr.c_str()) == TRUE);
 }
 
 TEST(ProcessTest, CreateSystemAccountProcessTestC)

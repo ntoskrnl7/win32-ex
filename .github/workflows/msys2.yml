@@ -1,0 +1,88 @@
+name: MSYS2
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+    strategy:
+        matrix:
+          include:
+            - { sys: MSYS, env: '', gen: ''}
+            - { sys: MINGW32, env: i686, gen: 'MinGW Makefiles'}
+            - { sys: MINGW64, env: x86_64, gen: 'MinGW Makefiles'}
+            - { sys: UCRT64,  env: ucrt-x86_64, gen: 'MinGW Makefiles'}  # Experimental!
+            - { sys: CLANG32, env: clang-i686, gen: 'MinGW Makefiles'}   # Experimental!
+            - { sys: CLANG64, env: clang-x86_64, gen: 'MinGW Makefiles'} # Experimental!
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{matrix.sys}}
+        update: true
+        install: >-
+          base-devel
+          git
+    - name: Add staging repo
+      if: ${{ matrix.sys == 'CLANG32' }}
+      run: |
+        sed -i '1s|^|[staging]\nServer = https://repo.msys2.org/staging/\nSigLevel = Never\n[clang32]\nInclude = /etc/pacman.d/mirrorlist.clang32\n|' /etc/pacman.conf
+    - name: Update using staging
+      if: ${{ matrix.sys == 'CLANG32' }}
+      run: |
+        pacman --noconfirm -Suuy
+        pacman --noconfirm -Suu
+    - name: Install toolchain and CMake
+      if: ${{ matrix.env != '' }}
+      run: |
+        pacman --noconfirm --overwrite "*" -S --needed mingw-w64-${{matrix.env}}-toolchain
+        pacman --noconfirm --overwrite "*" -S --needed mingw-w64-${{matrix.env}}-cmake
+    - name: Install gcc and CMake
+      if: ${{ matrix.env == '' }}
+      run: |
+        pacman --noconfirm --overwrite "*" -S --needed gcc
+        pacman --noconfirm --overwrite "*" -S --needed cmake
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Make build directory
+      run: mkdir build && cd build
+      working-directory: test
+
+    - name: Configure CMake
+      if: ${{ matrix.gen == '' }}
+      run: cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      working-directory: test/build
+
+    - name: Configure CMake
+      if: ${{ matrix.gen != '' }}
+      run: cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "${{matrix.gen}}"
+      working-directory: test/build
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build . --config ${{env.BUILD_TYPE}}
+      working-directory: test/build
+
+    - name: Test
+      working-directory: ${{github.workspace}}/test/build
+      # Execute tests defined by the CMake configuration.  
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: export LC_ALL=C; unset LANGUAGE; ctest -C ${{env.BUILD_TYPE}} --verbose
