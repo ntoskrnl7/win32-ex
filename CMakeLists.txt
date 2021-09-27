@@ -24,7 +24,7 @@ endif()
 
 if(WIN32EX_ENABLE_INSTALL)
     install(TARGETS win32ex EXPORT ${targets_export_name} DESTINATION lib)
-    FILE(GLOB_RECURSE INCLUDE_FILES "./include/*")
+    FILE(GLOB_RECURSE INCLUDE_FILES "${PROJECT_SOURCE_DIR}/include/*")
     MESSAGE("${INCLUDE_FILES}")
     install(FILES ${INCLUDE_FILES} DESTINATION include)
 endif()
