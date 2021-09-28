@@ -43,6 +43,8 @@ Win32 API Experimental(or Extension) features
           - [Functions](#functions-5)
           - [Variables](#variables)
   - [Test](#test)
+  - [Usage](#usage)
+    - [CMakeLists.txt](#cmakeliststxt)
 
 ## Features
 
@@ -68,6 +70,7 @@ Win32 API Experimental(or Extension) features
 ###### Example
 
 C/C++
+
 ```C
 #include <System\Process.h>
 
@@ -77,6 +80,7 @@ CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL,"CMD /C QUERY SE
 ```
 
 C++
+
 ```CPP
 #include <System\Process.hpp>
 
@@ -89,7 +93,7 @@ process.Run();
 
 #### Windows System Information [Handles and Objects]
 
-- **Link :** https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects>
 - **Headers :** System\Object.h
 
 ##### Reference
@@ -104,6 +108,7 @@ process.Run();
 ###### Example
 
 C/C++
+
 ```C
 #include <System\Object.h>
 
@@ -120,7 +125,7 @@ IsTemporaryObject(handle); // == TRUE
 
 #### Authorization [Privileges]
 
-- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges>
 - **Headers :** Security\Privilege.h, Security\Privilege.hpp
 
 ##### Reference
@@ -150,7 +155,6 @@ IsTemporaryObject(handle); // == TRUE
 - SE_MAX_WELL_KNOWN_PRIVILEGE
 
 ###### Example
-
 
 ```C++
 #include <System\Privilege.h>
@@ -245,7 +249,7 @@ if (token.IsValid()) {
 
 #### Authorization [Security Descriptors]
 
-- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors>
 - **Headers :** Security\Descriptor.h
 
 ##### Reference
@@ -257,7 +261,7 @@ if (token.IsValid()) {
 
 #### Authorization [Security Identifiers]
 
-- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers>
 - **Headers :** Security\Sid.h
 
 ##### Reference
@@ -282,8 +286,31 @@ if (token.IsValid()) {
 
 ## Test
 
-1. cd test
-2. mkdir build && cd build
-3. cmake ..
-4. cmake --build .
-5. Debug\unittest.exe
+```batch
+CD test
+MKDIR build && CD build
+cmake ..
+cmake --build .
+Debug\unittest.exe
+```
+
+## Usage
+
+### CMakeLists.txt
+
+```cmake
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+
+# create project
+project(MyProject)
+
+# add executable
+add_executable(tests tests.cpp)
+
+# add dependencies
+include(cmake/CPM.cmake)
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.1.0")
+
+# link dependencies
+target_link_libraries(tests win32ex)
+```
