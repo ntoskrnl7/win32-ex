@@ -13,9 +13,9 @@ endforeach()
 set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-    message(DEBUG "win32-ex version ${VERSION}")
+    message(DEBUG "${prefix} version ${VERSION}")
 else()
-    message(STATUS "win32-ex version ${VERSION}")
+    message(STATUS "${prefix} version ${VERSION}")
 endif()
 
 set(${version_arg} ${VERSION} PARENT_SCOPE)
