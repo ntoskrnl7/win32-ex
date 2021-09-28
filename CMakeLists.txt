@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 include(pkg-utils)
 
-pkg_get_version(${CMAKE_CURRENT_SOURCE_DIR}/include/internal/version.h VERSION)
+pkg_get_version(WIN32EX ${CMAKE_CURRENT_SOURCE_DIR}/include/internal/version.h VERSION)
 
 project(win32ex VERSION "${VERSION}" LANGUAGES C CXX)
 
