@@ -13,7 +13,6 @@ add_library(win32ex INTERFACE)
 
 target_include_directories(win32ex INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
 )
 
 if (WIN32EX_BUILD_TESTS)
