@@ -38,30 +38,7 @@ file(GLOB SOURCE_FILES ./*/*.cpp ./*.cpp)
 file(GLOB C_SOURCE_FILES ./*/*.c ./*.c)
 
 add_executable(unittest ${SOURCE_FILES} ${C_SOURCE_FILES})
-target_link_libraries(unittest win32ex gtest gtest_main Wtsapi32 Userenv)
-
-if (MSYS OR MINGW)
-target_link_libraries(unittest gtest gtest_main Wtsapi32 Userenv)
-else()
-target_link_libraries(unittest gtest gtest_main)
-endif()
-
-# SET_TARGET_PROPERTIES(unittest PROPERTIES LINK_FLAGS "/level='asInvoker' /uiAccess='false'")
-
-if (MSVC_VERSION LESS_EQUAL 1600)
-  add_definitions("/EHsc")
-endif()
-
-get_property(CXX_STANDARD_SPECIFIED TARGET unittest PROPERTY CXX_STANDARD SET)
-if (CXX_STANDARD_SPECIFIED)
-  get_property(CXX_STANDARD_VAR TARGET unittest PROPERTY CXX_STANDARD)
-  message("CXX_STANDARD : " ${CXX_STANDARD_VAR})
-else()
-  set_property(TARGET unittest PROPERTY CXX_STANDARD 17)
-  get_property(CXX_STANDARD_VAR TARGET unittest PROPERTY CXX_STANDARD)
-  message("CXX_STANDARD (default): " ${CXX_STANDARD_VAR})
-endif()
-set_property(TARGET unittest PROPERTY CXX_STANDARD_REQUIRED ON)
+target_link_libraries(unittest win32ex gtest gtest_main)
 
 enable_testing()
 
