@@ -506,46 +506,11 @@ typedef Detail::Process<UserAccount> UserAccountProcess;
 
 } // namespace System
 
-//
-//  현재 프로세스 관련 정의.
-//
-
 namespace ThisProcess
 {
 static std::string &GetExecutablePath()
 {
     static std::string processName_;
-
-#if defined(_MSC_VER)
-    USES_CONVERSION;
-#endif
-
-    if (!processName_.empty())
-        return processName_;
-
-        //
-        //  첫번째 인자가 프로그램 전체 경로라는 조건은 보장되지 않으므로 문제가 된다면 코드를 삭제하십시오.
-        //
-#if defined(__argv)
-    if (__argv)
-    {
-        processName_.assign(__argv[0]);
-        if (!processName_.empty())
-            return processName_;
-    }
-#endif
-
-#if defined(__wargv)
-    if (__wargv)
-    {
-#if defined(_MSC_VER)
-        processName_.assign((W2A(std::wstring(__wargv[0]).c_str())));
-        if (!processName_.empty())
-            return processName_;
-#endif
-    }
-#endif
-
     DWORD fileNameSize = MAX_PATH;
     PSTR fileName = new CHAR[fileNameSize + 1];
     if (fileName == NULL)
