@@ -24,6 +24,7 @@ if (MSVC_VERSION LESS_EQUAL 1700)
     VERSION 1.4.0
     OPTIONS "INSTALL_GTEST OFF" "gtest_force_shared_crt"
   )
+  include_directories("${gtest_SOURCE_DIR}/include")
 else()
   CPMAddPackage(
     NAME googletest
