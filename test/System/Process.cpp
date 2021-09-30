@@ -24,7 +24,7 @@ static const Win32Ex::TString &whoami_tstr = []() {
     Win32Ex::TString whoami = TEXT("CMD /C \"");
     whoami.resize(whoami.size() + MAX_PATH, '\0');
     whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
-    whoami.append("/whoami.exe\" /ALL");
+    whoami.append(TEXT("/whoami.exe\" /ALL"));
     return whoami;
 }();
 
@@ -218,7 +218,11 @@ TEST(ProcessTest, UserAccountProcessClassTest)
             if (sessionInfo[i].State == WTSListen)
                 continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+            wprintf(L"UserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
             printf("UserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
             wprintf(L"UserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -226,7 +230,7 @@ TEST(ProcessTest, UserAccountProcessClassTest)
             printf("UserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                   sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
             Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, whoami.c_str());
             ret = process.Run();
@@ -263,7 +267,11 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
                 if (sessionInfo[i].State == WTSListen)
                     continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+                wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
                 printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
                 wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -271,7 +279,7 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
                 printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                       sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                        sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
                 Win32Ex::System::SystemAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
                 ret = process.Run();
@@ -296,6 +304,8 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
 }
 
 #include <Security/Token.hpp>
+#include <atlconv.h>
+
 
 TEST(ProcessTest, CreateUserAccountProcessTest)
 {
@@ -315,7 +325,9 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
         STARTUPINFO si;
         ZeroMemory(&si, sizeof(STARTUPINFO));
         si.cb = sizeof(si);
-        PTSTR cmd = _tcsdup(TEXT(whoami_tstr.c_str()));
+
+        USES_CONVERSION;
+        PTSTR cmd = _tcsdup(whoami_tstr.c_str());
         if (cmd)
         {
             for (DWORD i = 0; i < count; ++i)
@@ -323,7 +335,11 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
                 if (sessionInfo[i].State == WTSListen)
                     continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+                wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
                 printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
                 wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -331,7 +347,7 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
                 printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                       sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                        sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
                 ret = CreateUserAccountProcess(sessionInfo[i].SessionId, NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL,
                                                &si, &pi);
                 if (ret)
@@ -381,7 +397,11 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
                     if (sessionInfo[i].State == WTSListen)
                         continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+                    wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
                     printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
                     wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -389,7 +409,7 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
                     printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                           sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                            sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
                     ret = CreateSystemAccountProcess(sessionInfo[i].SessionId, NULL, cmd, NULL, NULL, FALSE, 0, NULL,
                                                      NULL, &si, &pi);
                     if (ret)

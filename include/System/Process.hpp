@@ -117,7 +117,7 @@ template <ProcessAccountType _Type> class Process
         initCallbacks_();
     }
 
-    Process(const std::string &ProcessPathName, const char *Arguments = NULL, const char *CurrentDirectory = NULL)
+    Process(const std::string &ProcessPathName, PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL)
         : name_(ProcessPathName), creationFlags_(0), exitDetectionThread_(NULL)
     {
         if (Arguments)
@@ -131,8 +131,8 @@ template <ProcessAccountType _Type> class Process
         initCallbacks_();
     }
 
-    Process(DWORD SessionId, const char *ProcessPathName, const char *Arguments = NULL,
-            const char *CurrentDirectory = NULL, DWORD CreationFlags = 0L)
+    Process(DWORD SessionId, const std::string &ProcessPathName, PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL,
+            DWORD CreationFlags = 0L)
         : sessionId_(SessionId), name_(ProcessPathName), creationFlags_(CreationFlags), exitDetectionThread_(NULL)
     {
         if (Arguments)
@@ -210,7 +210,7 @@ template <ProcessAccountType _Type> class Process
         return false;
     }
 
-    bool Run(const char *Arguments = NULL, const char *CurrentDirectory = NULL, DWORD CreationFlags = 0L)
+    bool Run(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L)
     {
         if (IsRunning())
         {
@@ -227,7 +227,7 @@ template <ProcessAccountType _Type> class Process
         return (processInfo_.hProcess != NULL);
     }
 
-    Process &RunAsync(const char *Arguments = NULL, const char *CurrentDirectory = NULL, DWORD CreationFlags = 0L)
+    Process &RunAsync(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L)
     {
         if (IsRunning())
         {
@@ -259,9 +259,11 @@ template <ProcessAccountType _Type> class Process
         {
             creationFlags_ = CreationFlags;
         }
+
+        USES_CONVERSION;
 #if _UNICODE
-        currentDir = !currentDirectory_;
-        command = (arguments_.empty()) ? !name_ : !name_ + TEXT(" ") + !arguments_;
+        currentDir = A2W(currentDirectory_.c_str());
+        command = (arguments_.empty()) ? A2W(name_.c_str()) : A2W((name_ + " " + arguments_).c_str());
 #else
         currentDir = currentDirectory_;
         command = (arguments_.empty()) ? name_ : name_ + TEXT(" ") + arguments_;
@@ -393,11 +395,6 @@ template <ProcessAccountType _Type> class Process
         return *this;
     }
 
-    const std::string &GetExecutablePath() const
-    {
-        return name_;
-    }
-
     operator const std::string() const
     {
         std::stringstream process_info;
@@ -405,9 +402,29 @@ template <ProcessAccountType _Type> class Process
         return process_info.str();
     }
 
+    const std::string &GetExecutablePath() const
+    {
+        return name_;
+    }
+
+    DWORD GetId() const
+    {
+        return processInfo_.dwProcessId;
+    }
+
+    HANDLE GetHandle() const
+    {
+        return processInfo_.hProcess;
+    }
+
     DWORD GetMainThreadId() const
     {
         return processInfo_.dwThreadId;
+    }
+
+    HANDLE GetMainThreadHandle() const
+    {
+        return processInfo_.hThread;
     }
 
     bool IsSystemAccount() const
@@ -539,6 +556,47 @@ static std::string &GetExecutablePath()
     delete[] fileName;
 
     return processName_;
+}
+
+namespace Details
+{
+static DWORD mainThreadId = GetCurrentThreadId();
+static HANDLE OpenMainThread();
+static HANDLE mainThreadHandle = OpenMainThread();
+
+static VOID CloseMainThread()
+{
+    if (mainThreadHandle != NULL)
+        CloseHandle(mainThreadHandle);
+}
+
+static HANDLE OpenMainThread()
+{
+    HANDLE handle = OpenThread(MAXIMUM_ALLOWED, FALSE, GetCurrentThreadId());
+    if (handle != NULL)
+        atexit(CloseMainThread);
+    return handle;
+}
+} // namespace Details
+
+static DWORD GetMainThreadId()
+{
+    return Details::mainThreadId;
+}
+
+static HANDLE GetMainThreadHandle()
+{
+    return Details::mainThreadHandle;
+}
+
+static DWORD GetId()
+{
+    return GetCurrentProcessId();
+}
+
+static HANDLE GetHandle()
+{
+    return GetCurrentProcess();
 }
 
 static bool IsSystemAccount()

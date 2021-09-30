@@ -25,7 +25,7 @@ BOOL CreateUserAccountProcessTestC(PCTSTR whoami)
             BOOL isLocalSystem = IsLocalSystemToken(GetCurrentProcessToken());
             PROCESS_INFORMATION pi;
             STARTUPINFO si;
-            PTSTR cmd = _tcsdup(TEXT(whoami));
+            PTSTR cmd = _tcsdup(whoami);
             ZeroMemory(&si, sizeof(STARTUPINFO));
             si.cb = sizeof(si);
             if (cmd)
@@ -36,7 +36,11 @@ BOOL CreateUserAccountProcessTestC(PCTSTR whoami)
                     if (sessionInfo[i].State == WTSListen)
                         continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+                    wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
                     printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
                     wprintf(L"CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -44,7 +48,7 @@ BOOL CreateUserAccountProcessTestC(PCTSTR whoami)
                     printf("CreateUserAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                           sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                            sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
                     ret = CreateUserAccountProcess(sessionInfo[i].SessionId, NULL, cmd, NULL, NULL, FALSE, 0, NULL,
                                                    NULL, &si, &pi);
                     if (ret)
@@ -99,7 +103,11 @@ BOOL CreateSystemAccountProcessTestC()
                         if (sessionInfo[i].State == WTSListen)
                             continue;
 #if _MSC_VER > 1600
+#ifdef _UNICODE
+                        wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
                         printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
 #else
 #ifdef _UNICODE
                         wprintf(L"CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
@@ -107,7 +115,7 @@ BOOL CreateSystemAccountProcessTestC()
                         printf("CreateSystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                               sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                                sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
                         ret = CreateSystemAccountProcess(sessionInfo[i].SessionId, NULL, cmd, NULL, NULL, FALSE, 0,
                                                          NULL, NULL, &si, &pi);
                         if (ret)
