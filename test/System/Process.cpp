@@ -12,7 +12,8 @@
 #endif
 #endif
 
-static const std::string whoami() {
+std::string whoami()
+{
     static std::string whoami = "CMD /C \"";
     whoami.resize(whoami.size() + MAX_PATH, '\0');
     whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectoryA(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
@@ -20,7 +21,8 @@ static const std::string whoami() {
     return whoami;
 };
 
-static const Win32Ex::TString whoami_tstr() {
+Win32Ex::TString whoami_tstr()
+{
     static Win32Ex::TString whoami = TEXT("CMD /C \"");
     whoami.resize(whoami.size() + MAX_PATH, '\0');
     whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
@@ -304,8 +306,6 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
 }
 
 #include <Security/Token.hpp>
-#include <atlconv.h>
-
 
 TEST(ProcessTest, CreateUserAccountProcessTest)
 {
@@ -326,7 +326,6 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
         ZeroMemory(&si, sizeof(STARTUPINFO));
         si.cb = sizeof(si);
 
-        USES_CONVERSION;
         PTSTR cmd = _tcsdup(whoami_tstr().c_str());
         if (cmd)
         {

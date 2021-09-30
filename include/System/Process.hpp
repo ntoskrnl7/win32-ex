@@ -33,9 +33,6 @@ Environment:
 #include "../Internal/misc.hpp"
 #include "../Security/Token.h"
 #include "Process.h"
-#if defined(_MSC_VER)
-#include <atlconv.h>
-#endif
 #include <functional>
 #include <sstream>
 #include <stdexcept>
@@ -259,11 +256,10 @@ template <ProcessAccountType _Type> class Process
         {
             creationFlags_ = CreationFlags;
         }
-
-        USES_CONVERSION;
 #if _UNICODE
-        currentDir = A2W(currentDirectory_.c_str());
-        command = (arguments_.empty()) ? A2W(name_.c_str()) : A2W((name_ + " " + arguments_).c_str());
+        using namespace Convert::String;
+        currentDir = !currentDirectory_;
+        command = (arguments_.empty()) ? !name_ : !(name_ + " " + arguments_);
 #else
         currentDir = currentDirectory_;
         command = (arguments_.empty()) ? name_ : name_ + TEXT(" ") + arguments_;
