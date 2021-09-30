@@ -29,8 +29,80 @@ Environment:
 #include <atlconv.h>
 #endif
 
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN
+#endif
+#if !defined(NOMINMAX)
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#include <climits>
+
 namespace Win32Ex
 {
+class Duration
+{
+  public:
+    static Duration Infinite()
+    {
+        return Duration(INFINITE);
+    }
+
+    static Duration Second(unsigned long Second)
+    {
+        return Duration(((ULONG_MAX / 1000) < Second) ? ULONG_MAX : Second * 1000);
+    }
+
+  public:
+    Duration(unsigned long Millisecond) : Millisecond_(Millisecond)
+    {
+    }
+
+    operator DWORD() const
+    {
+        return Millisecond_;
+    }
+
+  private:
+    DWORD Millisecond_;
+};
+
+class WaitableObject
+{
+    friend class Waitable;
+
+  private:
+    virtual bool IsWaitable() = 0;
+    virtual bool Wait(Duration Timeout) = 0;
+};
+
+class Waitable
+{
+    friend class WaitableObject;
+
+  public:
+    Waitable(WaitableObject &object) : object_(object)
+    {
+    }
+
+  public:
+    operator bool()
+    {
+        return object_.IsWaitable();
+    }
+
+    bool Wait(Duration Timeout = Duration::Infinite())
+    {
+        if (!object_.IsWaitable())
+            return false;
+
+        return object_.Wait(Timeout);
+    }
+
+  private:
+    WaitableObject &object_;
+};
+
 typedef std::basic_string<TCHAR> TString;
 namespace Convert
 {

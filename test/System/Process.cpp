@@ -196,9 +196,10 @@ TEST(ProcessTest, RunAsyncUserAccountProcess)
                 .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1));
 #endif
             EXPECT_FALSE(terminated);
-            process.RunAsync();
+            Win32Ex::Waitable waitable = process.RunAsync();
             SleepConditionVariableCS(&cv, &cs, INFINITE);
             EXPECT_TRUE(terminated);
+            EXPECT_FALSE(waitable);
         }
         delete[] cmd;
     }
@@ -435,6 +436,14 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
         }
         Wow64RevertWow64FsRedirection(OldValue);
     }
+}
+
+TEST(ProcessTest, AttachTest)
+{
+    Win32Ex::System::UserAccountProcess process(GetCurrentProcessId());
+    EXPECT_EQ(process.GetExecutablePath(), Win32Ex::ThisProcess::GetExecutablePath());
+    EXPECT_TRUE(process.IsRunning());
+    EXPECT_FALSE(process.RunAsync());
 }
 
 /**

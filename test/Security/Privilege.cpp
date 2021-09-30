@@ -128,10 +128,12 @@ extern "C"
     extern BOOL IsPrivilegeEnabledTestC(LPCTSTR PrivilegeNames);
     extern BOOL IsPrivilegesEnabledTestC(DWORD NumberOfPrivilegeNames, /*LPCTSTR PrivilegeNames[]*/...);
 }
+
 TEST(PrivilegeTest, EnableAvailablePrivilegesTestC)
 {
     EXPECT_TRUE(EnableAvailablePrivilegesTestC() == TRUE);
 }
+
 TEST(PrivilegeTest, IsPrivilegeEnabledTestC)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
@@ -141,6 +143,7 @@ TEST(PrivilegeTest, IsPrivilegeEnabledTestC)
         RevertPrivileges(&prev);
     }
 }
+
 TEST(PrivilegeTest, IsPrivilegesEnabledTestC)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;

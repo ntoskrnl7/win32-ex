@@ -58,7 +58,7 @@ typedef DWORD ProcessId;
 
 namespace Detail
 {
-template <ProcessAccountType _Type> class Process
+template <ProcessAccountType _Type> class Process : public WaitableObject
 {
     typedef std::function<void(Process<_Type> &)> ProcessEnterCallbackWithSelf;
     typedef std::function<void(Process<_Type> &)> ProcessExitCallbackWithSelf;
@@ -71,9 +71,6 @@ template <ProcessAccountType _Type> class Process
   private:
     void initCallbacks_()
     {
-        //
-        //  WithSelf Callback호출 시, Callback도 호출되도록 설정합니다.
-        //
         enterCallbackWithSelf_ =
             _STD_NS_::bind(&Process<_Type>::enterCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
         exitCallbackWithSelf_ =
@@ -82,73 +79,25 @@ template <ProcessAccountType _Type> class Process
                                                 _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2);
     }
 
-  public:
-    Process(ProcessId ProcessId) : creationFlags_(0), exitDetectionThread_(NULL)
+    VOID Attach_(HANDLE ProcessHandle)
     {
-        ProcessIdToSessionId(ProcessId, &sessionId_);
+        DWORD processId = GetProcessId(ProcessHandle);
+        if (processId != 0)
+            ProcessIdToSessionId(processId, &sessionId_);
 
-        processInfo_.dwProcessId = ProcessId;
+        CHAR processName[4096];
+        DWORD processNameLength = sizeof(processName) / sizeof(CHAR);
+        if (QueryFullProcessImageNameA(ProcessHandle, 0, processName, &processNameLength))
+            name_.assign(processName, processNameLength);
 
-        HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
-        if (hProcess)
-        {
-            CHAR processName[4096];
-            DWORD processNameLength = sizeof(processName) / sizeof(CHAR);
-
-            if (QueryFullProcessImageNameA(hProcess, 0, processName, &processNameLength))
-            {
-                name_.assign(processName, processNameLength);
-            }
-
-            processInfo_.hProcess = hProcess;
-        }
-        else
-        {
-            processInfo_.hProcess = NULL;
-        }
-
+        processInfo_.hProcess = ProcessHandle;
+        processInfo_.dwProcessId = processId;
         processInfo_.dwThreadId = 0;
         processInfo_.hThread = NULL;
-        hThreadStopEvent_ = NULL;
-
-        initCallbacks_();
     }
 
-    Process(const std::string &ProcessPathName, PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL)
-        : name_(ProcessPathName), creationFlags_(0), exitDetectionThread_(NULL)
+    VOID Detach_()
     {
-        if (Arguments)
-            arguments_ = Arguments;
-        if (CurrentDirectory)
-            currentDirectory_ = CurrentDirectory;
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        ProcessIdToSessionId(GetCurrentProcessId(), &sessionId_);
-        hThreadStopEvent_ = NULL;
-
-        initCallbacks_();
-    }
-
-    Process(DWORD SessionId, const std::string &ProcessPathName, PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL,
-            DWORD CreationFlags = 0L)
-        : sessionId_(SessionId), name_(ProcessPathName), creationFlags_(CreationFlags), exitDetectionThread_(NULL)
-    {
-        if (Arguments)
-            arguments_ = Arguments;
-        if (CurrentDirectory)
-            currentDirectory_ = CurrentDirectory;
-
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        hThreadStopEvent_ = NULL;
-
-        initCallbacks_();
-    }
-
-    ~Process()
-    {
-        //
-        //  스레드 종료 이벤트를 시그널시킵니다.
-        //
-
         HANDLE handle = InterlockedExchangePointer(&hThreadStopEvent_, NULL);
         if (handle)
         {
@@ -157,14 +106,7 @@ template <ProcessAccountType _Type> class Process
         }
 
         if (exitDetectionThread_)
-        {
             WaitForSingleObject(exitDetectionThread_, INFINITE);
-        }
-
-        //
-        //  스레드, 프로세스 핸들을 정리합니다.
-        // 프로세스 종료 감지 스레드가 생성되지 않을수도 있기때문에 소멸자에서 정리했습니다.
-        //
 
         handle = InterlockedExchangePointer(&processInfo_.hProcess, NULL);
         if (handle)
@@ -175,39 +117,64 @@ template <ProcessAccountType _Type> class Process
             CloseHandle(handle);
     }
 
-    bool Wait(unsigned long Timeout = INFINITE)
+  public:
+    BOOL Attach(HANDLE ProcessHandle)
     {
-        if (processInfo_.hProcess == NULL)
-            return false;
-
-        if (WaitForSingleObject(processInfo_.hProcess, (DWORD)Timeout) == WAIT_OBJECT_0)
+        if (processInfo_.hProcess || hThreadStopEvent_ || exitDetectionThread_)
         {
-            //
-            //  프로세스 종료 스레드가 동작중인지 확인합니다.
-            //
-
-            if (exitDetectionThread_)
-            {
-                //
-                //  exitDetectionThread_에서 Wait를 호출하면 안되면, 혹시나 그런 상황이 발생할때 데드락이 발생하지
-                //  않도록 합니다.
-                //
-                if (GetCurrentThreadId() == GetThreadId(exitDetectionThread_))
-                {
-                    //
-                    //  exitDetectionThread_ 스레드 종료 이벤트를 시그널시키고, 종료될때까지 대기합니다.
-                    //
-                    SetEvent(hThreadStopEvent_);
-                }
-                WaitForSingleObject(exitDetectionThread_, INFINITE);
-            }
-            return true;
+            SetLastError(ERROR_ALREADY_INITIALIZED);
+            return FALSE;
         }
-
-        return false;
+        Attach_(ProcessHandle);
+        return TRUE;
     }
 
-    bool Run(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L)
+    // Process(HANDLE ProcessHandle) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
+    // {
+    //     ZeroMemory(&processInfo_, sizeof(processInfo_));
+    //     initCallbacks_();
+    //     Attach_(ProcessHandle);
+    // }
+
+    Process(ProcessId ProcessId) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        initCallbacks_();
+        HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
+        if (hProcess)
+            Attach_(hProcess);
+    }
+
+    Process(const std::string &ProcessPathName, const std::string &Arguments = std::string(),
+            const std::string &CurrentDirectory = std::string(), DWORD CreationFlags = 0L,
+            const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), name_(ProcessPathName), arguments_(Arguments),
+          currentDirectory_(CurrentDirectory), creationFlags_(CreationFlags), startupInfo_(StartupInfo),
+          inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        initCallbacks_();
+        ProcessIdToSessionId(GetCurrentProcessId(), &sessionId_);
+    }
+
+    Process(DWORD SessionId, const std::string &ProcessPathName, const std::string &Arguments = std::string(),
+            const std::string &CurrentDirectory = std::string(), DWORD CreationFlags = 0L,
+            const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), name_(ProcessPathName), arguments_(Arguments),
+          currentDirectory_(CurrentDirectory), creationFlags_(CreationFlags), startupInfo_(StartupInfo),
+          inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock), sessionId_(SessionId)
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        initCallbacks_();
+    }
+
+    ~Process()
+    {
+        Detach_();
+    }
+
+    bool Run(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L,
+             const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
     {
         if (IsRunning())
         {
@@ -216,7 +183,8 @@ template <ProcessAccountType _Type> class Process
             return false;
         }
 
-        return RunAsync(Arguments, CurrentDirectory, CreationFlags).Wait();
+        return RunAsync(Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles, EnvironmentBlock)
+            .Wait();
     }
 
     bool IsRunning()
@@ -224,75 +192,114 @@ template <ProcessAccountType _Type> class Process
         return (processInfo_.hProcess != NULL);
     }
 
-    Process &RunAsync(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L)
+    Waitable RunAsync(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L,
+                      const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE,
+                      LPVOID EnvironmentBlock = NULL)
     {
         if (IsRunning())
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, std::runtime_error("Already running"));
-            return *this;
+            return Waitable(*this);
         }
 
         if (name_.empty())
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, std::runtime_error("Process image file name is not specified"));
-            return *this;
+            return Waitable(*this);
         }
+
+        if (Arguments)
+            arguments_ = Arguments;
+
+        if (CurrentDirectory)
+            currentDirectory_ = CurrentDirectory;
+
+        if (CreationFlags)
+            creationFlags_ = CreationFlags;
+
+        if (CreationFlags)
+            creationFlags_ = CreationFlags;
+
+        if (InheritHandles)
+            inheritHandles_ = InheritHandles;
+
+        if (EnvironmentBlock)
+            environmentBlock_ = EnvironmentBlock;
 
         std::basic_string<TCHAR> command;
         std::basic_string<TCHAR> currentDir;
-        if (Arguments)
+        STARTUPINFOEX si;
+        if (startupInfo_)
         {
-            arguments_ = Arguments;
+            CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
         }
-
-        if (CurrentDirectory)
+        else
         {
-            currentDirectory_ = CurrentDirectory;
-        }
-
-        if (CreationFlags)
-        {
-            creationFlags_ = CreationFlags;
+            ZeroMemory(&si, sizeof(si));
+            si.StartupInfo.cb = sizeof(STARTUPINFO);
         }
 #if _UNICODE
+        std::wstring desktop;
+        std::wstring title;
+
         using namespace Convert::String;
         currentDir = !currentDirectory_;
         command = (arguments_.empty()) ? !name_ : !(name_ + " " + arguments_);
+        if (startupInfo_)
+        {
+            if (startupInfo_->lpDesktop)
+            {
+                desktop = !std::string(startupInfo_->lpDesktop);
+                si.StartupInfo.lpDesktop = &desktop[0];
+            }
+            if (startupInfo_->lpTitle)
+            {
+                title = !std::string(startupInfo_->lpTitle);
+                si.StartupInfo.lpTitle = &title[0];
+            }
+        }
 #else
         currentDir = currentDirectory_;
         command = (arguments_.empty()) ? name_ : name_ + TEXT(" ") + arguments_;
+        if (startupInfo_)
+        {
+            CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
+        }
+        else
+        {
+            ZeroMemory(&si, sizeof(si));
+            si.StartupInfo.cb = sizeof(STARTUPINFO);
+        }
 #endif
-        STARTUPINFO si;
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-
         if (_Type == SystemAccount)
         {
-            if (!CreateSystemAccountProcess(sessionId_, NULL, &command[0], NULL, NULL, FALSE, creationFlags_, NULL,
-                                            currentDir.empty() ? NULL : currentDir.c_str(), &si, &processInfo_))
+            if (!CreateSystemAccountProcess(sessionId_, NULL, &command[0], NULL, NULL, InheritHandles, creationFlags_,
+                                            environmentBlock_, currentDir.empty() ? NULL : currentDir.c_str(),
+                                            &si.StartupInfo, &processInfo_))
             {
                 if (errorCallbackWithSelf_)
                     errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateSystemAccountProcess"));
-                return *this;
+                return Waitable(*this);
             }
         }
         else if (_Type == UserAccount)
         {
-            if (!CreateUserAccountProcess(sessionId_, NULL, &command[0], NULL, NULL, FALSE, creationFlags_, NULL,
-                                          currentDir.empty() ? NULL : currentDir.c_str(), &si, &processInfo_))
+            if (!CreateUserAccountProcess(sessionId_, NULL, &command[0], NULL, NULL, InheritHandles, creationFlags_,
+                                          environmentBlock_, currentDir.empty() ? NULL : currentDir.c_str(),
+                                          &si.StartupInfo, &processInfo_))
             {
                 if (errorCallbackWithSelf_)
                     errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateUserAccountProcess"));
-                return *this;
+                return Waitable(*this);
             }
         }
         else
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, std::runtime_error("Unknown process type"));
-            return *this;
+            return Waitable(*this);
         }
 
         //
@@ -317,7 +324,7 @@ template <ProcessAccountType _Type> class Process
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, std::runtime_error("Failed to CreateEvent"));
-            return *this;
+            return Waitable(*this);
         }
 
         //
@@ -345,7 +352,7 @@ template <ProcessAccountType _Type> class Process
         }
 
         exitDetectionThread_ = CreateThread(NULL, 0, &Process<_Type>::ExitDetectionThreadProc_, this, 0, NULL);
-        return *this;
+        return Waitable(*this);
     }
 
     bool Exit()
@@ -499,7 +506,12 @@ template <ProcessAccountType _Type> class Process
     std::string currentDirectory_;
     DWORD sessionId_;
     DWORD creationFlags_;
+
+    BOOL inheritHandles_;
+    LPVOID environmentBlock_;
+
     PROCESS_INFORMATION processInfo_;
+    LPSTARTUPINFOA startupInfo_;
 
     HANDLE hThreadStopEvent_;
     HANDLE exitDetectionThread_;
@@ -511,7 +523,45 @@ template <ProcessAccountType _Type> class Process
     ProcessEnterCallbackWithSelf enterCallbackWithSelf_;
     ProcessExitCallbackWithSelf exitCallbackWithSelf_;
     ProcessErrorCallbackWithSelf errorCallbackWithSelf_;
-};
+
+    //
+    // WaitableObject Interface Implementations.
+    //
+  private:
+    bool IsWaitable()
+    {
+        return processInfo_.hProcess && (processInfo_.dwProcessId != GetCurrentProcessId());
+    }
+
+    bool Wait(Duration Timeout)
+    {
+        if (WaitForSingleObject(processInfo_.hProcess, Timeout) == WAIT_OBJECT_0)
+        {
+            //
+            //  프로세스 종료 스레드가 동작중인지 확인합니다.
+            //
+
+            if (exitDetectionThread_)
+            {
+                //
+                //  exitDetectionThread_에서 Wait를 호출하면 안되면, 혹시나 그런 상황이 발생할때 데드락이 발생하지
+                //  않도록 합니다.
+                //
+                if (GetCurrentThreadId() == GetThreadId(exitDetectionThread_))
+                {
+                    //
+                    //  exitDetectionThread_ 스레드 종료 이벤트를 시그널시키고, 종료될때까지 대기합니다.
+                    //
+                    SetEvent(hThreadStopEvent_);
+                }
+                WaitForSingleObject(exitDetectionThread_, INFINITE);
+            }
+            return true;
+        }
+
+        return false;
+    }
+}; // namespace Detail
 } // namespace Detail
 
 typedef Detail::Process<SystemAccount> SystemAccountProcess;
