@@ -21,25 +21,29 @@ Win32 API Experimental(or Extension) features
           - [Functions](#functions)
           - [Classes](#classes)
           - [Example](#example)
-      - [Windows System Information [Handles and Objects]](#windows-system-information-handles-and-objects)
+      - [Services](#services)
         - [Reference](#reference-1)
-          - [Functions](#functions-1)
+          - [Classes](#classes-1)
           - [Example](#example-1)
+      - [Windows System Information [Handles and Objects]](#windows-system-information-handles-and-objects)
+        - [Reference](#reference-2)
+          - [Functions](#functions-1)
+          - [Example](#example-2)
     - [Security and Identity](#security-and-identity)
       - [Authorization [Privileges]](#authorization-privileges)
-        - [Reference](#reference-2)
+        - [Reference](#reference-3)
           - [Functions](#functions-2)
           - [Macros](#macros)
-          - [Example](#example-2)
-      - [Authorization [Access Tokens]](#authorization-access-tokens)
-        - [Reference](#reference-3)
-          - [Functions](#functions-3)
           - [Example](#example-3)
-      - [Authorization [Security Descriptors]](#authorization-security-descriptors)
+      - [Authorization [Access Tokens]](#authorization-access-tokens)
         - [Reference](#reference-4)
+          - [Functions](#functions-3)
+          - [Example](#example-4)
+      - [Authorization [Security Descriptors]](#authorization-security-descriptors)
+        - [Reference](#reference-5)
           - [Functions](#functions-4)
       - [Authorization [Security Identifiers]](#authorization-security-identifiers)
-        - [Reference](#reference-5)
+        - [Reference](#reference-6)
           - [Functions](#functions-5)
           - [Variables](#variables)
   - [Test](#test)
@@ -74,9 +78,9 @@ C/C++
 ```C
 #include <System\Process.h>
 
-CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, "CMD /C QUERY SESSION", /* ... */);
+CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QUERY SESSION"), /* ... */);
 
-CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL,"CMD /C QUERY SESSION", /* ... */);
+CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QUERY SESSION"), /* ... */);
 ```
 
 C++
@@ -89,6 +93,51 @@ process.Run();
 
 Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C QUERY SESSION");
 process.Run();
+```
+
+#### Services
+
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/services/services>
+- **Headers :** System\Service.hpp
+
+##### Reference
+
+###### Classes
+
+- ServiceConfig
+- Service
+
+###### Example
+
+C++
+
+```CPP
+#include <System/Service.hpp>
+
+Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
+typedef Win32Ex::System::Service<TestServiceConfig> TestService;
+
+int main(int argc, char* argv[])
+{
+  TestService &svc = TestService::Instance();
+  svc.OnStart((TestService::StartCallback)[](){
+                  // TODO
+              })
+      .OnStop([]() {
+          // TODO
+      })
+      .OnPause([]() {
+          // TODO
+      })
+      .OnContinue([]() {
+          // TODO
+      })
+      .On(TEST_SVC_USER_CONTROL,
+          (TestService::OtherCallback)[](){
+              // TODO
+          })
+      .Run();
+}
 ```
 
 #### Windows System Information [Handles and Objects]
@@ -309,7 +358,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.1.0")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.2.0")
 
 # link dependencies
 target_link_libraries(tests win32ex)
