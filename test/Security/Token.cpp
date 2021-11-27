@@ -224,7 +224,7 @@ TEST(TokenTest, TokenClassTest)
             return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
         });
 #else
-        Security::Token token(HasCreatePermanentPrivilege);
+        Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasCreatePermanentPrivilege);
 #endif
         EXPECT_TRUE(token.IsValid() == TRUE);
 #ifdef __cpp_rvalue_references
@@ -242,7 +242,7 @@ TEST(TokenTest, TokenClassTest)
             return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
         });
 #else
-        Security::Token token(HasChangeNotifyPrivilege);
+        Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasChangeNotifyPrivilege);
 #endif
         EXPECT_TRUE(token.IsValid() == TRUE);
 #ifdef __cpp_rvalue_references

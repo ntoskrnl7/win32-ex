@@ -23,5 +23,5 @@ Environment:
 #pragma once
 
 #define WIN32EX_VERSION_MAJOR 0
-#define WIN32EX_VERSION_MINOR 1
+#define WIN32EX_VERSION_MINOR 2
 #define WIN32EX_VERSION_PATCH 0

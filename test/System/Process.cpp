@@ -441,7 +441,20 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
 TEST(ProcessTest, AttachTest)
 {
     Win32Ex::System::UserAccountProcess process(GetCurrentProcessId());
-    EXPECT_EQ(process.GetExecutablePath(), Win32Ex::ThisProcess::GetExecutablePath());
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+    EXPECT_TRUE(process.IsRunning());
+    EXPECT_FALSE(process.RunAsync());
+}
+
+TEST(ProcessTest, AttachHandleTest)
+{
+    Win32Ex::System::UserAccountProcess process(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+    EXPECT_TRUE(process.IsRunning());
+    EXPECT_FALSE(process.RunAsync());
+
+    process.Attach(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
     EXPECT_TRUE(process.IsRunning());
     EXPECT_FALSE(process.RunAsync());
 }

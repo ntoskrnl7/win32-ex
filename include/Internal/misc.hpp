@@ -63,6 +63,30 @@ class Duration
         return Millisecond_;
     }
 
+    Duration &operator+=(Duration rhs)
+    {
+        Millisecond_ += rhs.Millisecond_;
+        return *this;
+    }
+
+    Duration &operator-=(Duration rhs)
+    {
+        Millisecond_ -= rhs.Millisecond_;
+        return *this;
+    }
+
+    Duration &operator*=(Duration rhs)
+    {
+        Millisecond_ *= rhs.Millisecond_;
+        return *this;
+    }
+
+    Duration &operator/=(Duration rhs)
+    {
+        Millisecond_ *= rhs.Millisecond_;
+        return *this;
+    }
+
   private:
     DWORD Millisecond_;
 };

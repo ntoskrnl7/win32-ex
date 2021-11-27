@@ -56,6 +56,18 @@ enum ProcessAccountType
 
 typedef DWORD ProcessId;
 
+struct ProcessHandle
+{
+    HANDLE value;
+
+    static ProcessHandle FromHANDLE(HANDLE Handle)
+    {
+        ProcessHandle handle;
+        handle.value = Handle;
+        return handle;
+    }
+};
+
 namespace Detail
 {
 template <ProcessAccountType _Type> class Process : public WaitableObject
@@ -118,23 +130,23 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
     }
 
   public:
-    BOOL Attach(HANDLE ProcessHandle)
+    BOOL Attach(ProcessHandle ProcessHandle)
     {
         if (processInfo_.hProcess || hThreadStopEvent_ || exitDetectionThread_)
         {
             SetLastError(ERROR_ALREADY_INITIALIZED);
             return FALSE;
         }
-        Attach_(ProcessHandle);
+        Attach_(ProcessHandle.value);
         return TRUE;
     }
 
-    // Process(HANDLE ProcessHandle) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
-    // {
-    //     ZeroMemory(&processInfo_, sizeof(processInfo_));
-    //     initCallbacks_();
-    //     Attach_(ProcessHandle);
-    // }
+    Process(ProcessHandle ProcessHandle) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        initCallbacks_();
+        Attach_(ProcessHandle.value);
+    }
 
     Process(ProcessId ProcessId) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
     {
@@ -228,8 +240,8 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         if (EnvironmentBlock)
             environmentBlock_ = EnvironmentBlock;
 
-        std::basic_string<TCHAR> command;
-        std::basic_string<TCHAR> currentDir;
+        Win32Ex::TString command;
+        Win32Ex::TString currentDir;
         STARTUPINFOEX si;
         if (startupInfo_)
         {

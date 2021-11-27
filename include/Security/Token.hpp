@@ -130,22 +130,6 @@ class Token
         return result == TRUE;
     }
 
-    class Group
-    {
-      public:
-        Group(SID_AND_ATTRIBUTES group)
-        {
-        }
-        ~Group()
-        {
-            if (sid_)
-                FreeTokenUserSid(sid_);
-        }
-
-      private:
-        PSID sid_;
-    };
-
     std::vector<SID_AND_ATTRIBUTES> GetGroups()
     {
         std::vector<SID_AND_ATTRIBUTES> ret;
