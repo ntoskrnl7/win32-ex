@@ -1,4 +1,5 @@
 ﻿#include <gtest/gtest.h>
+#include <string>
 
 #define WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
 #include <System/Service.hpp>
@@ -14,7 +15,7 @@ int main(int argc, char *argv[])
 {
     if (argc == 2)
     {
-        if (_stricmp(argv[1], TEST_SVC_NAME) == 0)
+        if (std::string(argv[1]) == TEST_SVC_NAME)
         {
             TestService &svc = TestService::Instance();
 #ifdef __cpp_lambdas
@@ -25,10 +26,10 @@ int main(int argc, char *argv[])
                     // TODO
                 })
                 .OnPause([]() {
-                // TODO
+                    // TODO
                 })
                 .OnContinue([]() {
-                // TODO
+                    // TODO
                 })
                 .On(TEST_SVC_USER_CONTROL, (TestService::OtherCallback)[](){
                                                // TODO
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
             }
             return GetLastError();
         }
-        else if (_stricmp(argv[1], "SharedService") == 0)
+        else if (std::string(argv[1]) == "SharedService")
         {
             TestService &svc = TestService::Instance();
             Test2Service &svc2 = Test2Service::Instance();

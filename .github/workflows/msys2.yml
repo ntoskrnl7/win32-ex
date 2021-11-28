@@ -42,8 +42,7 @@ jobs:
       - name: Update using staging
         if: ${{ matrix.sys == 'CLANG32' }}
         run: |
-          pacman --noconfirm -Suuy
-          pacman --noconfirm -Suu
+          pacman --noconfirm -Sy
 
       - name: Install toolchain and CMake
         if: ${{ matrix.env != '' }}

@@ -1025,7 +1025,11 @@ template <const ServiceConfig &Config> class Service
 #ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
         if (GetConsoleWindow())
         {
+#if _CRT_DECLARE_GLOBAL_VARIABLES_DIRECTLY || (defined(__argc) && defined(__argv))
             ServiceMain_(__argc, __argv);
+#else
+            ServiceMain_(0, NULL);
+#endif
             return true;
         }
         else
