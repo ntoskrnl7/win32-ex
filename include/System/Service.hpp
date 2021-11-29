@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    This Module implements the ServiceConfig/Service class.
+    This Module implements the ServiceConfig / Service / Services class.
 
 Author:
 
@@ -38,6 +38,8 @@ Environment:
 #include <WtsApi32.h>
 #pragma comment(lib, "Wtsapi32.lib")
 #endif
+
+#include "Process.hpp"
 
 #ifdef _INC__MINGW_H
 //
@@ -157,7 +159,7 @@ class ServiceConfig
 
     ServiceConfig(const std::string &Name, const std::string &DisplayName = std::string(),
                   const std::string &Description = std::string())
-        : name_(Name), hSCManager_(NULL), hService_(NULL)
+        : name_(Name), hSCManager_(NULL)
     {
         if (!DisplayName.empty())
         {
@@ -194,8 +196,6 @@ class ServiceConfig
     {
         if (hSCManager_)
             CloseServiceHandle(hSCManager_);
-        if (hService_)
-            CloseServiceHandle(hService_);
     }
 
     bool Install(DWORD ServiceType = SERVICE_WIN32_OWN_PROCESS, DWORD StartType = SERVICE_AUTO_START,
@@ -458,34 +458,9 @@ class ServiceConfig
 
     std::string &GetBinaryPathName() const
     {
-        if (!binaryPathName_.empty())
-            return binaryPathName_;
+        if (binaryPathName_.empty())
+            binaryPathName_ = ThisProcess::GetExecutablePath();
 
-        DWORD fileNameSize = MAX_PATH;
-        PSTR fileName = new CHAR[fileNameSize];
-        if (fileName == NULL)
-            return binaryPathName_;
-
-        DWORD returnSize = GetModuleFileNameA(NULL, fileName, fileNameSize);
-        if (returnSize + 1 > fileNameSize)
-        {
-            delete[] fileName;
-
-            fileNameSize = returnSize + 1;
-            fileName = new CHAR[fileNameSize];
-
-            if (fileName == NULL)
-                return binaryPathName_;
-
-            returnSize = GetModuleFileNameA(NULL, fileName, fileNameSize);
-            if (returnSize == 0)
-            {
-                delete[] fileName;
-                return binaryPathName_;
-            }
-        }
-
-        binaryPathName_.assign(fileName, returnSize);
         return binaryPathName_;
     }
 
@@ -609,22 +584,12 @@ class ServiceConfig
         return hSCManager_;
     }
 
-    SC_HANDLE GetServiceHandle_() const
-    {
-        if (hService_)
-            return hService_;
-        hService_ = OpenServiceA(GetSCManagerHandle_(), name_.c_str(), SERVICE_QUERY_CONFIG);
-        return hService_;
-    }
-
     LPQUERY_SERVICE_CONFIGA QueryConfig_() const
     {
-        SC_HANDLE schService;
         DWORD dwBytesNeeded;
         DWORD cbBufSize = 0;
         LPQUERY_SERVICE_CONFIGA lpsc = NULL;
-
-        schService = GetServiceHandle_();
+        SC_HANDLE schService = OpenServiceA(GetSCManagerHandle_(), name_.c_str(), SERVICE_QUERY_CONFIG);
         if (!schService)
         {
             return NULL;
@@ -639,12 +604,14 @@ class ServiceConfig
             }
             else
             {
+                CloseServiceHandle(schService);
                 return NULL;
             }
         }
 
         if (lpsc == NULL)
         {
+            CloseServiceHandle(schService);
             return NULL;
         }
 
@@ -652,9 +619,12 @@ class ServiceConfig
         {
             if (lpsc)
                 LocalFree(lpsc);
+
+            CloseServiceHandle(schService);
             return NULL;
         }
 
+        CloseServiceHandle(schService);
         return lpsc;
     }
 
@@ -683,7 +653,6 @@ class ServiceConfig
     AcceptPauseCallback acceptPauseCallback_;
 
     mutable SC_HANDLE hSCManager_;
-    mutable SC_HANDLE hService_;
 };
 
 template <const ServiceConfig &Config> class Service
@@ -726,7 +695,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &On(DWORD Control, OtherCallbackEx Callback)
+    Service &OnEx(DWORD Control, OtherCallbackEx Callback)
     {
         otherCallbackExMap_[Control] = Callback;
         return *this;
@@ -738,7 +707,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnStart(StartCallbackEx Callback)
+    Service &OnStartEx(StartCallbackEx Callback)
     {
         startCallbackEx_ = Callback;
         return *this;

@@ -314,21 +314,12 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
             return Waitable(*this);
         }
 
-        //
-        //  프로세스가 실행되었음을 알립니다.
-        //
-
         if (enterCallbackWithSelf_)
             enterCallbackWithSelf_(*this);
-
-        //
-        // 스레드 종료 이벤트를 생성합니다.
-        //
 
         HANDLE handle = CreateEvent(NULL, FALSE, FALSE, NULL);
         if (InterlockedCompareExchangePointer(&hThreadStopEvent_, handle, NULL))
         {
-            // 기존에 이벤트 핸들이 존재한다면 새로 생성한 핸들을 닫습니다.
             if (handle)
                 CloseHandle(handle);
         }
@@ -355,7 +346,7 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
             else
             {
                 //
-                //  exitDetectionThread_에서 RunAsync가 호출된것이 아니라면,  exitDetectionThread_ 스레드 종료 이벤트를
+                //  exitDetectionThread_에서 RunAsync가 호출된것이 아니라면, exitDetectionThread_ 스레드 종료 이벤트를
                 //  시그널시키고, 종료될때까지 대기합니다.
                 //
                 SetEvent(hThreadStopEvent_);
@@ -585,34 +576,26 @@ namespace ThisProcess
 {
 static std::string &GetExecutablePath()
 {
-    static std::string processName_;
-    DWORD fileNameSize = MAX_PATH;
-    PSTR fileName = new CHAR[fileNameSize + 1];
-    if (fileName == NULL)
-        return processName_;
-
-    DWORD returnSize = GetModuleFileNameA(NULL, fileName, fileNameSize);
-    if (returnSize + 1 > fileNameSize)
+    static std::string processName_(MAX_PATH, '\0');
+    size_t returnSize = GetModuleFileNameA(NULL, &processName_[0], (DWORD)processName_.size());
+    for (;;)
     {
-        delete[] fileName;
-
-        fileNameSize = returnSize + 1;
-        fileName = new CHAR[fileNameSize + 1];
-
-        if (fileName == NULL)
-            return processName_;
-
-        returnSize = GetModuleFileNameA(NULL, fileName, fileNameSize);
-        if (returnSize == 0)
+        if (returnSize < processName_.size())
         {
-            delete[] fileName;
-            return processName_;
+            processName_.resize(returnSize);
+            break;
+        }
+        else
+        {
+            processName_.resize(returnSize + MAX_PATH);
+            returnSize = GetModuleFileNameA(NULL, &processName_[0], (DWORD)processName_.size());
+            processName_.resize(returnSize);
+        }
+        if (GetLastError() == ERROR_SUCCESS)
+        {
+            break;
         }
     }
-
-    processName_.assign(fileName, returnSize);
-    delete[] fileName;
-
     return processName_;
 }
 

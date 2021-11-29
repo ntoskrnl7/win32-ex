@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
         {
             TestService &svc = TestService::Instance();
 #ifdef __cpp_lambdas
-            svc.OnStart((TestService::StartCallback)[](){
-                            // TODO
-                        })
+            svc.OnStart([]() {
+                   // TODO
+               })
                 .OnStop([]() {
                     // TODO
                 })
@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
                 .OnContinue([]() {
                     // TODO
                 })
-                .On(TEST_SVC_USER_CONTROL, (TestService::OtherCallback)[](){
-                                               // TODO
-                                           });
+                .On(TEST_SVC_USER_CONTROL, []() {
+                    // TODO
+                });
 #else
             svc.SetControlsAccepted(SERVICE_ACCEPT_STOP);
             svc.SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
@@ -49,9 +49,9 @@ int main(int argc, char *argv[])
             TestService &svc = TestService::Instance();
             Test2Service &svc2 = Test2Service::Instance();
 #ifdef __cpp_lambdas
-            svc.OnStart((TestService::StartCallback)[](){
-                            // TODO
-                        })
+            svc.OnStart([]() {
+                   // TODO
+               })
                 .OnStop([]() {
                     // TODO
                 })
@@ -64,13 +64,13 @@ int main(int argc, char *argv[])
                 .OnError([](DWORD ErrorCode, PCSTR Message) {
                     // TODO
                 })
-                .On(TEST_SVC_USER_CONTROL, (TestService::OtherCallback)[](){
-                                               // TODO
-                                           });
+                .On(TEST_SVC_USER_CONTROL, []() {
+                    // TODO
+                });
 
-            svc2.OnStart((Test2Service::StartCallback)[](){
-                             // TODO
-                         })
+            svc2.OnStart([]() {
+                    // TODO
+                })
                 .OnStop([]() {
                     // TODO
                 })
@@ -83,9 +83,9 @@ int main(int argc, char *argv[])
                 .OnError([](DWORD ErrorCode, PCSTR Message) {
                     // TODO
                 })
-                .On(TEST2_SVC_USER_CONTROL, (Test2Service::OtherCallback)[](){
-                                                // TODO
-                                            });
+                .On(TEST2_SVC_USER_CONTROL, []() {
+                    // TODO
+                });
 #else
             svc.SetControlsAccepted(SERVICE_ACCEPT_STOP);
             svc.SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
