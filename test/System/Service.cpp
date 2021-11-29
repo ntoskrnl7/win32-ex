@@ -61,12 +61,15 @@ static const std::string testSvcPath = []() -> std::string {
         return "";
     }
     path.append(&fileName[pos + 1]);
+    if (fileName == path)
+    {
+        return "";
+    }
     if (!CopyFileA(fileName.c_str(), path.c_str(), FALSE))
     {
         std::cerr << "Failed to CopyFileA (" << path << ")\n";
         return "";
     }
-
     std::cout << "file name : " << path << '\n';
     return path;
 }();
@@ -105,7 +108,7 @@ TEST(ServiceTest, ServiceInstall)
     }
 
 #ifdef _INC__MINGW_H
-    std::string path = testSvcPath;
+    std::string path = testSvcPath.empty() ? TestServiceConfig.GetBinaryPathName() : testSvcPath;
 #else
     std::string path = TestServiceConfig.GetBinaryPathName();
 #endif
@@ -238,7 +241,7 @@ TEST(ServiceTest, SharedServiceInstall)
     }
 
 #ifdef _INC__MINGW_H
-    std::string path = testSvcPath;
+    std::string path = testSvcPath.empty() ? Win32Ex::ThisProcess::GetExecutablePath() : testSvcPath;
 #else
     std::string path = Win32Ex::ThisProcess::GetExecutablePath();
 #endif
