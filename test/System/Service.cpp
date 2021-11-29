@@ -67,7 +67,7 @@ static const std::string testSvcPath = []() -> std::string {
         return "";
     }
 
-    std::cout << "file name : " << fileName << '\n';
+    std::cout << "file name : " << path << '\n';
     return path;
 }();
 
@@ -99,7 +99,6 @@ TEST(ServiceTest, InvalidServiceRun)
 
 TEST(ServiceTest, ServiceInstall)
 {
-
     if (!IsUserAdmin())
     {
         return;
@@ -110,7 +109,7 @@ TEST(ServiceTest, ServiceInstall)
 #else
     std::string path = TestServiceConfig.GetBinaryPathName();
 #endif
-    std::cout << path << '\n';
+    path.append(" " TEST_SVC_NAME);
     EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path.c_str()));
     EXPECT_TRUE(TestServiceConfig.Installed());
 }
