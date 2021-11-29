@@ -245,7 +245,11 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         STARTUPINFOEX si;
         if (startupInfo_)
         {
+#ifdef min
+            CopyMemory(&si, startupInfo_, min((DWORD)sizeof(si), startupInfo_->cb));
+#else
             CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
+#endif
         }
         else
         {
@@ -277,7 +281,11 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         command = (arguments_.empty()) ? name_ : name_ + TEXT(" ") + arguments_;
         if (startupInfo_)
         {
+#ifdef min
+            CopyMemory(&si, startupInfo_, min((DWORD)sizeof(si), startupInfo_->cb));
+#else
             CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
+#endif
         }
         else
         {
