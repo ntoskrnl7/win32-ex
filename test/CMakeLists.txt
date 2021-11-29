@@ -38,6 +38,11 @@ endif()
 file(GLOB SOURCE_FILES ./*/*.cpp ./*.cpp)
 file(GLOB C_SOURCE_FILES ./*/*.c ./*.c)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(gtest INTERFACE -Wno-deprecated-copy)
+    target_compile_options(gtest_main INTERFACE -Wno-deprecated-copy)
+endif()
+
 add_executable(unittest ${SOURCE_FILES} ${C_SOURCE_FILES})
 target_link_libraries(unittest win32ex gtest gtest_main)
 

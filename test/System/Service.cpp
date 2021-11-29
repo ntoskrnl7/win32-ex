@@ -13,6 +13,19 @@ static const std::string testSvcPath = []() -> std::string {
     }
     if (hModule == NULL)
     {
+        hModule = GetModuleHandleA("libstdc++-6.dll");
+    }
+    if (hModule == NULL)
+    {
+        hModule = GetModuleHandleA("libc++.dll");
+    }
+    if (hModule == NULL)
+    {
+        hModule = GetModuleHandleA("libwinpthread-1.dll");
+    }
+    if (hModule == NULL)
+    {
+        std::cerr << "Failed to GetModuleHandleA\n";
         return "";
     }
 
@@ -44,6 +57,7 @@ static const std::string testSvcPath = []() -> std::string {
     pos = fileName.find_last_of('\\');
     if (pos == std::string::npos)
     {
+        std::cerr << "Invalid file name : " << fileName << '\n';
         return "";
     }
     path.append(&fileName[pos + 1]);
@@ -52,6 +66,8 @@ static const std::string testSvcPath = []() -> std::string {
         std::cerr << "Failed to CopyFileA (" << path << ")\n";
         return "";
     }
+
+    std::cout << "file name : " << fileName << '\n';
     return path;
 }();
 
@@ -94,7 +110,7 @@ TEST(ServiceTest, ServiceInstall)
 #else
     std::string path = TestServiceConfig.GetBinaryPathName();
 #endif
-    path.append(" " TEST_SVC_NAME);
+    std::cout << path << '\n';
     EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path.c_str()));
     EXPECT_TRUE(TestServiceConfig.Installed());
 }

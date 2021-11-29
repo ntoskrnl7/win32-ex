@@ -500,6 +500,10 @@ class ServiceConfig
             case SC_ACTION_REBOOT:
                 needToAcquireShutdownPrivilege = TRUE;
                 break;
+            case SC_ACTION_NONE:
+            case SC_ACTION_RUN_COMMAND:
+            default:
+                break;
             }
         }
 
