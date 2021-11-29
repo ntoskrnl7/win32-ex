@@ -13,13 +13,35 @@ typedef Win32Ex::System::Service<Test2ServiceConfig> Test2Service;
 
 int main(int argc, char *argv[])
 {
+#ifdef __cpp_lambdas
+    TestServiceConfig.SetAcceptStop([]() -> bool {
+        SC_HANDLE serviceHandle = TestServiceConfig.GetServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+        if (serviceHandle == NULL)
+            return false;
+        SERVICE_STATUS ss = {0};
+        BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
+        CloseServiceHandle(serviceHandle);
+        return (result == TRUE);
+    });
+
+    Test2ServiceConfig.SetAcceptStop([]() -> bool {
+        SC_HANDLE serviceHandle = Test2ServiceConfig.GetServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+        if (serviceHandle == NULL)
+            return false;
+        SERVICE_STATUS ss = {0};
+        BOOL result = ControlService(serviceHandle, TEST2_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
+        CloseServiceHandle(serviceHandle);
+        return (result == TRUE);
+    });
+#endif
     if (argc == 2)
     {
         if (std::string(argv[1]) == TEST_SVC_NAME)
         {
             TestService &svc = TestService::Instance();
 #ifdef __cpp_lambdas
-            svc.OnStart([]() {
+            svc.OnStart([&svc]() {
+                   svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
                    // TODO
                })
                 .OnStop([]() {
@@ -31,7 +53,8 @@ int main(int argc, char *argv[])
                 .OnContinue([]() {
                     // TODO
                 })
-                .On(TEST_SVC_USER_CONTROL, []() {
+                .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP, [&svc]() {
+                    svc.SetControlsAccepted(SERVICE_ACCEPT_STOP);
                     // TODO
                 });
 #else
@@ -49,7 +72,8 @@ int main(int argc, char *argv[])
             TestService &svc = TestService::Instance();
             Test2Service &svc2 = Test2Service::Instance();
 #ifdef __cpp_lambdas
-            svc.OnStart([]() {
+            svc.OnStart([&svc]() {
+                   svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
                    // TODO
                })
                 .OnStop([]() {
@@ -64,11 +88,13 @@ int main(int argc, char *argv[])
                 .OnError([](DWORD ErrorCode, PCSTR Message) {
                     // TODO
                 })
-                .On(TEST_SVC_USER_CONTROL, []() {
+                .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP, [&svc]() {
+                    svc.SetControlsAccepted(SERVICE_ACCEPT_STOP);
                     // TODO
                 });
 
-            svc2.OnStart([]() {
+            svc2.OnStart([&svc2]() {
+                    svc2.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
                     // TODO
                 })
                 .OnStop([]() {
@@ -83,7 +109,8 @@ int main(int argc, char *argv[])
                 .OnError([](DWORD ErrorCode, PCSTR Message) {
                     // TODO
                 })
-                .On(TEST2_SVC_USER_CONTROL, []() {
+                .On(TEST2_SVC_USER_CONTROL_ACCEPT_STOP, [&svc2]() {
+                    svc2.SetControlsAccepted(SERVICE_ACCEPT_STOP);
                     // TODO
                 });
 #else

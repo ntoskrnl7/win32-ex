@@ -69,7 +69,7 @@ TEST(ServiceTest, ServiceControl)
         return;
     }
 
-    EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL));
+    EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
 }
 
 TEST(ServiceTest, ServicePause)
@@ -208,11 +208,11 @@ TEST(ServiceTest, SharedServiceControl)
     }
     if (TestServiceConfig.Installed())
     {
-        EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL));
+        EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
     }
     if (Test2ServiceConfig.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfig.Control(TEST_SVC_USER_CONTROL));
+        EXPECT_TRUE(Test2ServiceConfig.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP));
     }
 }
 
