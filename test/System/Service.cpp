@@ -4,6 +4,68 @@
 #include <System/Service.hpp>
 #include <gtest/gtest.h>
 
+#ifdef _INC__MINGW_H
+static const std::string testSvcPath = []() -> std::string {
+    HMODULE hModule = GetModuleHandleA("msys-2.0.dll");
+    if (hModule == NULL)
+    {
+        hModule = GetModuleHandleA("libgcc_s_seh-1.dll");
+    }
+    if (hModule == NULL)
+    {
+        return "";
+    }
+
+    std::string path(MAX_PATH, '\0');
+    size_t returnSize = GetModuleFileNameA(hModule, &path[0], (DWORD)path.size());
+    for (;;)
+    {
+        if (returnSize < path.size())
+        {
+            path.resize(returnSize);
+            break;
+        }
+        else
+        {
+            path.resize(returnSize + MAX_PATH);
+            returnSize = GetModuleFileNameA(hModule, &path[0], (DWORD)path.size());
+            path.resize(returnSize);
+        }
+        if (GetLastError() == ERROR_SUCCESS)
+        {
+            break;
+        }
+    }
+    size_t pos = path.find_last_of('\\');
+    if (pos != std::string::npos)
+        path.resize(pos + 1);
+
+    const std::string &fileName = Win32Ex::ThisProcess::GetExecutablePath();
+    pos = fileName.find_last_of('\\');
+    if (pos == std::string::npos)
+    {
+        return "";
+    }
+    path.append(&fileName[pos + 1]);
+    if (!CopyFileA(fileName.c_str(), path.c_str(), FALSE))
+    {
+        std::cerr << "Failed to CopyFileA (" << path << ")\n";
+        return "";
+    }
+    return path;
+}();
+
+int __tmp___ = atexit([]() {
+    if (!testSvcPath.empty())
+    {
+        if (!DeleteFileA(testSvcPath.c_str()))
+        {
+            std::cerr << "Failed to DeleteFileA (" << testSvcPath << ")\n";
+        }
+    }
+});
+#endif
+
 #include "TestService.h"
 extern Win32Ex::System::ServiceConfig TestServiceConfig;
 typedef Win32Ex::System::Service<TestServiceConfig> TestService;
@@ -21,12 +83,17 @@ TEST(ServiceTest, InvalidServiceRun)
 
 TEST(ServiceTest, ServiceInstall)
 {
+
     if (!IsUserAdmin())
     {
         return;
     }
 
+#ifdef _INC__MINGW_H
+    std::string path = testSvcPath;
+#else
     std::string path = TestServiceConfig.GetBinaryPathName();
+#endif
     path.append(" " TEST_SVC_NAME);
     EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path.c_str()));
     EXPECT_TRUE(TestServiceConfig.Installed());
@@ -155,7 +222,11 @@ TEST(ServiceTest, SharedServiceInstall)
         return;
     }
 
+#ifdef _INC__MINGW_H
+    std::string path = testSvcPath;
+#else
     std::string path = Win32Ex::ThisProcess::GetExecutablePath();
+#endif
     path.append(" SharedService");
     EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
     EXPECT_TRUE(TestServiceConfig.Installed());
