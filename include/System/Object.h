@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SYSTEM_OBJECT_H_
+#define _WIN32EX_SYSTEM_OBJECT_H_
+
+#include "../Internal/version.h"
+#define WIN32EX_SYSTEM_OBJECT_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SYSTEM_OBJECT_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SYSTEM_OBJECT_H_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #ifdef __cplusplus
 #include "../Security/Privilege.hpp"
 #else
@@ -206,3 +214,5 @@ STATIC_OR_INLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
 {
     return NT_SUCCESS(NtMakeTemporaryObject(Handle));
 }
+
+#endif // _WIN32EX_SYSTEM_OBJECT_H_

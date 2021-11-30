@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SECURITY_TOKEN_H_
+#define _WIN32EX_SECURITY_TOKEN_H_
+
+#include "../Internal/version.h"
+#define WIN32EX_SECURITY_TOKEN_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SECURITY_TOKEN_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SECURITY_TOKEN_H_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #include "../Internal/misc.h"
 
 #if !defined(WIN32_LEAN_AND_MEAN)
@@ -406,3 +414,5 @@ STATIC_OR_INLINE HANDLE GetLocalSystemToken(_In_ DWORD DesireAccess)
 {
     return LookupToken2(DesireAccess, __IsLocalSystemTokenCondition);
 }
+
+#endif // _WIN32EX_SECURITY_TOKEN_H_

@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SYSTEM_PROCESS_H_
+#define _WIN32EX_SYSTEM_PROCESS_H_
+
+#include "../Internal/version.h"
+#define WIN32EX_SYSTEM_PROCESS_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SYSTEM_PROCESS_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SYSTEM_PROCESS_H_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -404,3 +412,5 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In
 
     return bRet;
 }
+
+#endif // _WIN32EX_SYSTEM_PROCESS_H_

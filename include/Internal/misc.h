@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_MISC_H_
+#define _WIN32EX_MISC_H_
+
+#include "version.h"
+#define WIN32EX_MISC_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_MISC_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_MISC_H_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #define __W(x) L##x
 #define _W(x) __W(x)
 
@@ -89,3 +97,5 @@ Environment:
 #else
 #define STATIC_OR_INLINE static
 #endif
+
+#endif // _WIN32EX_MISC_H_

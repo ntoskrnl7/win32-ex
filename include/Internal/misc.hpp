@@ -21,6 +21,15 @@ Environment:
 --*/
 
 #pragma once
+
+#ifndef _WIN32EX_MISC_HPP_
+#define _WIN32EX_MISC_HPP_
+
+#include "version.h"
+#define WIN32EX_MISC_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_MISC_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_MISC_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #include "misc.h"
 #include <string>
 #include <tchar.h>
@@ -170,3 +179,5 @@ inline std::string operator!(const std::wstring &rhs)
 #define __cpp_lambdas 200907L
 #endif
 #endif
+
+#endif // _WIN32EX_MISC_HPP_

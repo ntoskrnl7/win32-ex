@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SYSTEM_SERVICE_HPP_
+#define _WIN32EX_SYSTEM_SERVICE_HPP_
+
+#include "../Internal/version.h"
+#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #include <functional>
 #include <map>
 #include <stdexcept>
@@ -1558,3 +1566,5 @@ class Services
 } // namespace Win32Ex
 
 #undef _STD_NS_
+
+#endif // _WIN32EX_SYSTEM_SERVICE_HPP_

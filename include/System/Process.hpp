@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SYSTEM_PROCESS_HPP_
+#define _WIN32EX_SYSTEM_PROCESS_HPP_
+
+#include "../Internal/version.h"
+#define WIN32EX_SYSTEM_PROCESS_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SYSTEM_PROCESS_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SYSTEM_PROCESS_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -538,7 +546,7 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
     //
     // WaitableObject Interface Implementations.
     //
-  private:
+  public:
     bool IsWaitable()
     {
         return processInfo_.hProcess && (processInfo_.dwProcessId != GetCurrentProcessId());
@@ -656,3 +664,5 @@ static bool IsSystemAccount()
 } // namespace Win32Ex
 
 #undef _STD_NS_
+
+#endif // _WIN32EX_SYSTEM_PROCESS_HPP_

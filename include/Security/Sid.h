@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SECURITY_SID_H_
+#define _WIN32EX_SECURITY_SID_H_
+
+#include "../Internal/version.h"
+#define WIN32EX_SECURITY_SID_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SECURITY_SID_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SECURITY_SID_H_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #define WIN32_LEAN_AND_MEAN
 #include <AclAPI.h>
 
@@ -134,3 +142,5 @@ Cleanup:
 
     return bSuccess;
 }
+
+#endif // _WIN32EX_SECURITY_SID_H_

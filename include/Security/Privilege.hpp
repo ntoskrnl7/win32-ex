@@ -22,6 +22,14 @@ Environment:
 
 #pragma once
 
+#ifndef _WIN32EX_SECURITY_PRIVILEGE_HPP_
+#define _WIN32EX_SECURITY_PRIVILEGE_HPP_
+
+#include "../Internal/version.h"
+#define WIN32EX_SECURITY_PRIVILEGE_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SECURITY_PRIVILEGE_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SECURITY_PRIVILEGE_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+
 #include "../Internal/misc.hpp"
 #include "Privilege.h"
 
@@ -282,3 +290,5 @@ class TokenPrivileges
 };
 } // namespace Security
 } // namespace Win32Ex
+
+#endif // _WIN32EX_SECURITY_PRIVILEGE_HPP_
