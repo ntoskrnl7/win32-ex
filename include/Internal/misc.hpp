@@ -136,7 +136,10 @@ class Waitable
     WaitableObject &object_;
 };
 
+typedef std::basic_string<CHAR> String;
+typedef std::basic_string<WCHAR> WString;
 typedef std::basic_string<TCHAR> TString;
+
 namespace Convert
 {
 namespace String
@@ -172,6 +175,238 @@ inline std::string operator!(const std::wstring &rhs)
 }
 } // namespace String
 } // namespace Convert
+
+template <typename T, typename SFINAE = void> class Optional;
+
+struct None
+{
+};
+
+class Exception : public std::exception
+{
+};
+
+class NullException : public Exception
+{
+};
+
+template <> class Optional<WString>
+{
+  public:
+    typedef WString Type;
+
+    Optional() : IsNone_(true)
+    {
+    }
+
+    Optional(None) : IsNone_(true)
+    {
+    }
+
+    Optional(PCWSTR Value) : IsNone_(false)
+    {
+        IsNull_ = Value == NULL;
+        if (!IsNull_)
+        {
+            Value_ = Value;
+        }
+    }
+
+    Optional(const WString &Value) : Value_(Value), IsNone_(false), IsNull_(false)
+    {
+    }
+
+    operator const WString &() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        if (IsNull_)
+        {
+            throw NullException();
+        }
+        return Value_;
+    }
+
+    operator PCWSTR() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        return IsNull_ ? NULL : Value_.c_str();
+    }
+
+    bool IsSome() const
+    {
+        return !IsNone_;
+    }
+
+    bool IsNone() const
+    {
+        return IsNone_;
+    }
+
+  private:
+    WString Value_;
+    bool IsNull_;
+    bool IsNone_;
+};
+
+template <> class Optional<String>
+{
+  public:
+    typedef String Type;
+
+    Optional() : IsNone_(true)
+    {
+    }
+
+    Optional(None) : IsNone_(true)
+    {
+    }
+
+    Optional(PCSTR Value) : IsNone_(false)
+    {
+        IsNull_ = Value == NULL;
+        if (!IsNull_)
+        {
+            Value_ = Value;
+        }
+    }
+
+    Optional(const String &Value) : Value_(Value), IsNone_(false), IsNull_(false)
+    {
+    }
+
+    operator const String &() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        if (IsNull_)
+        {
+            throw NullException();
+        }
+        return Value_;
+    }
+
+    operator PCSTR() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        return IsNull_ ? NULL : Value_.c_str();
+    }
+
+    bool IsSome() const
+    {
+        return !IsNone_;
+    }
+
+    bool IsNone() const
+    {
+        return IsNone_;
+    }
+
+  private:
+    String Value_;
+    bool IsNull_;
+    bool IsNone_;
+};
+
+template <typename T> class Optional<T>
+{
+  public:
+    typedef T Type;
+
+    Optional() : IsNone_(true)
+    {
+    }
+
+    Optional(None) : IsNone_(true)
+    {
+    }
+
+    Optional(T Value) : Value_(Value), IsNone_(false)
+    {
+    }
+
+    operator T() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        return Value_;
+    }
+
+    bool IsSome() const
+    {
+        return !IsNone_;
+    }
+
+    bool IsNone() const
+    {
+        return IsNone_;
+    }
+
+  private:
+    T Value_;
+    bool IsNone_;
+};
+
+#if defined(__cpp_variadic_templates)
+template <typename... Args> bool IsAll(const Args &... args)
+{
+    for (auto val : {
+             args.IsNone()...,
+         })
+    {
+        if (val)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename... Args> bool IsSome(const Args &... args)
+{
+    for (auto val : {
+             args.IsSome()...,
+         })
+    {
+        if (val)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+template <typename... Args> bool IsAny(const Args &... args)
+{
+    return IsSome(args...);
+}
+
+template <typename... Args> bool IsNone(const Args &... args)
+{
+    for (auto val : {
+             args.IsSome()...,
+         })
+    {
+        if (val)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
 } // namespace Win32Ex
 
 #ifndef __cpp_lambdas
