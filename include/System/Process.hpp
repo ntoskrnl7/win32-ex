@@ -656,6 +656,19 @@ static HANDLE GetHandle()
     return GetCurrentProcess();
 }
 
+static String GetCurrentDirectory()
+{
+    String cwd(MAX_PATH, '\0');
+    size_t length = ::GetCurrentDirectoryA((DWORD)cwd.size(), &cwd[0]);
+    if (length > cwd.size())
+    {
+        cwd.resize(length);
+        length = ::GetCurrentDirectoryA((DWORD)cwd.size(), &cwd[0]);
+    }
+    cwd.resize(length);
+    return cwd;
+}
+
 static bool IsSystemAccount()
 {
     return IsUserAdmin(GetCurrentProcessToken()) == TRUE;

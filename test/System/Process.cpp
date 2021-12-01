@@ -34,6 +34,8 @@ TEST(ProcessTest, ThisProcess)
 {
     std::string path = Win32Ex::ThisProcess::GetExecutablePath();
     EXPECT_EQ(path, Win32Ex::ThisProcess::GetExecutablePath());
+    path = Win32Ex::ThisProcess::GetCurrentDirectory();
+    EXPECT_EQ(path, Win32Ex::ThisProcess::GetCurrentDirectory());
 }
 
 TEST(ProcessTest, RunInvalidProcess)
