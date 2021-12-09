@@ -1342,10 +1342,12 @@ template <const ServiceConfig &Config> class Service
 
 #ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
 #define _SERVICE_MAIN_CLEANUP_AND_EXIT_                                                                                \
-    service.Cleanup_();                                                                                                \
-    if (isConsoleMode)                                                                                                 \
-        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);                                                          \
-    return;
+    {                                                                                                                  \
+        service.Cleanup_();                                                                                            \
+        if (isConsoleMode)                                                                                             \
+            SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);                                                      \
+        return;                                                                                                        \
+    }
 
         bool isConsoleMode = (GetConsoleWindow() != NULL);
 
@@ -1444,8 +1446,10 @@ template <const ServiceConfig &Config> class Service
         else
 #else
 #define _SERVICE_MAIN_CLEANUP_AND_EXIT_                                                                                \
-    service.Cleanup_();                                                                                                \
-    return;
+    {                                                                                                                  \
+        service.Cleanup_();                                                                                            \
+        return;                                                                                                        \
+    }
 #endif // WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
         {
             service.serviceStatusHandle_ =
