@@ -44,8 +44,8 @@ Environment:
 #include <UserEnv.h>
 #pragma comment(lib, "Userenv.lib")
 
-#include "Security/Privilege.h"
-#include "Security/Token.h"
+#include "../Security/Privilege.h"
+#include "../Security/Token.h"
 
 STATIC_OR_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
                                                _Inout_opt_ LPTSTR lpCommandLine,

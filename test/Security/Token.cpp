@@ -1,5 +1,5 @@
-﻿#include <Security/Privilege.hpp>
-#include <Security/Token.hpp>
+﻿#include <Win32Ex/Security/Privilege.hpp>
+#include <Win32Ex/Security/Token.hpp>
 
 #include <gtest/gtest.h>
 

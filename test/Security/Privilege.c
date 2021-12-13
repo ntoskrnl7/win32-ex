@@ -1,4 +1,4 @@
-﻿#include <Security/Privilege.h>
+﻿#include <Win32Ex/Security/Privilege.h>
 
 BOOL IsPrivilegeEnabledTestC(_In_ LPCTSTR PrivilegeName)
 {

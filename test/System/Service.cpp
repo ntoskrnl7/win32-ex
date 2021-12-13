@@ -1,7 +1,7 @@
-﻿#include <System/Process.hpp>
+﻿#include <Win32Ex/System/Process.hpp>
 
 #define WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-#include <System/Service.hpp>
+#include <Win32Ex/System/Service.hpp>
 #include <gtest/gtest.h>
 
 #ifdef _INC__MINGW_H
@@ -228,9 +228,9 @@ TEST(ServiceTest, ServiceUninstall)
     // EXPECT_FALSE(TestServiceConfig.Installed());
 }
 
-TEST(ServiceTest, Etc)
+TEST(ServiceTest, IsServiceMode)
 {
-    Win32Ex::System::IsServiceMode();
+    EXPECT_FALSE(Win32Ex::System::IsServiceMode());
 }
 
 TEST(ServiceTest, SharedServiceInstall)

@@ -76,7 +76,7 @@ Win32 API Experimental(or Extension) features
 C/C++
 
 ```C
-#include <System\Process.h>
+#include <Win32Ex\System\Process.h>
 
 CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QUERY SESSION"), /* ... */);
 
@@ -86,7 +86,7 @@ CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QU
 C++
 
 ```CPP
-#include <System\Process.hpp>
+#include <Win32Ex\System\Process.hpp>
 
 Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C QUERY SESSION");
 process.Run();
@@ -114,7 +114,7 @@ C++
 Simple service (Control Process)
 
 ```CPP
-#include <System/Service.hpp>
+#include <Win32Ex\System\Service.hpp>
 
 Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
 
@@ -132,7 +132,7 @@ int main()
 Simple service (Service Process)
 
 ```CPP
-#include <System/Service.hpp>
+#include <Win32Ex\System\Service.hpp>
 
 Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
 typedef Win32Ex::System::Service<SimpleServiceConfig> SimpleService;
@@ -276,7 +276,7 @@ int main()
 C/C++
 
 ```C
-#include <System\Object.h>
+#include <Win32Ex\System\Object.h>
 
 HANDLE handle = ....
 MakePermanentObject(handle); // Administrator privilege required
@@ -323,7 +323,7 @@ IsTemporaryObject(handle); // == TRUE
 ###### Example
 
 ```C++
-#include <System\Privilege.h>
+#include <Win32Ex\System\Privilege.h>
 using namespace Win32Ex;
 
 Security::TokenPrivileges priv({Security::SeDebugPrivilege, Security::SeShutdownPrivilege});
@@ -339,7 +339,7 @@ if (priv.IsAcquired()) {
 OR
 
 ```C++
-#include <System\Privilege.hpp>
+#include <Win32Ex\System\Privilege.hpp>
 using namespace Win32Ex;
 
 {
@@ -397,7 +397,7 @@ using namespace Win32Ex;
 C++
 
 ```C++
-#include <System\Token.hpp>
+#include <Win32Ex\System\Token.hpp>
 using namespace Win32Ex;
 
 Security::Token token = Security::Token::Current();
@@ -475,7 +475,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.4.0")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.5.0")
 
 # link dependencies
 target_link_libraries(tests win32ex)

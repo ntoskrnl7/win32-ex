@@ -1,4 +1,4 @@
-﻿#include <System/Process.hpp>
+﻿#include <Win32Ex/System/Process.hpp>
 #include <gtest/gtest.h>
 #include <stdio.h>
 #include <tchar.h>
@@ -308,7 +308,7 @@ TEST(ProcessTest, SystemAccountProcessClassTest)
     }
 }
 
-#include <Security/Token.hpp>
+#include <Win32Ex/Security/Token.hpp>
 
 TEST(ProcessTest, CreateUserAccountProcessTest)
 {

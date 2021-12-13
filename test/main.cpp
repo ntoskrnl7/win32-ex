@@ -2,7 +2,7 @@
 #include <string>
 
 #define WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-#include <System/Service.hpp>
+#include <Win32Ex/System/Service.hpp>
 
 #include "System/TestService.h"
 Win32Ex::System::ServiceConfig TestServiceConfig(TEST_SVC_NAME, TEST_SVC_DISPLAY_NAME, TEST_SVC_DESCRIPTION);
