@@ -353,6 +353,7 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
             else
             {
 #if _UNICODE
+                using namespace Convert::String;
                 Win32Ex::TString name = !name_;
                 Win32Ex::TString params = !arguments_;
                 Win32Ex::TString cwd = !currentDirectory_;
