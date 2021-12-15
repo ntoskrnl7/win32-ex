@@ -70,6 +70,7 @@ Win32 API Experimental(or Extension) features
 
 - SystemAccountProcess
 - UserAccountProcess
+- ElevatedUserAccountProcess
 
 ###### Example
 
@@ -78,9 +79,9 @@ C/C++
 ```C
 #include <Win32Ex\System\Process.h>
 
-CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QUERY SESSION"), /* ... */);
+CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);
 
-CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD /C QUERY SESSION"), /* ... */);
+CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);
 ```
 
 C++
@@ -88,10 +89,13 @@ C++
 ```CPP
 #include <Win32Ex\System\Process.hpp>
 
-Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C QUERY SESSION");
+Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
 process.Run();
 
-Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD /C QUERY SESSION");
+Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
+process.Run();
+
+Win32Ex::System::ElevatedUserAccountProcess process("CMD.exe /C QUERY SESSION");
 process.Run();
 ```
 

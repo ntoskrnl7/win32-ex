@@ -14,19 +14,19 @@
 
 std::string whoami()
 {
-    static std::string whoami = "CMD /C \"";
+    static std::string whoami = "CMD.exe /C \"";
     whoami.resize(whoami.size() + MAX_PATH, '\0');
-    whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectoryA(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
-    whoami.append("/whoami.exe\" /ALL");
+    whoami.resize(sizeof("CMD.exe /C \"") - 1 + GetSystemDirectoryA(&whoami[sizeof("CMD.exe /C \"") - 1], MAX_PATH));
+    whoami.append("\\whoami.exe\" /ALL");
     return whoami;
 };
 
 Win32Ex::TString whoami_tstr()
 {
-    static Win32Ex::TString whoami = TEXT("CMD /C \"");
+    static Win32Ex::TString whoami = TEXT("CMD.exe /C \"");
     whoami.resize(whoami.size() + MAX_PATH, '\0');
-    whoami.resize(sizeof("CMD /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD /C \"") - 1], MAX_PATH));
-    whoami.append(TEXT("/whoami.exe\" /ALL"));
+    whoami.resize(sizeof("CMD.exe /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD.exe /C \"") - 1], MAX_PATH));
+    whoami.append(TEXT("\\whoami.exe\" /ALL"));
     return whoami;
 };
 
@@ -50,11 +50,22 @@ void onEnter(Win32Ex::System::UserAccountProcess *process)
     Sleep(500);
     process->Exit();
 }
+void onEnterElevatedUserProcess(Win32Ex::System::ElevatedUserAccountProcess *process)
+{
+    Sleep(500);
+    process->Exit();
+}
+void onEnterSystemProcess(Win32Ex::System::SystemAccountProcess *process, bool *isSystemAccount)
+{
+    Sleep(500);
+    *isSystemAccount = process->IsSystemAccount();
+    process->Exit();
+}
 void onExit(bool *terminated)
 {
     *terminated = true;
 }
-void onError(bool *terminated, const std::exception &)
+void onError(bool *terminated, DWORD, const std::exception &)
 {
     *terminated = true;
 }
@@ -64,15 +75,6 @@ void onError(bool *terminated, const std::exception &)
 #define _STD_NS_ std::tr1
 #else
 #define _STD_NS_ std
-#endif
-
-#if !defined(__cpp_lambdas)
-void onEnterSystemProcess(Win32Ex::System::SystemAccountProcess *process, bool *isSystemAccount)
-{
-    Sleep(500);
-    *isSystemAccount = process->IsSystemAccount();
-    process->Exit();
-}
 #endif
 
 TEST(ProcessTest, RunSystemAccountProcess)
@@ -97,12 +99,13 @@ TEST(ProcessTest, RunSystemAccountProcess)
                         process.Exit();
                     })
                     .OnExit([&terminated]() { terminated = true; })
-                    .OnError([&terminated](const std::exception &) { terminated = true; });
+                    .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
 #else
                 bool isSystemAccount;
                 process.OnEnter(_STD_NS_::bind(onEnterSystemProcess, &process, &isSystemAccount))
                     .OnExit(_STD_NS_::bind(onExit, &terminated))
-                    .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1));
+                    .OnError(
+                        _STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
 #endif
                 EXPECT_FALSE(terminated);
                 EXPECT_TRUE(process.Run());
@@ -136,11 +139,43 @@ TEST(ProcessTest, RunUserAccountProcess)
                     process.Exit();
                 })
                 .OnExit([&terminated]() { terminated = true; })
-                .OnError([&terminated](const std::exception &) { terminated = true; });
+                .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
 #else
             process.OnEnter(_STD_NS_::bind(onEnter, &process))
                 .OnExit(_STD_NS_::bind(onExit, &terminated))
-                .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1));
+                .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+
+            EXPECT_FALSE(terminated);
+            EXPECT_TRUE(process.Run());
+            EXPECT_TRUE(terminated);
+        }
+        delete[] cmd;
+    }
+}
+
+TEST(ProcessTest, ElevatedUserAccountProcess)
+{
+    PSTR cmd = new CHAR[1024];
+    if (cmd)
+    {
+        if (ExpandEnvironmentStringsA("%WINDIR%\\notepad.exe", cmd, 1024))
+        {
+            Win32Ex::System::ElevatedUserAccountProcess process(cmd);
+            bool terminated = false;
+#if defined(__cpp_lambdas)
+            process
+                .OnEnter([&process]() {
+                    Sleep(500);
+                    EXPECT_FALSE(process.IsSystemAccount());
+                    process.Exit();
+                })
+                .OnExit([&terminated]() { terminated = true; })
+                .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+            process.OnEnter(_STD_NS_::bind(onEnterElevatedUserProcess, &process))
+                .OnExit(_STD_NS_::bind(onExit, &terminated))
+                .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
 #endif
 
             EXPECT_FALSE(terminated);
@@ -157,7 +192,7 @@ void onExitCV(PCONDITION_VARIABLE cv, bool *terminated)
     WakeConditionVariable(cv);
     *terminated = true;
 }
-void onErrorCV(PCONDITION_VARIABLE cv, bool *terminated, const std::exception &)
+void onErrorCV(PCONDITION_VARIABLE cv, bool *terminated, DWORD, const std::exception &)
 {
     WakeConditionVariable(cv);
     *terminated = true;
@@ -188,14 +223,15 @@ TEST(ProcessTest, RunAsyncUserAccountProcess)
                     terminated = true;
                     WakeConditionVariable(&cv);
                 })
-                .OnError([&cv, &terminated](const std::exception &) {
+                .OnError([&cv, &terminated](DWORD, const std::exception &) {
                     terminated = true;
                     WakeConditionVariable(&cv);
                 });
 #else
             process.OnEnter(_STD_NS_::bind(onEnter, &process))
                 .OnExit(_STD_NS_::bind(onExitCV, &cv, &terminated))
-                .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1));
+                .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1,
+                                        _STD_NS_::placeholders::_2));
 #endif
             EXPECT_FALSE(terminated);
             Win32Ex::Waitable waitable = process.RunAsync();
