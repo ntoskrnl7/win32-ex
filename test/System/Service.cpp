@@ -225,7 +225,7 @@ TEST(ServiceTest, ServiceUninstall)
     }
 
     EXPECT_TRUE(TestServiceConfig.Uninstall());
-    // EXPECT_FALSE(TestServiceConfig.Installed());
+    EXPECT_FALSE(TestServiceConfig.Installed());
 }
 
 TEST(ServiceTest, IsServiceMode)
@@ -384,12 +384,12 @@ TEST(ServiceTest, SharedServiceUninstall)
     if (TestServiceConfig.Installed())
     {
         EXPECT_TRUE(TestServiceConfig.Uninstall());
-        // EXPECT_FALSE(TestServiceConfig.Installed());
+        EXPECT_FALSE(TestServiceConfig.Installed());
     }
 
     if (Test2ServiceConfig.Installed())
     {
         EXPECT_TRUE(Test2ServiceConfig.Uninstall());
-        // EXPECT_FALSE(Test2ServiceConfig.Installed());
+        EXPECT_FALSE(Test2ServiceConfig.Installed());
     }
 }

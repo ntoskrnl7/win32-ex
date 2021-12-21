@@ -167,7 +167,7 @@ class ServiceConfig
 
     ServiceConfig(const std::string &Name, const std::string &DisplayName = std::string(),
                   const std::string &Description = std::string())
-        : name_(Name), hSCManager_(NULL)
+        : name_(Name)
     {
         if (!DisplayName.empty())
         {
@@ -198,12 +198,6 @@ class ServiceConfig
 
             FreeConfig_(config);
         }
-    }
-
-    ~ServiceConfig()
-    {
-        if (hSCManager_)
-            CloseServiceHandle(hSCManager_);
     }
 
     bool Install(DWORD ServiceType = SERVICE_WIN32_OWN_PROCESS, DWORD StartType = SERVICE_AUTO_START,
@@ -241,26 +235,45 @@ class ServiceConfig
 
     bool Uninstall(Duration Timeout = Duration::Second(30))
     {
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
-            return false;
-
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), DELETE);
-        if (handles.hService == NULL)
-            return false;
-
-        SERVICE_STATUS ss = {0};
-        if (!QueryServiceStatus(ss))
-            return false;
-
-        if (ss.dwCurrentState != SERVICE_STOPPED)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS));
+        if (handles.hSCManager == NULL)
         {
-            if (!Stop(Timeout))
-                return false;
+            return false;
         }
 
-        return DeleteService(handles.hService) == TRUE;
+        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), DELETE);
+        if (handles.hService == NULL)
+        {
+            return false;
+        }
+
+        SERVICE_STATUS ss = {0};
+        if (QueryServiceStatus(ss))
+        {
+            if (ss.dwCurrentState != SERVICE_STOPPED)
+            {
+                if (!Stop(Timeout))
+                {
+                    return false;
+                }
+            }
+        }
+
+        if (DeleteService(handles.hService))
+        {
+            CloseServiceHandle(handles.hService);
+            handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), DELETE);
+            if (handles.hService == NULL)
+            {
+                return true;
+            }
+            if (DeleteService(handles.hService))
+            {
+                return true;
+            }
+            return GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE;
+        }
+        return false;
     }
 
     bool Control(DWORD ControlCode)
@@ -272,12 +285,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return false;
 
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL);
+        handles.hService =
+            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL);
         if (handles.hService == NULL)
             return false;
 
@@ -293,12 +306,11 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_RUNNING)
             return true;
 
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
+        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
         if (handles.hService == NULL)
             return false;
 
@@ -317,12 +329,11 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return true;
 
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP);
+        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP);
         if (handles.hService == NULL)
             return false;
 
@@ -344,12 +355,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
+        handles.hService =
+            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
         if (handles.hService == NULL)
             return false;
 
@@ -371,12 +382,12 @@ class ServiceConfig
         if (ss.dwCurrentState != SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
+        handles.hService =
+            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
         if (handles.hService == NULL)
             return false;
 
@@ -421,23 +432,21 @@ class ServiceConfig
 
     bool Installed() const
     {
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_INTERROGATE);
+        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
         return (handles.hService != NULL);
     }
 
     bool QueryServiceStatus(SERVICE_STATUS &ss) const
     {
-        SC_HANDLES handles;
-        SC_HANDLE hSCManager = GetSCManagerHandle_();
-        if (hSCManager == NULL)
+        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(hSCManager, name_.c_str(), SERVICE_INTERROGATE);
+        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
         if (handles.hService == NULL)
             return false;
 
@@ -445,6 +454,7 @@ class ServiceConfig
         {
             if (GetLastError() == ERROR_SERVICE_NOT_ACTIVE)
             {
+                SetLastError(ERROR_SUCCESS);
                 ss.dwCurrentState = SERVICE_STOPPED;
                 return true;
             }
@@ -474,7 +484,10 @@ class ServiceConfig
 
     SC_HANDLE GetServiceHandle(DWORD DesiredAccess) const
     {
-        return ::OpenServiceA(GetSCManagerHandle_(), name_.c_str(), DesiredAccess);
+        SC_HANDLE hSCManager = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+        if (hSCManager == NULL)
+            return NULL;
+        return ::OpenServiceA(hSCManager, name_.c_str(), DesiredAccess);
     }
 
     bool CloseHandle(SC_HANDLE ServiceHandle) const
@@ -588,20 +601,15 @@ class ServiceConfig
     }
 #endif
   private:
-    SC_HANDLE GetSCManagerHandle_() const
-    {
-        if (hSCManager_)
-            return hSCManager_;
-        hSCManager_ = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
-        return hSCManager_;
-    }
-
     LPQUERY_SERVICE_CONFIGA QueryConfig_() const
     {
         DWORD dwBytesNeeded;
         DWORD cbBufSize = 0;
         LPQUERY_SERVICE_CONFIGA lpsc = NULL;
-        SC_HANDLE schService = OpenServiceA(GetSCManagerHandle_(), name_.c_str(), SERVICE_QUERY_CONFIG);
+        SC_HANDLES handles;
+
+        SC_HANDLE schSCManager = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+        SC_HANDLE schService = OpenServiceA(schSCManager, name_.c_str(), SERVICE_QUERY_CONFIG);
         if (!schService)
         {
             return NULL;
@@ -663,8 +671,6 @@ class ServiceConfig
 
     AcceptStopCallback acceptStopCallback_;
     AcceptPauseCallback acceptPauseCallback_;
-
-    mutable SC_HANDLE hSCManager_;
 };
 
 template <const ServiceConfig &Config> class Service

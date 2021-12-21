@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 include(../cmake/CPM.cmake)
 
-if (CMAKE_BUILD_TYPE STREQUAL "")
+if (NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
   set(CMAKE_BUILD_TYPE Debug)
   message("CMAKE_BUILD_TYPE (default) : " ${CMAKE_BUILD_TYPE})
 else()

@@ -378,7 +378,7 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
 
                 if (creationFlags_ & CREATE_NO_WINDOW)
                 {
-                    sei.fMask |= SEE_MASK_FLAG_NO_UI;
+                    sei.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
                 }
 
                 sei.nShow = StartupInfo ? StartupInfo->wShowWindow : SW_SHOWDEFAULT;
