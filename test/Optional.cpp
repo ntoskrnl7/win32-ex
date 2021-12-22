@@ -2,15 +2,17 @@
 
 #include <Win32Ex/Internal/misc.hpp>
 
-void TestFn(Win32Ex::Optional<Win32Ex::TString> arg0, Win32Ex::Optional<Win32Ex::TString> arg1 = Win32Ex::None())
+void TestFn(Win32Ex::Optional<Win32Ex::StringT> arg0, Win32Ex::Optional<Win32Ex::StringT> arg1 = Win32Ex::None())
 {
     if (arg0.IsSome())
     {
-        Win32Ex::TString val = arg0;
+        Win32Ex::StringT val = arg0;
+        PCTSTR val2 = arg0.GetPtr();
     }
     if (arg1.IsSome())
     {
-        Win32Ex::TString val = arg1;
+        Win32Ex::StringT val = arg1;
+        PCTSTR val2 = arg1.GetPtr();
     }
 }
 #ifdef UNICODE
@@ -19,22 +21,26 @@ void TestFn(Win32Ex::Optional<Win32Ex::String> arg0, Win32Ex::Optional<Win32Ex::
     if (arg0.IsSome())
     {
         Win32Ex::String val = arg0;
+        PCSTR val2 = arg0.GetPtr();
     }
     if (arg1.IsSome())
     {
         Win32Ex::String val = arg1;
+        PCSTR val2 = arg1.GetPtr();
     }
 }
 #else
-void TestFn(Win32Ex::Optional<Win32Ex::WString> arg0, Win32Ex::Optional<Win32Ex::WString> arg1 = Win32Ex::None())
+void TestFn(Win32Ex::Optional<Win32Ex::StringW> arg0, Win32Ex::Optional<Win32Ex::StringW> arg1 = Win32Ex::None())
 {
     if (arg0.IsSome())
     {
-        Win32Ex::WString val = arg0;
+        Win32Ex::StringW val = arg0;
+        PCWSTR val2 = arg0.GetPtr();
     }
     if (arg1.IsSome())
     {
-        Win32Ex::WString val = arg1;
+        Win32Ex::StringW val = arg1;
+        PCWSTR val2 = arg1.GetPtr();
     }
 }
 #endif
@@ -186,14 +192,14 @@ TEST(OptionalTest, Throw)
 #endif
     EXPECT_THROW(
         {
-            Optional<WString> value = NULL;
-            WString val = value;
+            Optional<StringW> value = NULL;
+            StringW val = value;
         },
         NullException);
     EXPECT_THROW(
         {
-            Optional<WString> value;
-            WString val = value;
+            Optional<StringW> value;
+            StringW val = value;
         },
         Exception);
     EXPECT_THROW(

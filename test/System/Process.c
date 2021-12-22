@@ -11,7 +11,7 @@
 #endif
 #endif
 
-BOOL CreateUserAccountProcessTestC(PCTSTR whoami)
+BOOL CreateUserAccountProcessTestC()
 {
     BOOL result = TRUE;
     PVOID OldValue = NULL;
@@ -25,7 +25,7 @@ BOOL CreateUserAccountProcessTestC(PCTSTR whoami)
             BOOL isLocalSystem = IsLocalSystemToken(GetCurrentProcessToken());
             PROCESS_INFORMATION pi;
             STARTUPINFO si;
-            PTSTR cmd = _tcsdup(whoami);
+            PTSTR cmd = _tcsdup(TEXT("CMD /C QUERY SESSION"));
             ZeroMemory(&si, sizeof(STARTUPINFO));
             si.cb = sizeof(si);
             if (cmd)

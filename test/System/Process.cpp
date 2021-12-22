@@ -12,25 +12,7 @@
 #endif
 #endif
 
-std::string whoami()
-{
-    static std::string whoami = "CMD.exe /C \"";
-    whoami.resize(whoami.size() + MAX_PATH, '\0');
-    whoami.resize(sizeof("CMD.exe /C \"") - 1 + GetSystemDirectoryA(&whoami[sizeof("CMD.exe /C \"") - 1], MAX_PATH));
-    whoami.append("\\whoami.exe\" /ALL");
-    return whoami;
-};
-
-Win32Ex::TString whoami_tstr()
-{
-    static Win32Ex::TString whoami = TEXT("CMD.exe /C \"");
-    whoami.resize(whoami.size() + MAX_PATH, '\0');
-    whoami.resize(sizeof("CMD.exe /C \"") - 1 + GetSystemDirectory(&whoami[sizeof("CMD.exe /C \"") - 1], MAX_PATH));
-    whoami.append(TEXT("\\whoami.exe\" /ALL"));
-    return whoami;
-};
-
-TEST(ProcessTest, ThisProcess)
+TEST(ProcessTest, ThisProcessTest)
 {
     std::string path = Win32Ex::ThisProcess::GetExecutablePath();
     EXPECT_EQ(path, Win32Ex::ThisProcess::GetExecutablePath());
@@ -38,27 +20,60 @@ TEST(ProcessTest, ThisProcess)
     EXPECT_EQ(path, Win32Ex::ThisProcess::GetCurrentDirectory());
 }
 
-TEST(ProcessTest, RunInvalidProcess)
+TEST(ProcessTest, ParentProcessTest)
+{
+    std::string name;
+    Win32Ex::System::Process parent = Win32Ex::ThisProcess::GetParent();
+    while (parent.IsValid())
+    {
+        Win32Ex::System::Process parent2(parent.GetId());
+        EXPECT_STREQ(parent.GetExecutablePath().c_str(), parent2.GetExecutablePath().c_str());
+        parent = parent.GetParent();
+    }
+}
+
+TEST(ProcessTest, RunInvalidProcessTest)
 {
     Win32Ex::System::UserAccountProcess process("!@#$test");
     EXPECT_FALSE(process.Run());
 }
 
+TEST(ProcessTest, AttachByProcessIdTest)
+{
+    Win32Ex::System::Process process(GetCurrentProcessId());
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+}
+
+TEST(ProcessTest, AttachByHandleTest)
+{
+    Win32Ex::System::Process process(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+
+    process.Attach(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+}
+
 #if !defined(__cpp_lambdas)
-void onEnter(Win32Ex::System::UserAccountProcess *process)
+void onEnter(Win32Ex::System::RunnableProcess *process)
 {
     Sleep(500);
     process->Exit();
 }
-void onEnterElevatedUserProcess(Win32Ex::System::ElevatedUserAccountProcess *process)
+void onEnterW(Win32Ex::System::RunnableProcessW *process)
 {
     Sleep(500);
     process->Exit();
 }
-void onEnterSystemProcess(Win32Ex::System::SystemAccountProcess *process, bool *isSystemAccount)
+void onEnterSystemProcess(Win32Ex::System::SystemAccountProcess *process, bool *isAdmin)
 {
     Sleep(500);
-    *isSystemAccount = process->IsSystemAccount();
+    *isAdmin = process->IsAdmin();
+    process->Exit();
+}
+void onEnterSystemProcessW(Win32Ex::System::SystemAccountProcessW *process, bool *isAdmin)
+{
+    Sleep(500);
+    *isAdmin = process->IsAdmin();
     process->Exit();
 }
 void onExit(bool *terminated)
@@ -77,112 +92,176 @@ void onError(bool *terminated, DWORD, const std::exception &)
 #define _STD_NS_ std
 #endif
 
-TEST(ProcessTest, RunSystemAccountProcess)
+TEST(ProcessTest, UserAccountProcessTest)
 {
-    if (Win32Ex::ThisProcess::IsSystemAccount())
     {
-        Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), whoami().c_str());
+        Win32Ex::System::UserAccountProcess process("CMD /C QUERY SESSION");
         EXPECT_TRUE(process.Run());
-
-        PSTR cmd = new CHAR[1024];
-        if (cmd)
-        {
-            if (ExpandEnvironmentStringsA("%WINDIR%\\notepad.exe", cmd, 1024))
-            {
-                Win32Ex::System::SystemAccountProcess process(cmd);
-                bool terminated = false;
-#if defined(__cpp_lambdas)
-                process
-                    .OnEnter([&process]() {
-                        Sleep(500);
-                        EXPECT_TRUE(process.IsSystemAccount());
-                        process.Exit();
-                    })
-                    .OnExit([&terminated]() { terminated = true; })
-                    .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
-#else
-                bool isSystemAccount;
-                process.OnEnter(_STD_NS_::bind(onEnterSystemProcess, &process, &isSystemAccount))
-                    .OnExit(_STD_NS_::bind(onExit, &terminated))
-                    .OnError(
-                        _STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
-#endif
-                EXPECT_FALSE(terminated);
-                EXPECT_TRUE(process.Run());
-#if !defined(__cpp_lambdas)
-                EXPECT_TRUE(isSystemAccount);
-#endif
-                EXPECT_TRUE(terminated);
-            }
-            delete[] cmd;
-        }
     }
-}
 
-TEST(ProcessTest, RunUserAccountProcess)
-{
-    Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), whoami().c_str());
+    Win32Ex::System::UserAccountProcess process("notepad.exe");
+    bool terminated = false;
+#if defined(__cpp_lambdas)
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            EXPECT_FALSE(process.IsAdmin());
+            process.Exit();
+        })
+        .OnExit([&terminated]() { terminated = true; })
+        .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+    process.OnEnter(_STD_NS_::bind(onEnter, &process))
+        .OnExit(_STD_NS_::bind(onExit, &terminated))
+        .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+
+    EXPECT_FALSE(terminated);
     EXPECT_TRUE(process.Run());
+    EXPECT_TRUE(terminated);
+}
 
-    PSTR cmd = new CHAR[1024];
-    if (cmd)
+TEST(ProcessTest, UserAccountProcessWTest)
+{
     {
-        if (ExpandEnvironmentStringsA("%WINDIR%\\notepad.exe", cmd, 1024))
-        {
-            Win32Ex::System::UserAccountProcess process(cmd);
-            bool terminated = false;
+        Win32Ex::System::UserAccountProcessW process(L"CMD /C QUERY SESSION");
+        EXPECT_TRUE(process.Run());
+    }
+    Win32Ex::System::UserAccountProcessW process(L"notepad.exe");
+    bool terminated = false;
 #if defined(__cpp_lambdas)
-            process
-                .OnEnter([&process]() {
-                    Sleep(500);
-                    EXPECT_FALSE(process.IsSystemAccount());
-                    process.Exit();
-                })
-                .OnExit([&terminated]() { terminated = true; })
-                .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            EXPECT_FALSE(process.IsAdmin());
+            process.Exit();
+        })
+        .OnExit([&terminated]() { terminated = true; })
+        .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
 #else
-            process.OnEnter(_STD_NS_::bind(onEnter, &process))
-                .OnExit(_STD_NS_::bind(onExit, &terminated))
-                .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+    process.OnEnter(_STD_NS_::bind(onEnterW, &process))
+        .OnExit(_STD_NS_::bind(onExit, &terminated))
+        .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
 #endif
 
-            EXPECT_FALSE(terminated);
+    EXPECT_FALSE(terminated);
+    EXPECT_TRUE(process.Run());
+    EXPECT_TRUE(terminated);
+}
+
+TEST(ProcessTest, ElevatedProcessTest)
+{
+    Win32Ex::System::ElevatedProcess process("notepad.exe");
+    bool terminated = false;
+#if defined(__cpp_lambdas)
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            EXPECT_FALSE(process.IsAdmin());
+            process.Exit();
+        })
+        .OnExit([&terminated]() { terminated = true; })
+        .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+    process.OnEnter(_STD_NS_::bind(onEnter, &process))
+        .OnExit(_STD_NS_::bind(onExit, &terminated))
+        .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+    EXPECT_FALSE(terminated);
+    process.Run(); // EXPECT_TRUE(process.Run());
+    EXPECT_TRUE(terminated);
+}
+
+TEST(ProcessTest, ElevatedProcessWTest)
+{
+    Win32Ex::System::ElevatedProcessW process(L"notepad.exe");
+    bool terminated = false;
+#if defined(__cpp_lambdas)
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            EXPECT_FALSE(process.IsAdmin());
+            process.Exit();
+        })
+        .OnExit([&terminated]() { terminated = true; })
+        .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+    process.OnEnter(_STD_NS_::bind(onEnterW, &process))
+        .OnExit(_STD_NS_::bind(onExit, &terminated))
+        .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+    EXPECT_FALSE(terminated);
+    process.Run(); // EXPECT_TRUE(process.Run());
+    EXPECT_TRUE(terminated);
+}
+
+TEST(ProcessTest, SystemAccountProcessTest)
+{
+    if (Win32Ex::ThisProcess::IsAdmin())
+    {
+        {
+            Win32Ex::System::SystemAccountProcess process("CMD /C QUERY SESSION");
             EXPECT_TRUE(process.Run());
-            EXPECT_TRUE(terminated);
         }
-        delete[] cmd;
+
+        Win32Ex::System::SystemAccountProcess process("notepad.exe");
+        bool terminated = false;
+#if defined(__cpp_lambdas)
+        process
+            .OnEnter([&process]() {
+                Sleep(500);
+                EXPECT_TRUE(process.IsAdmin());
+                process.Exit();
+            })
+            .OnExit([&terminated]() { terminated = true; })
+            .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+        bool isAdmin;
+        process.OnEnter(_STD_NS_::bind(onEnterSystemProcess, &process, &isAdmin))
+            .OnExit(_STD_NS_::bind(onExit, &terminated))
+            .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+        EXPECT_FALSE(terminated);
+        EXPECT_TRUE(process.Run());
+#if !defined(__cpp_lambdas)
+        EXPECT_TRUE(isAdmin);
+#endif
+        EXPECT_TRUE(terminated);
     }
 }
 
-TEST(ProcessTest, ElevatedUserAccountProcess)
+TEST(ProcessTest, SystemAccountProcessWTest)
 {
-    PSTR cmd = new CHAR[1024];
-    if (cmd)
+    if (Win32Ex::ThisProcess::IsAdmin())
     {
-        if (ExpandEnvironmentStringsA("%WINDIR%\\notepad.exe", cmd, 1024))
         {
-            Win32Ex::System::ElevatedUserAccountProcess process(cmd);
-            bool terminated = false;
-#if defined(__cpp_lambdas)
-            process
-                .OnEnter([&process]() {
-                    Sleep(500);
-                    EXPECT_FALSE(process.IsSystemAccount());
-                    process.Exit();
-                })
-                .OnExit([&terminated]() { terminated = true; })
-                .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
-#else
-            process.OnEnter(_STD_NS_::bind(onEnterElevatedUserProcess, &process))
-                .OnExit(_STD_NS_::bind(onExit, &terminated))
-                .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
-#endif
-
-            EXPECT_FALSE(terminated);
-            process.Run(); // EXPECT_TRUE(process.Run());
-            EXPECT_TRUE(terminated);
+            Win32Ex::System::SystemAccountProcessW process(L"CMD /C QUERY SESSION");
+            EXPECT_TRUE(process.Run());
         }
-        delete[] cmd;
+
+        Win32Ex::System::SystemAccountProcessW process(L"notepad.exe");
+        bool terminated = false;
+#if defined(__cpp_lambdas)
+        process
+            .OnEnter([&process]() {
+                Sleep(500);
+                EXPECT_TRUE(process.IsAdmin());
+                process.Exit();
+            })
+            .OnExit([&terminated]() { terminated = true; })
+            .OnError([&terminated](DWORD, const std::exception &) { terminated = true; });
+#else
+        bool isAdmin;
+        process.OnEnter(_STD_NS_::bind(onEnterSystemProcessW, &process, &isAdmin))
+            .OnExit(_STD_NS_::bind(onExit, &terminated))
+            .OnError(_STD_NS_::bind(onError, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+        EXPECT_FALSE(terminated);
+        EXPECT_TRUE(process.Run());
+#if !defined(__cpp_lambdas)
+        EXPECT_TRUE(isAdmin);
+#endif
+        EXPECT_TRUE(terminated);
     }
 }
 
@@ -199,51 +278,45 @@ void onErrorCV(PCONDITION_VARIABLE cv, bool *terminated, DWORD, const std::excep
 }
 #endif
 
-TEST(ProcessTest, RunAsyncUserAccountProcess)
+TEST(ProcessTest, UserAccountProcessRunAsyncTest)
 {
-    PSTR cmd = new CHAR[1024];
-    if (cmd)
-    {
-        if (ExpandEnvironmentStringsA("%WINDIR%\\notepad.exe", cmd, 1024))
-        {
-            CRITICAL_SECTION cs;
-            CONDITION_VARIABLE cv;
-            InitializeConditionVariable(&cv);
-            InitializeCriticalSection(&cs);
+    CRITICAL_SECTION cs;
+    CONDITION_VARIABLE cv;
+    InitializeConditionVariable(&cv);
+    InitializeCriticalSection(&cs);
 
-            Win32Ex::System::UserAccountProcess process(cmd);
-            bool terminated = false;
+    Win32Ex::System::UserAccountProcess process("notepad.exe");
+    bool terminated = false;
 #if defined(__cpp_lambdas)
-            process
-                .OnEnter([&process]() {
-                    Sleep(500);
-                    process.Exit();
-                })
-                .OnExit([&cv, &terminated]() {
-                    terminated = true;
-                    WakeConditionVariable(&cv);
-                })
-                .OnError([&cv, &terminated](DWORD, const std::exception &) {
-                    terminated = true;
-                    WakeConditionVariable(&cv);
-                });
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            process.Exit();
+        })
+        .OnExit([&cv, &terminated]() {
+            terminated = true;
+            WakeConditionVariable(&cv);
+        })
+        .OnError([&cv, &terminated](DWORD, const std::exception &) {
+            terminated = true;
+            WakeConditionVariable(&cv);
+        });
 #else
-            process.OnEnter(_STD_NS_::bind(onEnter, &process))
-                .OnExit(_STD_NS_::bind(onExitCV, &cv, &terminated))
-                .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1,
-                                        _STD_NS_::placeholders::_2));
+    process.OnEnter(_STD_NS_::bind(onEnter, &process))
+        .OnExit(_STD_NS_::bind(onExitCV, &cv, &terminated))
+        .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
 #endif
-            EXPECT_FALSE(terminated);
-            Win32Ex::Waitable waitable = process.RunAsync();
-            SleepConditionVariableCS(&cv, &cs, INFINITE);
-            EXPECT_TRUE(terminated);
-            EXPECT_FALSE(waitable);
-        }
-        delete[] cmd;
+    EXPECT_FALSE(terminated);
+    Win32Ex::Waitable waitable = process.RunAsync();
+    if (!terminated)
+    {
+        SleepConditionVariableCS(&cv, &cs, INFINITE);
     }
+    EXPECT_TRUE(terminated);
+    EXPECT_FALSE(waitable);
 }
 
-TEST(ProcessTest, UserAccountProcessClassTest)
+TEST(ProcessTest, UserAccountProcessAllSessionsTest)
 {
     PVOID OldValue = NULL;
     Wow64DisableWow64FsRedirection(&OldValue);
@@ -273,7 +346,7 @@ TEST(ProcessTest, UserAccountProcessClassTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, whoami().c_str());
+            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
             ret = process.Run();
             if (!ret)
             {
@@ -291,57 +364,154 @@ TEST(ProcessTest, UserAccountProcessClassTest)
     Wow64RevertWow64FsRedirection(OldValue);
 }
 
-TEST(ProcessTest, SystemAccountProcessClassTest)
+TEST(ProcessTest, UserAccountProcessWAllSessionsTest)
 {
-    if (Win32Ex::ThisProcess::IsSystemAccount())
-    {
-        PVOID OldValue = NULL;
-        Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID OldValue = NULL;
+    Wow64DisableWow64FsRedirection(&OldValue);
 
-        PWTS_SESSION_INFO sessionInfo = NULL;
-        DWORD count = 0;
-        if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+    PWTS_SESSION_INFO sessionInfo = NULL;
+    DWORD count = 0;
+    if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+    {
+        BOOL isLocalSystem = IsLocalSystemToken(GetCurrentProcessToken());
+        BOOL ret = FALSE;
+        for (DWORD i = 0; i < count; ++i)
         {
-            BOOL ret = FALSE;
-            for (DWORD i = 0; i < count; ++i)
-            {
-                if (sessionInfo[i].State == WTSListen)
-                    continue;
+            if (sessionInfo[i].State == WTSListen)
+                continue;
 #if _MSC_VER > 1600
 #ifdef _UNICODE
-                wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+            wprintf(L"UserAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+            printf("UserAccountProcessW (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
 #endif
 #else
 #ifdef _UNICODE
-                wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+            wprintf(L"UserAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #else
-                printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+            printf("UserAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
 #endif
 #endif
-                        sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-                Win32Ex::System::SystemAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
-                ret = process.Run();
-                if (!ret)
-                {
-                    printf("Failed to SystemAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId,
-                           GetLastError());
-                }
-
-                // GitHub Action의 Windows 운영체제에서는 세션0으로 System Process를 생성하는 것이 실패합니다.
-                // 추후 원인 파악이 필요합니다. :-(
-                if (!((((sessionInfo[i].SessionId == 0) && GetLastError() == ERROR_ACCESS_DENIED))))
-                {
-                    EXPECT_EQ(ret, TRUE);
-                }
+            Win32Ex::System::UserAccountProcessW process(sessionInfo[i].SessionId, L"CMD /C QUERY SESSION");
+            ret = process.Run();
+            if (!ret)
+            {
+                printf("Failed to UserAccountProcessW::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
             }
 
-            WTSFreeMemory(sessionInfo);
+            if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
+            {
+                EXPECT_EQ(ret, TRUE);
+            }
         }
-        Wow64RevertWow64FsRedirection(OldValue);
+
+        WTSFreeMemory(sessionInfo);
     }
+    Wow64RevertWow64FsRedirection(OldValue);
+}
+
+TEST(ProcessTest, SystemAccountProcessAllSessionsTest)
+{
+    if (!Win32Ex::ThisProcess::IsAdmin())
+        return;
+
+    PVOID OldValue = NULL;
+    Wow64DisableWow64FsRedirection(&OldValue);
+
+    PWTS_SESSION_INFO sessionInfo = NULL;
+    DWORD count = 0;
+    if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+    {
+        BOOL isLocalSystem = IsLocalSystemToken(GetCurrentProcessToken());
+        BOOL ret = FALSE;
+        for (DWORD i = 0; i < count; ++i)
+        {
+            if (sessionInfo[i].State == WTSListen)
+                continue;
+#if _MSC_VER > 1600
+#ifdef _UNICODE
+            wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
+            printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
+#else
+#ifdef _UNICODE
+            wprintf(L"SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
+            printf("SystemAccountProcess (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#endif
+#endif
+                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+
+            Win32Ex::System::SystemAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
+            ret = process.Run();
+            if (!ret)
+            {
+                printf("Failed to SystemAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
+            }
+
+            if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
+            {
+                EXPECT_EQ(ret, TRUE);
+            }
+        }
+
+        WTSFreeMemory(sessionInfo);
+    }
+    Wow64RevertWow64FsRedirection(OldValue);
+}
+
+TEST(ProcessTest, SystemAccountProcessWAllSessionsTest)
+{
+    if (!Win32Ex::ThisProcess::IsAdmin())
+        return;
+
+    PVOID OldValue = NULL;
+    Wow64DisableWow64FsRedirection(&OldValue);
+
+    PWTS_SESSION_INFO sessionInfo = NULL;
+    DWORD count = 0;
+    if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+    {
+        BOOL isLocalSystem = IsLocalSystemToken(GetCurrentProcessToken());
+        BOOL ret = FALSE;
+        for (DWORD i = 0; i < count; ++i)
+        {
+            if (sessionInfo[i].State == WTSListen)
+                continue;
+#if _MSC_VER > 1600
+#ifdef _UNICODE
+            wprintf(L"SystemAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
+            printf("SystemAccountProcessW (SessionId: %lu, pWinStationName: %Ts, State: %d)\n",
+#endif
+#else
+#ifdef _UNICODE
+            wprintf(L"SystemAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#else
+            printf("SystemAccountProcessW (SessionId: %lu, pWinStationName: %s, State: %d)\n",
+#endif
+#endif
+                    sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
+
+            Win32Ex::System::SystemAccountProcessW process(sessionInfo[i].SessionId, L"CMD /C QUERY SESSION");
+            ret = process.Run();
+            if (!ret)
+            {
+                printf("Failed to SystemAccountProcessW::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
+            }
+
+            if (isLocalSystem || WTSGetActiveConsoleSessionId() == sessionInfo[i].SessionId)
+            {
+                EXPECT_EQ(ret, TRUE);
+            }
+        }
+
+        WTSFreeMemory(sessionInfo);
+    }
+    Wow64RevertWow64FsRedirection(OldValue);
 }
 
 #include <Win32Ex/Security/Token.hpp>
@@ -365,7 +535,7 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
         ZeroMemory(&si, sizeof(STARTUPINFO));
         si.cb = sizeof(si);
 
-        PTSTR cmd = _tcsdup(whoami_tstr().c_str());
+        PTSTR cmd = _tcsdup(TEXT("CMD /C QUERY SESSION"));
         if (cmd)
         {
             for (DWORD i = 0; i < count; ++i)
@@ -476,40 +646,19 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
     }
 }
 
-TEST(ProcessTest, AttachTest)
-{
-    Win32Ex::System::UserAccountProcess process(GetCurrentProcessId());
-    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
-    EXPECT_TRUE(process.IsRunning());
-    EXPECT_FALSE(process.RunAsync());
-}
-
-TEST(ProcessTest, AttachHandleTest)
-{
-    Win32Ex::System::UserAccountProcess process(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
-    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
-    EXPECT_TRUE(process.IsRunning());
-    EXPECT_FALSE(process.RunAsync());
-
-    process.Attach(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
-    EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
-    EXPECT_TRUE(process.IsRunning());
-    EXPECT_FALSE(process.RunAsync());
-}
-
 /**
  * @brief Test a C Code
  *
  */
 extern "C"
 {
-    extern BOOL CreateUserAccountProcessTestC(PCTSTR whoami);
+    extern BOOL CreateUserAccountProcessTestC();
     extern BOOL CreateSystemAccountProcessTestC();
 }
 
 TEST(ProcessTest, CreateUserAccountProcessTestC)
 {
-    EXPECT_TRUE(CreateUserAccountProcessTestC(whoami_tstr().c_str()) == TRUE);
+    EXPECT_TRUE(CreateUserAccountProcessTestC() == TRUE);
 }
 
 TEST(ProcessTest, CreateSystemAccountProcessTestC)

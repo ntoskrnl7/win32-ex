@@ -38,12 +38,12 @@ Environment:
 #endif
 #include <Windows.h>
 
-#include <shellapi.h>
-#pragma comment(lib, "Shell32.lib")
+#include "../TmplApi/shellapi.hpp"
 
 #include "../Internal/misc.hpp"
 #include "../Security/Token.h"
 #include "Process.h"
+#include <algorithm>
 #include <functional>
 #include <sstream>
 #include <stdexcept>
@@ -62,27 +62,27 @@ namespace ThisProcess
 {
 static std::string &GetExecutablePath()
 {
-    static std::string processName_(MAX_PATH, '\0');
-    size_t returnSize = GetModuleFileNameA(NULL, &processName_[0], (DWORD)processName_.size());
+    static std::string executablePath_(MAX_PATH, '\0');
+    size_t returnSize = GetModuleFileNameA(NULL, &executablePath_[0], (DWORD)executablePath_.size());
     for (;;)
     {
-        if (returnSize < processName_.size())
+        if (returnSize < executablePath_.size())
         {
-            processName_.resize(returnSize);
+            executablePath_.resize(returnSize);
             break;
         }
         else
         {
-            processName_.resize(returnSize + MAX_PATH);
-            returnSize = GetModuleFileNameA(NULL, &processName_[0], (DWORD)processName_.size());
-            processName_.resize(returnSize);
+            executablePath_.resize(returnSize + MAX_PATH);
+            returnSize = GetModuleFileNameA(NULL, &executablePath_[0], (DWORD)executablePath_.size());
+            executablePath_.resize(returnSize);
         }
         if (GetLastError() == ERROR_SUCCESS)
         {
             break;
         }
     }
-    return processName_;
+    return executablePath_;
 }
 
 namespace Details
@@ -139,20 +139,13 @@ static String GetCurrentDirectory()
     return cwd;
 }
 
-static bool IsSystemAccount()
+static bool IsAdmin()
 {
     return IsUserAdmin(GetCurrentProcessToken()) == TRUE;
 }
 } // namespace ThisProcess
 namespace System
 {
-enum ProcessAccountType
-{
-    SystemAccount,
-    UserAccount,
-    ElevatedUserAccount
-};
-
 typedef DWORD ProcessId;
 
 struct ProcessHandle
@@ -167,40 +160,74 @@ struct ProcessHandle
     }
 };
 
-namespace Detail
-{
-template <ProcessAccountType _Type> class Process : public WaitableObject
-{
-    typedef std::function<void(Process<_Type> &)> ProcessEnterCallbackWithSelf;
-    typedef std::function<void(Process<_Type> &)> ProcessExitCallbackWithSelf;
-    typedef std::function<void(Process<_Type> &, DWORD, const std::exception &)> ProcessErrorCallbackWithSelf;
+//
+//
+//
 
-    typedef std::function<void()> ProcessEnterCallback;
-    typedef std::function<void()> ProcessExitCallback;
-    typedef std::function<void(DWORD, const std::exception &)> ProcessErrorCallback;
+template <typename _CharType> struct ConstValue
+{
+};
 
-  private:
-    void initCallbacks_()
+template <> struct ConstValue<CHAR>
+{
+    static PCSTR Space()
     {
-        enterCallbackWithSelf_ =
-            _STD_NS_::bind(&Process<_Type>::enterCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
-        exitCallbackWithSelf_ =
-            _STD_NS_::bind(&Process<_Type>::exitCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
-        errorCallbackWithSelf_ =
-            _STD_NS_::bind(&Process<_Type>::errorCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1,
-                           _STD_NS_::placeholders::_2, _STD_NS_::placeholders::_3);
+        return " ";
     }
+    static PCSTR RunAs()
+    {
+        return "runas";
+    }
+};
+template <> struct ConstValue<WCHAR>
+{
+    static PCWSTR Space()
+    {
+        return L" ";
+    }
+    static PCWSTR RunAs()
+    {
+        return L"runas";
+    }
+};
 
-    VOID Attach_(HANDLE ProcessHandle)
+//
+//
+//
+
+template <typename _StringType> class BasicRunnableProcess;
+
+template <typename _StringType> class BasicProcess : public WaitableObject
+{
+  protected:
+    friend class BasicRunnableProcess<_StringType>;
+    typedef typename _StringType::value_type _CharType;
+
+    void Attach_(HANDLE ProcessHandle)
     {
         DWORD processId = GetProcessId(ProcessHandle);
         if (processId != 0)
             ProcessIdToSessionId(processId, &sessionId_);
 
-        CHAR processName[4096];
-        DWORD processNameLength = sizeof(processName) / sizeof(CHAR);
-        if (QueryFullProcessImageNameA(ProcessHandle, 0, processName, &processNameLength))
-            name_.assign(processName, processNameLength);
+        DWORD length = 10;
+        _StringType executablePath;
+        executablePath.resize(length);
+        while (!QueryFullProcessImageNameT<_CharType>(ProcessHandle, 0, &executablePath[0], &length))
+        {
+            if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+            {
+                length = 0;
+                break;
+            }
+            length += 32;
+            executablePath.resize(length);
+        }
+
+        if (length)
+        {
+            executablePath.resize(length);
+            executablePath_.swap(executablePath);
+        }
 
         processInfo_.hProcess = ProcessHandle;
         processInfo_.dwProcessId = processId;
@@ -208,18 +235,9 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         processInfo_.hThread = NULL;
     }
 
-    VOID Detach_()
+    void Detach_()
     {
-        HANDLE handle = InterlockedExchangePointer(&hThreadStopEvent_, NULL);
-        if (handle)
-        {
-            SetEvent(handle);
-            CloseHandle(handle);
-        }
-
-        if (exitDetectionThread_)
-            WaitForSingleObject(exitDetectionThread_, INFINITE);
-
+        HANDLE handle;
         handle = InterlockedExchangePointer(&processInfo_.hProcess, NULL);
         if (handle)
             CloseHandle(handle);
@@ -229,10 +247,68 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
             CloseHandle(handle);
     }
 
+    void Init_()
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        sessionId_ = WTSGetActiveConsoleSessionId();
+    }
+
+    BasicProcess()
+    {
+        Init_();
+    }
+
   public:
+#if defined(__cpp_rvalue_references)
+    BasicProcess(BasicProcess &&other)
+    {
+        Init_();
+        Swap(other);
+    }
+
+    BasicProcess &operator=(BasicProcess &&rhs)
+    {
+        return Swap(rhs);
+    }
+
+    BasicProcess(const BasicProcess &other) = delete;
+    BasicProcess &operator=(const BasicProcess &rhs) = delete;
+#else
+    BasicProcess(BasicProcess &other)
+    {
+        Init_();
+        Swap(other);
+    }
+
+    BasicProcess &operator=(BasicProcess &rhs)
+    {
+        return Swap(rhs);
+    }
+#endif
+
+  public:
+    BasicProcess(ProcessHandle ProcessHandle)
+    {
+        Init_();
+        Attach_(ProcessHandle.value);
+    }
+
+    BasicProcess(ProcessId ProcessId)
+    {
+        Init_();
+        HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
+        if (hProcess)
+            Attach_(hProcess);
+    }
+
+    ~BasicProcess()
+    {
+        Detach_();
+    }
+
     BOOL Attach(ProcessHandle ProcessHandle)
     {
-        if (processInfo_.hProcess || hThreadStopEvent_ || exitDetectionThread_)
+        if (processInfo_.hProcess)
         {
             SetLastError(ERROR_ALREADY_INITIALIZED);
             return FALSE;
@@ -241,344 +317,40 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         return TRUE;
     }
 
-    Process(ProcessHandle ProcessHandle) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
+    BasicProcess &Swap(BasicProcess &other)
     {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        initCallbacks_();
-        Attach_(ProcessHandle.value);
+        std::swap(processInfo_, other.processInfo_);
+        std::swap(sessionId_, other.sessionId_);
+        executablePath_.swap(other.executablePath_);
+        return *this;
     }
 
-    Process(ProcessId ProcessId) : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), creationFlags_(0)
+    bool IsValid() const
     {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        initCallbacks_();
-        HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
-        if (hProcess)
-            Attach_(hProcess);
+        return processInfo_.dwProcessId != 0;
     }
 
-    Process(const std::string &ProcessPathName, const std::string &Arguments = std::string(),
-            const std::string &CurrentDirectory = std::string(), DWORD CreationFlags = 0L,
-            const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), name_(ProcessPathName), arguments_(Arguments),
-          currentDirectory_(CurrentDirectory), creationFlags_(CreationFlags), startupInfo_(StartupInfo),
-          inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
+    bool IsRunning() const
     {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        initCallbacks_();
-        ProcessIdToSessionId(GetCurrentProcessId(), &sessionId_);
-    }
-
-    Process(DWORD SessionId, const std::string &ProcessPathName, const std::string &Arguments = std::string(),
-            const std::string &CurrentDirectory = std::string(), DWORD CreationFlags = 0L,
-            const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : exitDetectionThread_(NULL), hThreadStopEvent_(NULL), name_(ProcessPathName), arguments_(Arguments),
-          currentDirectory_(CurrentDirectory), creationFlags_(CreationFlags), startupInfo_(StartupInfo),
-          inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock), sessionId_(SessionId)
-    {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        initCallbacks_();
-    }
-
-    ~Process()
-    {
-        Detach_();
-    }
-
-    bool Run(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L,
-             const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-    {
-        if (IsRunning())
-        {
-            if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, GetLastError(), std::runtime_error("Already running"));
+        if (processInfo_.hProcess == NULL)
             return false;
-        }
-
-        return RunAsync(Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles, EnvironmentBlock)
-            .Wait();
+        return WaitForSingleObject(processInfo_.hProcess, 0) == WAIT_TIMEOUT;
     }
 
-    bool IsRunning()
+    const _StringType &GetExecutablePath() const
     {
-        return (processInfo_.hProcess != NULL);
+        return executablePath_;
     }
 
-    Waitable RunAsync(PCSTR Arguments = NULL, PCSTR CurrentDirectory = NULL, DWORD CreationFlags = 0L,
-                      const LPSTARTUPINFOA StartupInfo = NULL, BOOL InheritHandles = FALSE,
-                      LPVOID EnvironmentBlock = NULL)
+    operator const _StringType() const
     {
-        if (IsRunning())
+        std::basic_stringstream<typename _StringType::value_type> process_info;
+        if (!processInfo_.dwProcessId)
         {
-            if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, ERROR_BUSY, std::runtime_error("Already running"));
-            return Waitable(*this);
+            return "Invalid process";
         }
-
-        if (name_.empty())
-        {
-            if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, ERROR_INVALID_NAME,
-                                       std::runtime_error("Process image file name is not specified"));
-            return Waitable(*this);
-        }
-
-        if (Arguments)
-            arguments_ = Arguments;
-
-        if (CurrentDirectory)
-            currentDirectory_ = CurrentDirectory;
-
-        if (CreationFlags)
-            creationFlags_ = CreationFlags;
-
-        if (CreationFlags)
-            creationFlags_ = CreationFlags;
-
-        if (InheritHandles)
-            inheritHandles_ = InheritHandles;
-
-        if (EnvironmentBlock)
-            environmentBlock_ = EnvironmentBlock;
-
-        if (_Type == ElevatedUserAccount)
-        {
-            if (ThisProcess::IsSystemAccount())
-            {
-                if (errorCallbackWithSelf_)
-                    errorCallbackWithSelf_(*this, ERROR_NOT_SUPPORTED,
-                                           std::runtime_error("It can only be called by user account process."));
-                return Waitable(*this);
-            }
-            else
-            {
-#if _UNICODE
-                using namespace Convert::String;
-                Win32Ex::TString name = !name_;
-                Win32Ex::TString params = !arguments_;
-                Win32Ex::TString cwd = !currentDirectory_;
-#else
-                Win32Ex::TString name = name_;
-                Win32Ex::TString params = arguments_;
-                Win32Ex::TString cwd = currentDirectory_;
-#endif
-                SHELLEXECUTEINFO sei = {
-                    0,
-                };
-                sei.fMask |= SEE_MASK_NOCLOSEPROCESS;
-                sei.cbSize = sizeof(SHELLEXECUTEINFO);
-                sei.lpVerb = TEXT("runas");
-                sei.lpFile = name.c_str();
-
-                if (!params.empty())
-                    sei.lpParameters = params.c_str();
-
-                if (!cwd.empty())
-                    sei.lpDirectory = cwd.c_str();
-
-                if (creationFlags_ & CREATE_NO_WINDOW)
-                {
-                    sei.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
-                }
-
-                sei.nShow = StartupInfo ? StartupInfo->wShowWindow : SW_SHOWDEFAULT;
-
-                if (!ShellExecuteEx(&sei))
-                {
-                    if (errorCallbackWithSelf_)
-                        errorCallbackWithSelf_(*this, GetLastError(), std::runtime_error("Failed to ShellExecuteEx"));
-                    return Waitable(*this);
-                }
-
-                processInfo_.dwProcessId = GetProcessId(sei.hProcess);
-                processInfo_.hProcess = sei.hProcess;
-            }
-        }
-        else
-        {
-            Win32Ex::TString command;
-            Win32Ex::TString currentDir;
-            STARTUPINFOEX si;
-            if (startupInfo_)
-            {
-#ifdef min
-                CopyMemory(&si, startupInfo_, min((DWORD)sizeof(si), startupInfo_->cb));
-#else
-                CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
-#endif
-            }
-            else
-            {
-                ZeroMemory(&si, sizeof(si));
-                si.StartupInfo.cb = sizeof(STARTUPINFO);
-            }
-#if _UNICODE
-            std::wstring desktop;
-            std::wstring title;
-
-            using namespace Convert::String;
-            currentDir = !currentDirectory_;
-            command = (arguments_.empty()) ? !name_ : !(name_ + " " + arguments_);
-            if (startupInfo_)
-            {
-                if (startupInfo_->lpDesktop)
-                {
-                    desktop = !std::string(startupInfo_->lpDesktop);
-                    si.StartupInfo.lpDesktop = &desktop[0];
-                }
-                if (startupInfo_->lpTitle)
-                {
-                    title = !std::string(startupInfo_->lpTitle);
-                    si.StartupInfo.lpTitle = &title[0];
-                }
-            }
-#else
-            currentDir = currentDirectory_;
-            command = (arguments_.empty()) ? name_ : name_ + TEXT(" ") + arguments_;
-            if (startupInfo_)
-            {
-#ifdef min
-                CopyMemory(&si, startupInfo_, min((DWORD)sizeof(si), startupInfo_->cb));
-#else
-                CopyMemory(&si, startupInfo_, std::min((DWORD)sizeof(si), startupInfo_->cb));
-#endif
-            }
-            else
-            {
-                ZeroMemory(&si, sizeof(si));
-                si.StartupInfo.cb = sizeof(STARTUPINFO);
-            }
-#endif
-            if (_Type == SystemAccount)
-            {
-                if (!CreateSystemAccountProcess(
-                        sessionId_, NULL, &command[0], NULL, NULL, InheritHandles, creationFlags_, environmentBlock_,
-                        currentDir.empty() ? NULL : currentDir.c_str(), &si.StartupInfo, &processInfo_))
-                {
-                    if (errorCallbackWithSelf_)
-                        errorCallbackWithSelf_(*this, GetLastError(),
-                                               std::runtime_error("Failed to CreateSystemAccountProcess"));
-                    return Waitable(*this);
-                }
-            }
-            else if (_Type == UserAccount)
-            {
-                if (!CreateUserAccountProcess(sessionId_, NULL, &command[0], NULL, NULL, InheritHandles, creationFlags_,
-                                              environmentBlock_, currentDir.empty() ? NULL : currentDir.c_str(),
-                                              &si.StartupInfo, &processInfo_))
-                {
-                    if (errorCallbackWithSelf_)
-                        errorCallbackWithSelf_(*this, GetLastError(),
-                                               std::runtime_error("Failed to CreateUserAccountProcess"));
-                    return Waitable(*this);
-                }
-            }
-            else
-            {
-                if (errorCallbackWithSelf_)
-                    errorCallbackWithSelf_(*this, ERROR_CLASS_DOES_NOT_EXIST,
-                                           std::runtime_error("Unknown process type"));
-                return Waitable(*this);
-            }
-        }
-
-        if (enterCallbackWithSelf_)
-            enterCallbackWithSelf_(*this);
-
-        HANDLE handle = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (InterlockedCompareExchangePointer(&hThreadStopEvent_, handle, NULL))
-        {
-            if (handle)
-                CloseHandle(handle);
-        }
-        if (hThreadStopEvent_ == NULL)
-        {
-            if (errorCallbackWithSelf_)
-                errorCallbackWithSelf_(*this, GetLastError(), std::runtime_error("Failed to CreateEvent"));
-            return Waitable(*this);
-        }
-
-        //
-        //  프로세스 종료 스레드가 동작중인지 확인합니다.
-        //
-        if (exitDetectionThread_)
-        {
-            if (GetCurrentThreadId() == GetThreadId(exitDetectionThread_))
-            {
-                //
-                //  exitDetectionThread_에서 RunAsync가 호출된것이라면, exitDetectionThread_ 스레드 객체를 분리
-                //  시킵니다.
-                //
-                exitDetectionThread_ = NULL;
-            }
-            else
-            {
-                //
-                //  exitDetectionThread_에서 RunAsync가 호출된것이 아니라면, exitDetectionThread_ 스레드 종료 이벤트를
-                //  시그널시키고, 종료될때까지 대기합니다.
-                //
-                SetEvent(hThreadStopEvent_);
-                WaitForSingleObject(exitDetectionThread_, INFINITE);
-            }
-        }
-
-        exitDetectionThread_ = CreateThread(NULL, 0, &Process<_Type>::ExitDetectionThreadProc_, this, 0, NULL);
-        return Waitable(*this);
-    }
-
-    bool Exit()
-    {
-        if (IsRunning())
-            return TerminateProcess(processInfo_.hProcess, ERROR_PROCESS_ABORTED) == TRUE;
-        return false;
-    }
-
-    Process &OnEnterEx(ProcessEnterCallbackWithSelf Callback)
-    {
-        enterCallbackWithSelf_ = Callback;
-        return *this;
-    }
-
-    Process &OnExitEx(ProcessExitCallbackWithSelf Callback)
-    {
-        exitCallbackWithSelf_ = Callback;
-        return *this;
-    }
-
-    Process &OnErrorEx(ProcessErrorCallbackWithSelf Callback)
-    {
-        errorCallbackWithSelf_ = Callback;
-        return *this;
-    }
-
-    Process &OnEnter(ProcessEnterCallback Callback)
-    {
-        enterCallback_ = Callback;
-        return *this;
-    }
-
-    Process &OnExit(ProcessExitCallback Callback)
-    {
-        exitCallback_ = Callback;
-        return *this;
-    }
-
-    Process &OnError(ProcessErrorCallback Callback)
-    {
-        errorCallback_ = Callback;
-        return *this;
-    }
-
-    operator const std::string() const
-    {
-        std::stringstream process_info;
-        process_info << name_ << "(" << processInfo_.dwProcessId << ")";
+        process_info << executablePath_ << "(" << processInfo_.dwProcessId << ")";
         return process_info.str();
-    }
-
-    const std::string &GetExecutablePath() const
-    {
-        return name_;
     }
 
     DWORD GetId() const
@@ -591,47 +363,84 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         return processInfo_.hProcess;
     }
 
-    DWORD GetMainThreadId() const
+    BasicProcess<_StringType> GetParent()
     {
-        return processInfo_.dwThreadId;
+        return BasicProcess<_StringType>(GetParentProcessId(processInfo_.dwProcessId));
     }
 
-    HANDLE GetMainThreadHandle() const
+  protected:
+    DWORD sessionId_;
+    _StringType executablePath_;
+    PROCESS_INFORMATION processInfo_;
+
+    //
+    // WaitableObject Interface Implementations.
+    //
+  public:
+    bool IsWaitable()
     {
-        return processInfo_.hThread;
+        return processInfo_.hProcess != NULL;
     }
 
-    bool IsSystemAccount() const
+    bool Wait(Duration Timeout)
     {
-        bool bRet = (_Type == SystemAccount);
-        HANDLE hToken;
-        if (!OpenProcessToken(processInfo_.hProcess, TOKEN_QUERY | TOKEN_IMPERSONATE, &hToken))
-        {
-            return bRet;
-        }
-        if (ImpersonateLoggedOnUser(hToken))
-        {
-            bRet = IsUserAdmin(hToken) == TRUE;
-            RevertToSelf();
-        }
-        CloseHandle(hToken);
-        return bRet;
+        return WaitForSingleObject(processInfo_.hProcess, Timeout) == WAIT_OBJECT_0;
     }
+};
+
+enum ProcessAccountType
+{
+    SystemAccount,
+    UserAccount
+};
+
+template <typename _StringType, ProcessAccountType _Type> class BasicRunnableSessionProcess;
+template <typename _StringType> class BasicElevatedProcess;
+
+template <typename _StringType> class BasicRunnableProcess : public BasicProcess<_StringType>
+{
+  protected:
+    friend class BasicRunnableSessionProcess<_StringType, SystemAccount>;
+    friend class BasicRunnableSessionProcess<_StringType, UserAccount>;
+    friend class BasicElevatedProcess<_StringType>;
+    friend class BasicElevatedProcess<_StringType>;
+
+    typedef BasicProcess<_StringType> _BasicProcess;
+    typedef typename _StringType::value_type _CharType;
 
   private:
-    void enterCallbackWithSelfDefault_(Process<_Type> &)
+    typedef std::function<void(BasicRunnableProcess &)> ProcessEnterCallbackWithSelf;
+    typedef std::function<void(BasicRunnableProcess &)> ProcessExitCallbackWithSelf;
+    typedef std::function<void(BasicRunnableProcess &, DWORD, const std::exception &)> ProcessErrorCallbackWithSelf;
+
+    typedef std::function<void()> ProcessEnterCallback;
+    typedef std::function<void()> ProcessExitCallback;
+    typedef std::function<void(DWORD, const std::exception &)> ProcessErrorCallback;
+
+    void InitCallbacks_()
+    {
+        enterCallbackWithSelf_ =
+            _STD_NS_::bind(&BasicRunnableProcess::EnterCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
+        exitCallbackWithSelf_ =
+            _STD_NS_::bind(&BasicRunnableProcess::ExitCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
+        errorCallbackWithSelf_ =
+            _STD_NS_::bind(&BasicRunnableProcess::ErrorCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1,
+                           _STD_NS_::placeholders::_2, _STD_NS_::placeholders::_3);
+    }
+
+    void EnterCallbackWithSelfDefault_(BasicRunnableProcess &)
     {
         if (enterCallback_)
             enterCallback_();
     };
 
-    void exitCallbackWithSelfDefault_(Process<_Type> &)
+    void ExitCallbackWithSelfDefault_(BasicRunnableProcess &)
     {
         if (exitCallback_)
             exitCallback_();
     };
 
-    void errorCallbackWithSelfDefault_(Process<_Type> &, DWORD LastError, const std::exception &e)
+    void ErrorCallbackWithSelfDefault_(BasicRunnableProcess &, DWORD LastError, const std::exception &e)
     {
         if (errorCallback_)
             errorCallback_(LastError, e);
@@ -639,7 +448,7 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
 
     static DWORD WINAPI ExitDetectionThreadProc_(PVOID lpThreadParameter)
     {
-        Process *self = (Process *)lpThreadParameter;
+        BasicRunnableProcess *self = (BasicRunnableProcess *)lpThreadParameter;
         HANDLE handles[2] = {self->hThreadStopEvent_, self->processInfo_.hProcess};
         switch (WaitForMultipleObjects(2, handles, FALSE, INFINITE))
         {
@@ -672,18 +481,138 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
         return 0;
     }
 
-  private:
-    std::string name_;
-    std::string arguments_;
-    std::string currentDirectory_;
-    DWORD sessionId_;
-    DWORD creationFlags_;
+  protected:
+    BasicRunnableProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
+                         const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
+                         const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+                         BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : _BasicProcess(), exitDetectionThread_(NULL), hThreadStopEvent_(NULL), arguments_(Arguments),
+          currentDirectory_(CurrentDirectory), creationFlags_(CreationFlags), startupInfo_(StartupInfo),
+          inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
+    {
+        _BasicProcess::executablePath_ = ExecutablePath;
+        InitCallbacks_();
+    }
 
+  public:
+    ~BasicRunnableProcess()
+    {
+        HANDLE handle = InterlockedExchangePointer(&hThreadStopEvent_, NULL);
+        if (handle)
+        {
+            SetEvent(handle);
+            CloseHandle(handle);
+        }
+
+        if (exitDetectionThread_)
+        {
+            WaitForSingleObject(exitDetectionThread_, INFINITE);
+        }
+    }
+
+    bool Run(Optional<_StringType> Arguments = None(), Optional<_StringType> CurrentDirectory = None(),
+             Optional<DWORD> CreationFlags = None(),
+             Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
+             Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None())
+    {
+        if (_BasicProcess::IsRunning())
+        {
+            if (errorCallbackWithSelf_)
+                errorCallbackWithSelf_(*this, GetLastError(), std::runtime_error("Already running"));
+            return false;
+        }
+
+        return RunAsync(Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles, EnvironmentBlock)
+            .Wait();
+    }
+
+    virtual Waitable RunAsync(Optional<_StringType> Arguments = None(), Optional<_StringType> CurrentDirectory = None(),
+                              Optional<DWORD> CreationFlags = None(),
+                              Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
+                              Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None()) = 0;
+
+    bool Exit()
+    {
+        if (_BasicProcess::IsRunning())
+            return TerminateProcess(_BasicProcess::processInfo_.hProcess, ERROR_PROCESS_ABORTED) == TRUE;
+        return false;
+    }
+
+    //
+    // Callbacks
+    //
+
+    BasicRunnableProcess &OnEnterEx(ProcessEnterCallbackWithSelf Callback)
+    {
+        enterCallbackWithSelf_ = Callback;
+        return *this;
+    }
+
+    BasicRunnableProcess &OnExitEx(ProcessExitCallbackWithSelf Callback)
+    {
+        exitCallbackWithSelf_ = Callback;
+        return *this;
+    }
+
+    BasicRunnableProcess &OnErrorEx(ProcessErrorCallbackWithSelf Callback)
+    {
+        errorCallbackWithSelf_ = Callback;
+        return *this;
+    }
+
+    BasicRunnableProcess &OnEnter(ProcessEnterCallback Callback)
+    {
+        enterCallback_ = Callback;
+        return *this;
+    }
+
+    BasicRunnableProcess &OnExit(ProcessExitCallback Callback)
+    {
+        exitCallback_ = Callback;
+        return *this;
+    }
+
+    BasicRunnableProcess &OnError(ProcessErrorCallback Callback)
+    {
+        errorCallback_ = Callback;
+        return *this;
+    }
+
+    bool IsAdmin() const
+    {
+        bool bRet = FALSE;
+        HANDLE hToken;
+        if (!OpenProcessToken(_BasicProcess::processInfo_.hProcess, TOKEN_QUERY | TOKEN_IMPERSONATE, &hToken))
+        {
+            return bRet;
+        }
+        if (ImpersonateLoggedOnUser(hToken))
+        {
+            bRet = IsUserAdmin(hToken) == TRUE;
+            RevertToSelf();
+        }
+        CloseHandle(hToken);
+        return bRet;
+    }
+
+    DWORD GetMainThreadId() const
+    {
+        return _BasicProcess::processInfo_.dwThreadId;
+    }
+
+    HANDLE GetMainThreadHandle() const
+    {
+        return _BasicProcess::processInfo_.hThread;
+    }
+
+  protected:
+    _StringType arguments_;
+    DWORD creationFlags_;
     BOOL inheritHandles_;
     LPVOID environmentBlock_;
+    const typename Win32Ex::STARTUPINFOT<_CharType>::Type *startupInfo_;
 
-    PROCESS_INFORMATION processInfo_;
-    LPSTARTUPINFOA startupInfo_;
+    _StringType currentDirectory_;
 
     HANDLE hThreadStopEvent_;
     HANDLE exitDetectionThread_;
@@ -700,14 +629,9 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
     // WaitableObject Interface Implementations.
     //
   public:
-    bool IsWaitable()
-    {
-        return processInfo_.hProcess && (processInfo_.dwProcessId != GetCurrentProcessId());
-    }
-
     bool Wait(Duration Timeout)
     {
-        if (WaitForSingleObject(processInfo_.hProcess, Timeout) == WAIT_OBJECT_0)
+        if (WaitForSingleObject(_BasicProcess::processInfo_.hProcess, Timeout) == WAIT_OBJECT_0)
         {
             //
             //  프로세스 종료 스레드가 동작중인지 확인합니다.
@@ -733,14 +657,350 @@ template <ProcessAccountType _Type> class Process : public WaitableObject
 
         return false;
     }
-}; // namespace Detail
-} // namespace Detail
+};
 
-typedef Detail::Process<SystemAccount> SystemAccountProcess;
-typedef Detail::Process<UserAccount> UserAccountProcess;
-typedef Detail::Process<ElevatedUserAccount> ElevatedUserAccountProcess;
+template <typename _StringType, ProcessAccountType _Type>
+class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
+{
+  private:
+    typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
+    typedef typename _StringType::value_type _CharType;
 
+  public:
+    BasicRunnableSessionProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
+                                const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
+                                const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+                                BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
+                                            InheritHandles, EnvironmentBlock)
+    {
+        _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
+    }
+
+    BasicRunnableSessionProcess(DWORD SessionId, const _StringType &ExecutablePath,
+                                const _StringType &Arguments = _StringType(),
+                                const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
+                                const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+                                BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
+                                            InheritHandles, EnvironmentBlock)
+    {
+        _BasicRunnableProcess::sessionId_ = SessionId;
+    }
+
+    bool IsAdmin() const
+    {
+        if (_Type == SystemAccount)
+            return true;
+
+        return _BasicRunnableProcess::IsAdmin();
+    }
+
+    Waitable RunAsync(Optional<_StringType> Arguments = None(), Optional<_StringType> CurrentDirectory = None(),
+                      Optional<DWORD> CreationFlags = None(),
+                      Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
+                      Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None())
+    {
+        if (_BasicRunnableProcess::IsRunning())
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, ERROR_BUSY, std::runtime_error("Already running"));
+            return Waitable(*this);
+        }
+
+        if (_BasicRunnableProcess::executablePath_.empty())
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(
+                    *this, ERROR_INVALID_NAME, std::runtime_error("Process image file name is not specified"));
+            return Waitable(*this);
+        }
+
+        if (Arguments.IsSome())
+            _BasicRunnableProcess::arguments_ = Arguments;
+
+        if (CurrentDirectory.IsSome())
+            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
+
+        if (CreationFlags.IsSome())
+            _BasicRunnableProcess::creationFlags_ = CreationFlags;
+
+        if (CreationFlags.IsSome())
+            _BasicRunnableProcess::creationFlags_ = CreationFlags;
+
+        if (InheritHandles.IsSome())
+            _BasicRunnableProcess::inheritHandles_ = InheritHandles;
+
+        if (EnvironmentBlock.IsSome())
+            _BasicRunnableProcess::environmentBlock_ = EnvironmentBlock;
+
+        typename Win32Ex::STARTUPINFOEXT<_CharType>::Type si;
+        if (_BasicRunnableProcess::startupInfo_)
+        {
+#ifdef min
+            CopyMemory(&si, _BasicRunnableProcess::startupInfo_,
+                       min((DWORD)sizeof(si), _BasicRunnableProcess::startupInfo_->cb));
+#else
+            CopyMemory(&si, _BasicRunnableProcess::startupInfo_,
+                       std::min((DWORD)sizeof(si), _BasicRunnableProcess::startupInfo_->cb));
+#endif
+        }
+        else
+        {
+            ZeroMemory(&si, sizeof(si));
+            si.StartupInfo.cb = sizeof(typename Win32Ex::STARTUPINFOT<_CharType>::Type);
+        }
+
+        _StringType command = (_BasicRunnableProcess::arguments_.empty())
+                                  ? _BasicRunnableProcess::executablePath_
+                                  : _BasicRunnableProcess::executablePath_ +
+                                        ConstValue<typename _StringType::value_type>::Space() +
+                                        _BasicRunnableProcess::arguments_;
+
+        if (_Type == SystemAccount)
+        {
+            if (!CreateSystemAccountProcessT<typename _StringType::value_type>(
+                    _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
+                    (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), _BasicRunnableProcess::creationFlags_,
+                    _BasicRunnableProcess::environmentBlock_,
+                    _BasicRunnableProcess::currentDirectory_.empty() ? NULL
+                                                                     : _BasicRunnableProcess::currentDirectory_.c_str(),
+                    &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
+            {
+                if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                    _BasicRunnableProcess::errorCallbackWithSelf_(
+                        *this, GetLastError(), std::runtime_error("Failed to CreateSystemAccountProcessT"));
+                return Waitable(*this);
+            }
+        }
+        else if (_Type == UserAccount)
+        {
+            if (!CreateUserAccountProcessT<typename _StringType::value_type>(
+                    _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
+                    (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), _BasicRunnableProcess::creationFlags_,
+                    _BasicRunnableProcess::environmentBlock_,
+                    _BasicRunnableProcess::currentDirectory_.empty() ? NULL
+                                                                     : _BasicRunnableProcess::currentDirectory_.c_str(),
+                    &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
+            {
+                if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                    _BasicRunnableProcess::errorCallbackWithSelf_(
+                        *this, GetLastError(), std::runtime_error("Failed to CreateUserAccountProcessT"));
+                return Waitable(*this);
+            }
+        }
+        else
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, ERROR_CLASS_DOES_NOT_EXIST,
+                                                              std::runtime_error("Unknown process type"));
+            return Waitable(*this);
+        }
+
+        if (_BasicRunnableProcess::enterCallbackWithSelf_)
+            _BasicRunnableProcess::enterCallbackWithSelf_(*this);
+
+        HANDLE handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+        if (InterlockedCompareExchangePointer(&(_BasicRunnableProcess::hThreadStopEvent_), handle, NULL))
+        {
+            if (handle)
+                CloseHandle(handle);
+        }
+        if (_BasicRunnableProcess::hThreadStopEvent_ == NULL)
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
+                                                              std::runtime_error("Failed to CreateEvent"));
+            return Waitable(*this);
+        }
+
+        //
+        //  프로세스 종료 스레드가 동작중인지 확인합니다.
+        //
+        if (_BasicRunnableProcess::exitDetectionThread_)
+        {
+            if (GetCurrentThreadId() == GetThreadId(_BasicRunnableProcess::exitDetectionThread_))
+            {
+                //
+                //  exitDetectionThread_에서 RunAsync가 호출된것이라면, exitDetectionThread_ 스레드 객체를 분리
+                //  시킵니다.
+                //
+                _BasicRunnableProcess::exitDetectionThread_ = NULL;
+            }
+            else
+            {
+                //
+                //  exitDetectionThread_에서 RunAsync가 호출된것이 아니라면, exitDetectionThread_ 스레드 종료 이벤트를
+                //  시그널시키고, 종료될때까지 대기합니다.
+                //
+                SetEvent(_BasicRunnableProcess::hThreadStopEvent_);
+                WaitForSingleObject(_BasicRunnableProcess::exitDetectionThread_, INFINITE);
+            }
+        }
+
+        _BasicRunnableProcess::exitDetectionThread_ =
+            CreateThread(NULL, 0, &_BasicRunnableProcess::ExitDetectionThreadProc_, this, 0, NULL);
+        return Waitable(*this);
+    }
+};
+
+template <typename _StringType> class BasicElevatedProcess : public BasicRunnableProcess<_StringType>
+{
+  private:
+    typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
+    typedef typename _StringType::value_type _CharType;
+
+  public:
+    BasicElevatedProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
+                         const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
+                         const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+                         BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
+                                            InheritHandles, EnvironmentBlock)
+    {
+        _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
+    }
+
+    Waitable RunAsync(Optional<_StringType> Arguments = None(), Optional<_StringType> CurrentDirectory = None(),
+                      Optional<DWORD> CreationFlags = None(),
+                      Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
+                      Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None())
+    {
+        if (_BasicRunnableProcess::IsRunning())
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, ERROR_BUSY, std::runtime_error("Already running"));
+            return Waitable(*this);
+        }
+
+        if (_BasicRunnableProcess::executablePath_.empty())
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(
+                    *this, ERROR_INVALID_NAME, std::runtime_error("Process image file name is not specified"));
+            return Waitable(*this);
+        }
+
+        if (Arguments.IsSome())
+            _BasicRunnableProcess::arguments_ = Arguments;
+
+        if (CurrentDirectory.IsSome())
+            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
+
+        if (CreationFlags.IsSome())
+            _BasicRunnableProcess::creationFlags_ = CreationFlags;
+
+        if (CreationFlags.IsSome())
+            _BasicRunnableProcess::creationFlags_ = CreationFlags;
+
+        if (InheritHandles.IsSome())
+            _BasicRunnableProcess::inheritHandles_ = InheritHandles;
+
+        if (EnvironmentBlock.IsSome())
+            _BasicRunnableProcess::environmentBlock_ = EnvironmentBlock;
+
+        typename SHELLEXECUTEINFOT<_CharType>::Type sei = {
+            0,
+        };
+        sei.fMask |= SEE_MASK_NOCLOSEPROCESS;
+        sei.cbSize = sizeof(sei);
+        sei.lpVerb = ConstValue<_CharType>::RunAs();
+        sei.lpFile = _BasicRunnableProcess::executablePath_.c_str();
+
+        if (!_BasicRunnableProcess::arguments_.empty())
+            sei.lpParameters = _BasicRunnableProcess::arguments_.c_str();
+
+        if (!_BasicRunnableProcess::currentDirectory_.empty())
+            sei.lpDirectory = _BasicRunnableProcess::currentDirectory_.c_str();
+
+        if (_BasicRunnableProcess::creationFlags_ & CREATE_NO_WINDOW)
+        {
+            sei.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
+        }
+
+        sei.nShow = StartupInfo.IsSome() ? StartupInfo->wShowWindow : SW_SHOWDEFAULT;
+
+        if (!ShellExecuteExT<_CharType>(&sei))
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
+                                                              std::runtime_error("Failed to ShellExecuteExT"));
+            return Waitable(*this);
+        }
+
+        _BasicRunnableProcess::processInfo_.dwProcessId = GetProcessId(sei.hProcess);
+        _BasicRunnableProcess::processInfo_.hProcess = sei.hProcess;
+
+        if (_BasicRunnableProcess::enterCallbackWithSelf_)
+            _BasicRunnableProcess::enterCallbackWithSelf_(*this);
+
+        HANDLE handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+        if (InterlockedCompareExchangePointer(&(_BasicRunnableProcess::hThreadStopEvent_), handle, NULL))
+        {
+            if (handle)
+                CloseHandle(handle);
+        }
+        if (_BasicRunnableProcess::hThreadStopEvent_ == NULL)
+        {
+            if (_BasicRunnableProcess::errorCallbackWithSelf_)
+                _BasicRunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
+                                                              std::runtime_error("Failed to CreateEvent"));
+            return Waitable(*this);
+        }
+
+        //
+        //  프로세스 종료 스레드가 동작중인지 확인합니다.
+        //
+        if (_BasicRunnableProcess::exitDetectionThread_)
+        {
+            if (GetCurrentThreadId() == GetThreadId(_BasicRunnableProcess::exitDetectionThread_))
+            {
+                //
+                //  exitDetectionThread_에서 RunAsync가 호출된것이라면, exitDetectionThread_ 스레드 객체를 분리
+                //  시킵니다.
+                //
+                _BasicRunnableProcess::exitDetectionThread_ = NULL;
+            }
+            else
+            {
+                //
+                //  exitDetectionThread_에서 RunAsync가 호출된것이 아니라면, exitDetectionThread_ 스레드 종료 이벤트를
+                //  시그널시키고, 종료될때까지 대기합니다.
+                //
+                SetEvent(_BasicRunnableProcess::hThreadStopEvent_);
+                WaitForSingleObject(_BasicRunnableProcess::exitDetectionThread_, INFINITE);
+            }
+        }
+
+        _BasicRunnableProcess::exitDetectionThread_ =
+            CreateThread(NULL, 0, &_BasicRunnableProcess::ExitDetectionThreadProc_, this, 0, NULL);
+        return Waitable(*this);
+    }
+}; // namespace System
+
+typedef BasicProcess<String> Process;
+typedef BasicProcess<StringW> ProcessW;
+
+typedef BasicRunnableProcess<String> RunnableProcess;
+typedef BasicRunnableProcess<StringW> RunnableProcessW;
+
+typedef BasicElevatedProcess<String> ElevatedProcess;
+typedef BasicElevatedProcess<StringW> ElevatedProcessW;
+
+typedef BasicRunnableSessionProcess<String, UserAccount> UserAccountProcess;
+typedef BasicRunnableSessionProcess<StringW, UserAccount> UserAccountProcessW;
+
+typedef BasicRunnableSessionProcess<String, SystemAccount> SystemAccountProcess;
+typedef BasicRunnableSessionProcess<StringW, SystemAccount> SystemAccountProcessW;
 } // namespace System
+
+namespace ThisProcess
+{
+inline System::BasicProcess<String> GetParent()
+{
+    return System::BasicProcess<String>(GetParentProcessId(ThisProcess::GetId()));
+}
+} // namespace ThisProcess
 } // namespace Win32Ex
 
 #undef _STD_NS_

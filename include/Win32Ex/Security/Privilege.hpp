@@ -72,10 +72,10 @@ namespace Security
 #define SE_INCREASE_QUOTA_NAME_W _W(SE_INCREASE_QUOTA_NAME)
 #endif
 
-inline TString ToPrivilegeName(LUID luid)
+inline StringT ToPrivilegeName(LUID luid)
 {
     DWORD length = 256;
-    TString name(length, _T('\0'));
+    StringT name(length, _T('\0'));
 
     if (LookupPrivilegeName(NULL, &luid, &name[0], &length))
     {
@@ -87,7 +87,7 @@ inline TString ToPrivilegeName(LUID luid)
     {
         return name;
     }
-    return TString();
+    return StringT();
 }
 
 inline LUID FromPrivilegeName(PCTSTR PrivilegeName)
@@ -275,7 +275,7 @@ class TokenPrivileges
         return isAcquired_;
     }
 
-    const std::vector<TString> AcquiredPrivileges() const
+    const std::vector<StringT> AcquiredPrivileges() const
     {
         return acquiredPrivileges_;
     }
@@ -285,7 +285,7 @@ class TokenPrivileges
     bool isAcquired_;
     bool isPermanent_;
 
-    std::vector<TString> acquiredPrivileges_;
+    std::vector<StringT> acquiredPrivileges_;
     _PREVIOUS_TOKEN_PRIVILEGES previousPrivileges_;
 };
 } // namespace Security

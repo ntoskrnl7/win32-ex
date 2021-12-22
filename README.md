@@ -46,6 +46,12 @@ Win32 API Experimental(or Extension) features
         - [Reference](#reference-6)
           - [Functions](#functions-5)
           - [Variables](#variables)
+    - [Etc](#etc)
+  - [Optional](#optional)
+    - [Classes](#classes-2)
+  - [Win32 Api Template](#win32-api-template)
+    - [Functions](#functions-6)
+    - [Structures](#structures)
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
@@ -70,7 +76,7 @@ Win32 API Experimental(or Extension) features
 
 - SystemAccountProcess
 - UserAccountProcess
-- ElevatedUserAccountProcess
+- ElevatedProcess
 
 ###### Example
 
@@ -95,7 +101,7 @@ process.Run();
 Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
 process.Run();
 
-Win32Ex::System::ElevatedUserAccountProcess process("CMD.exe /C QUERY SESSION");
+Win32Ex::System::ElevatedProcess process("notepad.exe");
 process.Run();
 ```
 
@@ -454,6 +460,30 @@ if (token.IsValid()) {
 - LocalServiceSid
 - NetworkServiceSid
 
+### Etc
+
+## Optional
+
+Optional Argument...
+
+### Classes
+
+Optional\<T\>
+Optional\<String\>
+Optional\<StringW\>
+Optional\<StringT\>
+
+## Win32 Api Template
+
+### Functions
+
+CreateProcessT
+CreateProcessAsUserT
+ShellExecuteExT
+
+### Structures
+
+
 ## Test
 
 ```batch
@@ -479,7 +509,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.7.0")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.0")
 
 # link dependencies
 target_link_libraries(tests win32ex)

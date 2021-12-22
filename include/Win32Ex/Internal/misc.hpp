@@ -137,8 +137,8 @@ class Waitable
 };
 
 typedef std::basic_string<CHAR> String;
-typedef std::basic_string<WCHAR> WString;
-typedef std::basic_string<TCHAR> TString;
+typedef std::basic_string<WCHAR> StringW;
+typedef std::basic_string<TCHAR> StringT;
 
 namespace Convert
 {
@@ -190,10 +190,10 @@ class NullException : public Exception
 {
 };
 
-template <> class Optional<WString>
+template <> class Optional<StringW>
 {
   public:
-    typedef WString Type;
+    typedef StringW Type;
 
     Optional() : IsNone_(true)
     {
@@ -212,11 +212,11 @@ template <> class Optional<WString>
         }
     }
 
-    Optional(const WString &Value) : Value_(Value), IsNone_(false), IsNull_(false)
+    Optional(const StringW &Value) : Value_(Value), IsNone_(false), IsNull_(false)
     {
     }
 
-    operator const WString &() const
+    operator const StringW &() const
     {
         if (IsNone_)
         {
@@ -229,7 +229,7 @@ template <> class Optional<WString>
         return Value_;
     }
 
-    operator PCWSTR() const
+    PCWSTR GetPtr() const
     {
         if (IsNone_)
         {
@@ -249,7 +249,7 @@ template <> class Optional<WString>
     }
 
   private:
-    WString Value_;
+    StringW Value_;
     bool IsNull_;
     bool IsNone_;
 };
@@ -293,7 +293,7 @@ template <> class Optional<String>
         return Value_;
     }
 
-    operator PCSTR() const
+    PCSTR GetPtr() const
     {
         if (IsNone_)
         {
@@ -336,6 +336,15 @@ template <typename T> class Optional<T>
     }
 
     operator T() const
+    {
+        if (IsNone_)
+        {
+            throw Exception();
+        }
+        return Value_;
+    }
+
+    T operator->() const
     {
         if (IsNone_)
         {
