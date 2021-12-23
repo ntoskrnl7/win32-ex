@@ -47,7 +47,7 @@ template <> inline DWORD GetCurrentDirectoryT<CHAR>(_In_ DWORD nBufferLength, _O
     return GetCurrentDirectoryA(nBufferLength, lpBuffer);
 }
 
-template <> inline DWORD WINAPI GetCurrentDirectoryT<WCHAR>(_In_ DWORD nBufferLength, _Out_ LPWSTR lpBuffer)
+template <> inline DWORD GetCurrentDirectoryT<WCHAR>(_In_ DWORD nBufferLength, _Out_ LPWSTR lpBuffer)
 {
     return GetCurrentDirectoryW(nBufferLength, lpBuffer);
 }
