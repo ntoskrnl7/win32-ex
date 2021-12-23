@@ -1045,6 +1045,9 @@ template <class _StringType> static _StringType GetCurrentDirectoryT()
     return cwd;
 }
 
+#if defined(UNICODE)
+#undef GetCurrentDirectory
+#endif
 static String GetCurrentDirectory()
 {
     return GetCurrentDirectoryT<String>();

@@ -41,6 +41,13 @@ Environment:
 
 #include <tlhelp32.h>
 
+#if defined(UNICODE)
+#undef Process32Next
+#undef Process32First
+#undef PROCESSENTRY32
+#undef LPPROCESSENTRY32
+#endif
+
 namespace Win32Ex
 {
 WIN32EX_API_DEFINE_STRUCT_T_EX(PROCESSENTRY32T, PROCESSENTRY32, PROCESSENTRY32W);
@@ -50,13 +57,7 @@ inline BOOL Process32FirstT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType
 
 template <> inline BOOL Process32FirstT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {
-#if defined(Process32First)
-#undef Process32First
-    return ::Process32First(hSnapshot, lppe);
-#define Process32First Process32FirstW
-#else
-    return ::Process32First(hSnapshot, lppe);
-#endif
+    return ::Process32First(hSnapshot, NULL);
 }
 
 template <> inline BOOL Process32FirstT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY32W lppe)
@@ -69,13 +70,7 @@ inline BOOL Process32NextT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType>
 
 template <> inline BOOL Process32NextT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {
-#if defined(Process32Next)
-#undef Process32Next
-    return ::Process32Next(hSnapshot, lppe);
-#define Process32Next Process32NextW
-#else
-    return ::Process32Next(hSnapshot, lppe);
-#endif
+    return ::Process32Next(hSnapshot, NULL);
 }
 
 template <> inline BOOL Process32NextT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY32W lppe)
