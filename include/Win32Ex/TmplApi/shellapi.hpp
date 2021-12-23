@@ -30,32 +30,22 @@ Environment:
 #define WIN32EX_TMPL_API_SHELLAPI_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
 #define WIN32EX_TMPL_API_SHELLAPI_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
 
+#include "macros.hpp"
+
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
 #include <shellapi.h>
 #pragma comment(lib, "Shell32.lib")
 
 namespace Win32Ex
 {
-template <typename _CharType> struct SHELLEXECUTEINFOT
-{
-};
-
-template <> struct SHELLEXECUTEINFOT<CHAR> : SHELLEXECUTEINFOA
-{
-    typedef SHELLEXECUTEINFOA Type;
-};
-
-template <> struct SHELLEXECUTEINFOT<WCHAR> : SHELLEXECUTEINFOW
-{
-    typedef SHELLEXECUTEINFOW Type;
-};
+WIN32EX_API_DEFINE_STRUCT_T(SHELLEXECUTEINFO);
 
 template <typename _CharType>
 inline BOOL ShellExecuteExT(_Inout_ typename SHELLEXECUTEINFOT<_CharType>::Type *pExecInfo);

@@ -36,14 +36,14 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
-#include <TlHelp32.h>
+#include <tlhelp32.h>
 
-#include <WtsApi32.h>
+#include <wtsapi32.h>
 #pragma comment(lib, "Wtsapi32.lib")
 
-#include <UserEnv.h>
+#include <userenv.h>
 #pragma comment(lib, "Userenv.lib")
 
 #include "../Security/Privilege.h"

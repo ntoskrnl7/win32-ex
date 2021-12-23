@@ -44,8 +44,8 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
 #include <climits>
+#include <windows.h>
 
 namespace Win32Ex
 {

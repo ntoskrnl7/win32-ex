@@ -38,9 +38,9 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
-#include <Psapi.h>
+#include <psapi.h>
 #pragma comment(lib, "psapi.lib")
 
 #include "Sid.h"

@@ -40,10 +40,10 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
 #ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-#include <WtsApi32.h>
+#include <wtsapi32.h>
 #pragma comment(lib, "Wtsapi32.lib")
 #endif
 
@@ -117,7 +117,7 @@ typedef struct _SERVICE_TIMECHANGE_INFO
 } SERVICE_TIMECHANGE_INFO, *PSERVICE_TIMECHANGE_INFO;
 #endif
 
-#include <Dbt.h>
+#include <dbt.h>
 #include <shellapi.h>
 
 #include "../Internal/misc.hpp"

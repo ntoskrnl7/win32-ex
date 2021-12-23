@@ -39,7 +39,7 @@ Environment:
 #if !defined(WIN32_NO_STATUS)
 #define WIN32_NO_STATUS
 #endif
-#include <Windows.h>
+#include <windows.h>
 #include <ntstatus.h>
 
 #ifndef STATUS_ENTRYPOINT_NOT_FOUND

@@ -47,11 +47,21 @@ Win32 API Experimental(or Extension) features
           - [Functions](#functions-5)
           - [Variables](#variables)
     - [Etc](#etc)
-  - [Optional](#optional)
-    - [Classes](#classes-2)
-  - [Win32 Api Template](#win32-api-template)
-    - [Functions](#functions-6)
-    - [Structures](#structures)
+      - [Optional](#optional)
+        - [Classes](#classes-2)
+      - [Win32 Api Template](#win32-api-template)
+        - [ShellApi](#shellapi)
+          - [Functions](#functions-6)
+          - [Structures](#structures)
+          - [Example](#example-5)
+        - [Processes and Threads](#processes-and-threads-1)
+          - [Functions](#functions-7)
+          - [Structures](#structures-1)
+          - [Example](#example-6)
+        - [TlHelp32](#tlhelp32)
+          - [Functions](#functions-8)
+          - [Structures](#structures-2)
+          - [Example](#example-7)
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
@@ -74,9 +84,17 @@ Win32 API Experimental(or Extension) features
 
 ###### Classes
 
-- SystemAccountProcess
+- Process
+- RunnableProcess
+- RunnableProcessW
 - UserAccountProcess
+- UserAccountProcessW
 - ElevatedProcess
+- ElevatedProcessW
+- SystemAccountProcess
+- SystemAccountProcessW
+- BasicRunnableSessionProcess\<String, ProcessAccountType\>
+- BasicElevatedProcess\<String\>
 
 ###### Example
 
@@ -92,7 +110,7 @@ CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /
 
 C++
 
-```CPP
+```C++
 #include <Win32Ex\System\Process.hpp>
 
 Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
@@ -103,6 +121,15 @@ process.Run();
 
 Win32Ex::System::ElevatedProcess process("notepad.exe");
 process.Run();
+```
+
+```C++
+Win32Ex::System::Process parent = Win32Ex::ThisProcess::GetParent();
+while (parent.IsValid())
+{
+    std::cout << parent.GetExecutablePath() << '\n';
+    parent = parent.GetParent();
+}
 ```
 
 #### Services
@@ -123,7 +150,7 @@ C++
 
 Simple service (Control Process)
 
-```CPP
+```C++
 #include <Win32Ex\System\Service.hpp>
 
 Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
@@ -141,7 +168,7 @@ int main()
 
 Simple service (Service Process)
 
-```CPP
+```C++
 #include <Win32Ex\System\Service.hpp>
 
 Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
@@ -171,7 +198,7 @@ int main()
 
 Not stoppable service (Control Process)
 
-```CPP
+```C++
 Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
 
 #define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
@@ -196,7 +223,7 @@ int main(int argc, char* argv[])
 
 Not stoppable service (Service Process)
 
-```CPP
+```C++
 Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
 typedef Win32Ex::System::Service<TestServiceConfig> TestService;
 
@@ -231,7 +258,7 @@ int main(int argc, char* argv[])
 
 Share process service (Control Process)
 
-```CPP
+```C++
 Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
 Win32Ex::System::ServiceConfig Test2ServiceConfig("Test2Svc");
 
@@ -249,7 +276,7 @@ int main()
 
 Share process service (Service Process)
 
-```CPP
+```C++
 Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
 typedef Win32Ex::System::Service<TestServiceConfig> TestService;
 
@@ -462,27 +489,103 @@ if (token.IsValid()) {
 
 ### Etc
 
-## Optional
+#### Optional
 
-Optional Argument...
+Optional class
 
-### Classes
+##### Classes
 
-Optional\<T\>
-Optional\<String\>
-Optional\<StringW\>
-Optional\<StringT\>
+- Optional\<T\>
+- Optional\<String\>
+- Optional\<StringW\>
+- Optional\<StringT\>
 
-## Win32 Api Template
+#### Win32 Api Template
 
-### Functions
+##### ShellApi
 
-CreateProcessT
-CreateProcessAsUserT
-ShellExecuteExT
+- **Headers :** TmplApi/shellapi.hpp
 
-### Structures
+###### Functions
 
+- ShellExecuteExT<_CharType>
+
+###### Structures
+
+- SHELLEXECUTEINFOT<_CharType>
+
+###### Example
+
+```C++
+SHELLEXECUTEINFOT<CHAR> sei;
+ZeroMemory(&sei, sizeof(sei));
+// or
+// typename SHELLEXECUTEINFOT<CHAR>::Type sei = { 0, };
+
+...
+
+Win32Ex::ShellExecuteExT<CHAR>(&sei);
+```
+
+##### Processes and Threads
+
+- **Headers :** TmplApi/processthreadsapi.hpp
+
+###### Functions
+
+- CreateProcessT<_CharType>
+- CreateProcessAsUserT<_CharType>
+- QueryFullProcessImageNameT<_CharType>
+
+###### Structures
+
+- STARTUPINFOT<_CharType>
+- STARTUPINFOEXT<_CharType>
+
+###### Example
+
+```C++
+STARTUPINFOT<CHAR> si;
+
+...
+
+Win32Ex::CreateProcessAsUserT<CHAR>(..., &si, ..);
+```
+
+##### TlHelp32
+
+- **Headers :** TmplApi/tlhelp32.hpp
+
+###### Functions
+
+- Process32FirstT<_CharType>
+- Process32NextT<_CharType>
+
+###### Structures
+
+- PROCESSENTRY32T<_CharType>
+
+###### Example
+
+```C++
+typename PROCESSENTRY32T<CHAR>::Type pe32 = {
+    0,
+};
+pe32.dwSize = sizeof(pe32);
+
+hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+if (!Process32FirstT<CHAR>(hSnapshot, &pe32))
+    return;
+do
+{
+  ...
+} while (Process32NextT<CHAR>(hSnapshot, &pe32));
+...
+
+CloseHandle(hSnapshot);
+
+```
 
 ## Test
 
@@ -509,7 +612,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.0")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.1")
 
 # link dependencies
 target_link_libraries(tests win32ex)

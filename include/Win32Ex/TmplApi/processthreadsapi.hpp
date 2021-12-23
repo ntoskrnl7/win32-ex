@@ -22,13 +22,15 @@ Environment:
 
 #pragma once
 
-#ifndef _WIN32EX_TMPL_API_HPP_
-#define _WIN32EX_TMPL_API_HPP_
+#ifndef _WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_
+#define _WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_
 
 #include "../Internal/version.h"
-#define WIN32EX_TMPL_API_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
-#define WIN32EX_TMPL_API_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
-#define WIN32EX_TMPL_API_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+#define WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+
+#include "macros.hpp"
 
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
@@ -36,37 +38,13 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
 namespace Win32Ex
 {
-template <typename _CharType> struct STARTUPINFOT
-{
-};
+WIN32EX_API_DEFINE_STRUCT_T(STARTUPINFO);
 
-template <> struct STARTUPINFOT<CHAR> : STARTUPINFOA
-{
-    typedef STARTUPINFOA Type;
-};
-
-template <> struct STARTUPINFOT<WCHAR> : STARTUPINFOW
-{
-    typedef STARTUPINFOW Type;
-};
-
-template <typename _CharType> struct STARTUPINFOEXT
-{
-};
-
-template <> struct STARTUPINFOEXT<CHAR> : STARTUPINFOEXA
-{
-    typedef STARTUPINFOEXA Type;
-};
-
-template <> struct STARTUPINFOEXT<WCHAR> : STARTUPINFOEXW
-{
-    typedef STARTUPINFOEXW Type;
-};
+WIN32EX_API_DEFINE_STRUCT_T(STARTUPINFOEX);
 
 template <typename _CharType>
 inline BOOL QueryFullProcessImageNameT(_In_ HANDLE hProcess, _In_ DWORD dwFlags, _Out_ _CharType *lpExeName,
@@ -176,4 +154,4 @@ inline BOOL CreateProcessAsUserT<WCHAR>(_In_opt_ HANDLE hToken, _In_opt_ LPCWSTR
 }
 } // namespace Win32Ex
 
-#endif // WIN32EX_TMPL_API_HPP
+#endif // _WIN32EX_TMPL_API_PROCESSTHREADSAPI_HPP_

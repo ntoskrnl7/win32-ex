@@ -36,7 +36,7 @@ Environment:
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
 #include "../Internal/misc.h"
 #include "Sid.h"

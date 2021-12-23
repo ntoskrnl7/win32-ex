@@ -20,14 +20,24 @@ TEST(ProcessTest, ThisProcessTest)
     EXPECT_EQ(path, Win32Ex::ThisProcess::GetCurrentDirectory());
 }
 
-TEST(ProcessTest, ParentProcessTest)
+TEST(ProcessTest, ParentTest)
 {
-    std::string name;
     Win32Ex::System::Process parent = Win32Ex::ThisProcess::GetParent();
     while (parent.IsValid())
     {
-        Win32Ex::System::Process parent2(parent.GetId());
-        EXPECT_STREQ(parent.GetExecutablePath().c_str(), parent2.GetExecutablePath().c_str());
+        EXPECT_STREQ(parent.GetExecutablePath().c_str(),
+                     Win32Ex::System::Process(parent.GetId()).GetExecutablePath().c_str());
+        parent = parent.GetParent();
+    }
+}
+
+TEST(ProcessTest, ParentWTest)
+{
+    Win32Ex::System::ProcessW parent = Win32Ex::ThisProcess::GetParentW();
+    while (parent.IsValid())
+    {
+        EXPECT_STREQ(parent.GetExecutablePath().c_str(),
+                     Win32Ex::System::ProcessW(parent.GetId()).GetExecutablePath().c_str());
         parent = parent.GetParent();
     }
 }
@@ -41,16 +51,41 @@ TEST(ProcessTest, RunInvalidProcessTest)
 TEST(ProcessTest, AttachByProcessIdTest)
 {
     Win32Ex::System::Process process(GetCurrentProcessId());
+    EXPECT_TRUE(process.IsAttached());
     EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
 }
 
 TEST(ProcessTest, AttachByHandleTest)
 {
     Win32Ex::System::Process process(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_TRUE(process.IsAttached());
     EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
 
     process.Attach(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
+    EXPECT_TRUE(process.IsAttached());
     EXPECT_STRCASEEQ(process.GetExecutablePath().c_str(), Win32Ex::ThisProcess::GetExecutablePath().c_str());
+}
+
+TEST(ProcessTest, RunnableProcessTest)
+{
+    EXPECT_NO_THROW({
+        Win32Ex::System::UserAccountProcess process("CMD /C QUERY SESSION");
+        Win32Ex::System::RunnableProcess &runnable = process;
+        EXPECT_TRUE(runnable.Run());
+
+        if (Win32Ex::ThisProcess::IsAdmin())
+        {
+            Win32Ex::System::SystemAccountProcess process("CMD /C QUERY SESSION");
+            Win32Ex::System::RunnableProcess &runnable = process;
+            EXPECT_TRUE(runnable.Run());
+        }
+
+        {
+            Win32Ex::System::ElevatedProcess process("CMD.exe", "/C QUERY SESSION");
+            Win32Ex::System::RunnableProcess &runnable = process;
+            runnable.Run(); // EXPECT_TRUE(runnable.Run());
+        }
+    });
 }
 
 #if !defined(__cpp_lambdas)
@@ -277,6 +312,44 @@ void onErrorCV(PCONDITION_VARIABLE cv, bool *terminated, DWORD, const std::excep
     *terminated = true;
 }
 #endif
+
+TEST(ProcessTest, ElevatedProcessRunAsyncTest)
+{
+    CRITICAL_SECTION cs;
+    CONDITION_VARIABLE cv;
+    InitializeConditionVariable(&cv);
+    InitializeCriticalSection(&cs);
+
+    Win32Ex::System::ElevatedProcess process("notepad.exe");
+    bool terminated = false;
+#if defined(__cpp_lambdas)
+    process
+        .OnEnter([&process]() {
+            Sleep(500);
+            process.Exit();
+        })
+        .OnExit([&cv, &terminated]() {
+            terminated = true;
+            WakeConditionVariable(&cv);
+        })
+        .OnError([&cv, &terminated](DWORD, const std::exception &) {
+            terminated = true;
+            WakeConditionVariable(&cv);
+        });
+#else
+    process.OnEnter(_STD_NS_::bind(onEnter, &process))
+        .OnExit(_STD_NS_::bind(onExitCV, &cv, &terminated))
+        .OnError(_STD_NS_::bind(onErrorCV, &cv, &terminated, _STD_NS_::placeholders::_1, _STD_NS_::placeholders::_2));
+#endif
+    EXPECT_FALSE(terminated);
+    Win32Ex::Waitable waitable = process.RunAsync();
+    if (!terminated)
+    {
+        SleepConditionVariableCS(&cv, &cs, INFINITE);
+    }
+    EXPECT_TRUE(terminated);
+    EXPECT_FALSE(waitable);
+}
 
 TEST(ProcessTest, UserAccountProcessRunAsyncTest)
 {
