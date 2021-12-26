@@ -50,7 +50,7 @@ Environment:
 #include "../Security/Token.h"
 
 #if defined(__cplusplus)
-#include "../TmplApi/processthreadsapi.hpp"
+#include "../T/processthreadsapi.hpp"
 
 template <typename _CharType>
 STATIC_OR_INLINE BOOL CreateUserAccountProcessT(
@@ -425,7 +425,7 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcessT(
 #define CreateUserAccountProcess CreateUserAccountProcessT<CHAR>
 #define CreateSystemAccountProcess CreateSystemAccountProcessT<CHAR>
 #endif // !UNICODE
-#else
+#else  // !defined(__cplusplus)
 STATIC_OR_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
                                                _Inout_opt_ LPTSTR lpCommandLine,
                                                _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
@@ -791,8 +791,7 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In
 
     return bRet;
 }
-
-#endif
+#endif // !defined(__cplusplus)
 
 STATIC_OR_INLINE DWORD GetParentProcessId(DWORD ProcessId)
 {

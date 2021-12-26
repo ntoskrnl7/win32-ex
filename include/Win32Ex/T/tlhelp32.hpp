@@ -45,6 +45,7 @@ Environment:
 #undef Process32Next
 #undef Process32First
 #undef PROCESSENTRY32
+#undef PPROCESSENTRY32
 #undef LPPROCESSENTRY32
 #endif
 
@@ -78,5 +79,13 @@ template <> inline BOOL Process32NextT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY32
     return ::Process32NextW(hSnapshot, lppe);
 }
 } // namespace Win32Ex
+
+#if defined(UNICODE)
+#define Process32Next Process32NextW
+#define Process32First Process32FirstW
+#define PROCESSENTRY32 PROCESSENTRY32W
+#define PPROCESSENTRY32 PPROCESSENTRY32W
+#define LPPROCESSENTRY32 LPPROCESSENTRY32W
+#endif
 
 #endif // _WIN32EX_TMPL_API_TLHELP32_HPP_

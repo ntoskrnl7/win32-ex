@@ -58,7 +58,6 @@ template <> inline BOOL ShellExecuteExT<WCHAR>(_Inout_ SHELLEXECUTEINFOW *pExecI
 {
     return ShellExecuteExW(pExecInfo);
 }
-
 } // namespace Win32Ex
 
 #endif // WIN32EX_TMPL_API_SHELLAPI_HPP

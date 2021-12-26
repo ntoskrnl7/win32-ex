@@ -79,22 +79,32 @@ Win32 API Experimental(or Extension) features
 
 ###### Functions
 
-- CreateSystemAccountProcess
 - CreateUserAccountProcess
+- CreateSystemAccountProcess
+- CreateUserAccountProcessT\<typename CharType\> (for C++)
+- CreateSystemAccountProcessT\<typename CharType\> (for C++)
 
 ###### Classes
 
 - Process
+- ProcessW
+- ProcessT
+- BasicProcess\<class StringType\>
 - RunnableProcess
 - RunnableProcessW
+- RunnableProcessT
+- BasicRunnableProcess\<class StringType\>
 - UserAccountProcess
 - UserAccountProcessW
-- ElevatedProcess
-- ElevatedProcessW
+- UserAccountProcessT
 - SystemAccountProcess
 - SystemAccountProcessW
-- BasicRunnableSessionProcess\<String, ProcessAccountType\>
-- BasicElevatedProcess\<String\>
+- SystemAccountProcessT
+- BasicRunnableSessionProcess\<class StringType, ProcessAccountType Type\>
+- ElevatedProcess
+- ElevatedProcessW
+- ElevatedProcessT
+- BasicElevatedProcess\<class StringType\>
 
 ###### Example
 
@@ -111,6 +121,14 @@ CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /
 C++
 
 ```C++
+#include <Win32Ex\System\Process.h>
+
+CreateUserAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
+
+CreateSystemAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
+```
+
+```C++
 #include <Win32Ex\System\Process.hpp>
 
 Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
@@ -124,11 +142,11 @@ process.Run();
 ```
 
 ```C++
-Win32Ex::System::Process parent = Win32Ex::ThisProcess::GetParent();
+Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
 while (parent.IsValid())
 {
-    std::cout << parent.GetExecutablePath() << '\n';
-    parent = parent.GetParent();
+    std::cout << parent.ExecutablePath() << '\n';
+    parent = parent.Parent();
 }
 ```
 
@@ -142,7 +160,17 @@ while (parent.IsValid())
 ###### Classes
 
 - ServiceConfig
-- Service
+- ServiceConfigW
+- ServiceConfigT
+- BasicServiceConfig\<class StringType\>
+- Service\<ServiceConfig Config\>
+- ServiceW\<ServiceConfigW Config\>
+- ServiceT\<ServiceConfigW Config\>
+- BasicService\<class StringType, ServiceConfigW Config\>
+- Services
+- ServicesW
+- ServicesT
+- BasicServicesT\<class StringType\>
 
 ###### Example
 
@@ -176,7 +204,7 @@ typedef Win32Ex::System::Service<SimpleServiceConfig> SimpleService;
 
 int main()
 {
-  SimpleService &svc = TestSeSimpleServicervice::Instance();
+  SimpleService &svc = SimpleService::Instance();
   svc.OnStart([]() {
           // TODO
       })
@@ -207,7 +235,7 @@ int main(int argc, char* argv[])
 {
   TestServiceConfig.SetAcceptStop([]() -> bool
   {
-    SC_HANDLE serviceHandle = config.GetServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+    SC_HANDLE serviceHandle = config.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
     if (serviceHandle == NULL)
       return false;
     SERVICE_STATUS ss = { 0 };
@@ -491,20 +519,26 @@ if (token.IsValid()) {
 
 #### Optional
 
-Optional class
+- **Headers :** Win32Ex/Optional.hpp
 
 ##### Classes
 
 - Optional\<T\>
-- Optional\<String\>
-- Optional\<StringW\>
-- Optional\<StringT\>
+- Optional\<class StringType\>
+- Optional\<class StringTypeW\>
+- Optional\<class StringTypeT\>
+- Optional\<class StringType &\>
+- Optional\<class StringTypeW &\>
+- Optional\<class StringTypeT &\>
+- Optional\<const String &\>
+- Optional\<const StringW &\>
+- Optional\<const StringT &\>
 
 #### Win32 Api Template
 
 ##### ShellApi
 
-- **Headers :** TmplApi/shellapi.hpp
+- **Headers :** Win32Ex/T/shellapi.hpp
 
 ###### Functions
 
@@ -517,6 +551,8 @@ Optional class
 ###### Example
 
 ```C++
+#include <Win32Ex/T/shellapi.hpp>
+
 SHELLEXECUTEINFOT<CHAR> sei;
 ZeroMemory(&sei, sizeof(sei));
 // or
@@ -529,7 +565,7 @@ Win32Ex::ShellExecuteExT<CHAR>(&sei);
 
 ##### Processes and Threads
 
-- **Headers :** TmplApi/processthreadsapi.hpp
+- **Headers :** Win32Ex/T/processthreadsapi.hpp
 
 ###### Functions
 
@@ -545,6 +581,8 @@ Win32Ex::ShellExecuteExT<CHAR>(&sei);
 ###### Example
 
 ```C++
+#include <Win32Ex/T/processthreadsapi.hpp>
+
 STARTUPINFOT<CHAR> si;
 
 ...
@@ -554,7 +592,7 @@ Win32Ex::CreateProcessAsUserT<CHAR>(..., &si, ..);
 
 ##### TlHelp32
 
-- **Headers :** TmplApi/tlhelp32.hpp
+- **Headers :** Win32Ex/T/tlhelp32.hpp
 
 ###### Functions
 
@@ -568,6 +606,8 @@ Win32Ex::CreateProcessAsUserT<CHAR>(..., &si, ..);
 ###### Example
 
 ```C++
+#include <Win32Ex/T/tlhelp32.hpp>
+
 typename PROCESSENTRY32T<CHAR>::Type pe32 = {
     0,
 };
@@ -612,7 +652,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.1")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.2")
 
 # link dependencies
 target_link_libraries(tests win32ex)

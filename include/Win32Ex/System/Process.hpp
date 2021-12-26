@@ -8,7 +8,12 @@ Module Name:
 
 Abstract:
 
-    This Module implements the SystemAccountProcess/UserAccountProcess class.
+    This Module implements the Process, ProcessW, ProcessT /
+                                ElevatedProcess, ElevatedProcessW, ElevatedProcessT /
+                                UserAccountProcess, UserAccountProcessW, UserAccountProcessT /
+                                SystemAccountProcess, SystemAccountProcessW, SystemAccountProcessT
+                                BasicProcess, BasicRunnableProcess, BasicElevatedProcess, BasicRunnableSessionProcess
+class.
 
 Author:
 
@@ -38,14 +43,14 @@ Environment:
 #endif
 #include <windows.h>
 
-#include "../TmplApi/libloaderapi.hpp"
-#include "../TmplApi/processenv.hpp"
-#include "../TmplApi/processthreadsapi.hpp"
-#include "../TmplApi/shellapi.hpp"
-#include "../TmplApi/tlhelp32.hpp"
-
 #include "../Internal/misc.hpp"
+#include "../Optional.hpp"
 #include "../Security/Token.h"
+#include "../T/libloaderapi.hpp"
+#include "../T/processenv.hpp"
+#include "../T/processthreadsapi.hpp"
+#include "../T/shellapi.hpp"
+#include "../T/tlhelp32.hpp"
 #include "Process.h"
 #include <algorithm>
 #include <functional>
@@ -65,7 +70,9 @@ namespace System
 {
 namespace Details
 {
-template <typename _CharType> struct ConstValue
+namespace Process
+{
+template <typename CharType> struct ConstValue
 {
 };
 
@@ -91,6 +98,7 @@ template <> struct ConstValue<WCHAR>
         return L"runas";
     }
 };
+} // namespace Process
 } // namespace Details
 
 typedef DWORD ProcessId;
@@ -111,73 +119,12 @@ template <typename _StringType> class BasicRunnableProcess;
 
 template <typename _StringType> class BasicProcess : public WaitableObject
 {
-  private:
     friend class BasicRunnableProcess<_StringType>;
-    typedef typename _StringType::value_type _CharType;
-
-    BasicProcess()
-    {
-        Init_();
-    }
-
-    BasicProcess(const typename PROCESSENTRY32T<_CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
-    {
-        Init_();
-        processInfo_.dwProcessId = pe32.th32ProcessID;
-    }
-
-  protected:
-    void Attach_(HANDLE ProcessHandle)
-    {
-        DWORD processId = GetProcessId(ProcessHandle);
-        if (processId != 0)
-            ProcessIdToSessionId(processId, &sessionId_);
-
-        DWORD length = 10;
-        _StringType executablePath;
-        executablePath.resize(length);
-        while (!QueryFullProcessImageNameT<_CharType>(ProcessHandle, 0, &executablePath[0], &length))
-        {
-            if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-            {
-                length = 0;
-                break;
-            }
-            length += 32;
-            executablePath.resize(length);
-        }
-
-        if (length)
-        {
-            executablePath.resize(length);
-            executablePath_.swap(executablePath);
-        }
-
-        processInfo_.hProcess = ProcessHandle;
-        processInfo_.dwProcessId = processId;
-        processInfo_.dwThreadId = 0;
-        processInfo_.hThread = NULL;
-    }
-
-    void Detach_()
-    {
-        HANDLE handle;
-        handle = InterlockedExchangePointer(&processInfo_.hProcess, NULL);
-        if (handle)
-            CloseHandle(handle);
-
-        handle = InterlockedExchangePointer(&processInfo_.hThread, NULL);
-        if (handle)
-            CloseHandle(handle);
-    }
-
-    void Init_()
-    {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        sessionId_ = WTSGetActiveConsoleSessionId();
-    }
 
   public:
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
 #if defined(__cpp_rvalue_references)
     BasicProcess(BasicProcess &&other)
     {
@@ -205,7 +152,6 @@ template <typename _StringType> class BasicProcess : public WaitableObject
     }
 #endif
 
-  public:
     BasicProcess(ProcessHandle ProcessHandle)
     {
         Init_();
@@ -217,7 +163,18 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         Init_();
         HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
         if (hProcess)
+        {
             Attach_(hProcess);
+            return;
+        }
+
+        typename PROCESSENTRY32T<CharType>::Type pe32;
+        if (GetProcessEntry_(ProcessId, pe32))
+        {
+            processInfo_.dwProcessId = pe32.th32ProcessID;
+            executablePath_ = pe32.szExeFile;
+            ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_);
+        }
     }
 
     ~BasicProcess()
@@ -261,70 +218,123 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         return WaitForSingleObject(processInfo_.hProcess, 0) == WAIT_TIMEOUT;
     }
 
-    const _StringType &GetExecutablePath() const
+    const StringType &ExecutablePath() const
     {
         return executablePath_;
     }
 
-    operator const _StringType() const
-    {
-        std::basic_stringstream<typename _StringType::value_type> process_info;
-        if (!processInfo_.dwProcessId)
-        {
-            return "Invalid process";
-        }
-        process_info << executablePath_ << "(" << processInfo_.dwProcessId << ")";
-        return process_info.str();
-    }
-
-    DWORD GetId() const
+    DWORD Id() const
     {
         return processInfo_.dwProcessId;
     }
 
-    HANDLE GetHandle() const
+    HANDLE Handle() const
     {
         return processInfo_.hProcess;
     }
 
-    BasicProcess<_StringType> GetParent()
+    BasicProcess<StringType> Parent()
     {
         DWORD parentProcessId = GetParentProcessId(processInfo_.dwProcessId);
-        BasicProcess<_StringType> process = BasicProcess<_StringType>(parentProcessId);
+        BasicProcess<StringType> process = BasicProcess<StringType>(parentProcessId);
         if (process.IsValid())
             return process;
 
+        typename PROCESSENTRY32T<CharType>::Type pe32;
+        return GetProcessEntry_(parentProcessId, pe32) ? BasicProcess<StringType>(pe32) : BasicProcess<StringType>();
+    }
+
+  private:
+    BasicProcess()
+    {
+        Init_();
+    }
+
+    BasicProcess(const typename PROCESSENTRY32T<CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
+    {
+        Init_();
+        processInfo_.dwProcessId = pe32.th32ProcessID;
+        ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_);
+    }
+
+    bool GetProcessEntry_(DWORD ProcessId, typename PROCESSENTRY32T<CharType>::Type &pe32)
+    {
         HANDLE hSnapshot;
         hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (hSnapshot == INVALID_HANDLE_VALUE)
-            return BasicProcess<_StringType>();
+            return false;
 
-        typename PROCESSENTRY32T<_CharType>::Type pe32 = {
-            0,
-        };
         pe32.dwSize = sizeof(pe32);
 
-        if (!Process32FirstT<_CharType>(hSnapshot, &pe32))
-            return BasicProcess<_StringType>();
+        if (!Process32FirstT<CharType>(hSnapshot, &pe32))
+            return false;
 
         do
         {
-            if (pe32.th32ProcessID == parentProcessId)
+            if (pe32.th32ProcessID == ProcessId)
             {
                 CloseHandle(hSnapshot);
-                hSnapshot = NULL;
-                return BasicProcess<_StringType>(pe32);
+                return true;
             }
-        } while (Process32NextT<_CharType>(hSnapshot, &pe32));
+        } while (Process32NextT<CharType>(hSnapshot, &pe32));
 
         CloseHandle(hSnapshot);
+        return false;
+    }
 
-        return BasicProcess<_StringType>();
+  protected:
+    void Attach_(HANDLE ProcessHandle)
+    {
+        DWORD length = 10;
+        StringType executablePath;
+        executablePath.resize(length);
+        while (!QueryFullProcessImageNameT<CharType>(ProcessHandle, 0, &executablePath[0], &length))
+        {
+            if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+            {
+                length = 0;
+                break;
+            }
+            length += 32;
+            executablePath.resize(length);
+        }
+
+        if (length)
+        {
+            executablePath.resize(length);
+            executablePath_.swap(executablePath);
+        }
+
+        DWORD processId = GetProcessId(ProcessHandle);
+        processInfo_.hProcess = ProcessHandle;
+        processInfo_.dwProcessId = processId;
+        processInfo_.dwThreadId = 0;
+        processInfo_.hThread = NULL;
+
+        ProcessIdToSessionId(processId, &sessionId_);
+    }
+
+    void Detach_()
+    {
+        HANDLE handle;
+        handle = InterlockedExchangePointer(&processInfo_.hProcess, NULL);
+        if (handle)
+            CloseHandle(handle);
+
+        handle = InterlockedExchangePointer(&processInfo_.hThread, NULL);
+        if (handle)
+            CloseHandle(handle);
+    }
+
+    void Init_()
+    {
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
   protected:
     DWORD sessionId_;
-    _StringType executablePath_;
+    StringType executablePath_;
     PROCESS_INFORMATION processInfo_;
 
     //
@@ -353,16 +363,18 @@ template <typename _StringType> class BasicElevatedProcess;
 
 template <typename _StringType> class BasicRunnableProcess : public BasicProcess<_StringType>
 {
-  protected:
     friend class BasicRunnableSessionProcess<_StringType, SystemAccount>;
     friend class BasicRunnableSessionProcess<_StringType, UserAccount>;
     friend class BasicElevatedProcess<_StringType>;
     friend class BasicElevatedProcess<_StringType>;
 
-    typedef BasicProcess<_StringType> _BasicProcess;
-    typedef typename _StringType::value_type _CharType;
+  public:
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
 
   private:
+    typedef BasicProcess<StringType> _BasicProcess;
+
     typedef std::function<void(BasicRunnableProcess &)> ProcessEnterCallbackWithSelf;
     typedef std::function<void(BasicRunnableProcess &)> ProcessExitCallbackWithSelf;
     typedef std::function<void(BasicRunnableProcess &, DWORD, const std::exception &)> ProcessErrorCallbackWithSelf;
@@ -436,8 +448,8 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     }
 
   protected:
-    BasicRunnableProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
-                         const _StringType &CurrentDirectory = _StringType())
+    BasicRunnableProcess(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
+                         const Optional<const StringType &> &CurrentDirectory = None())
         : _BasicProcess(), exitDetectionThread_(NULL), hThreadStopEvent_(NULL), arguments_(Arguments),
           currentDirectory_(CurrentDirectory)
     {
@@ -595,8 +607,8 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     }
 
   protected:
-    _StringType arguments_;
-    _StringType currentDirectory_;
+    Optional<StringType> arguments_;
+    Optional<StringType> currentDirectory_;
 
     HANDLE hThreadStopEvent_;
     HANDLE exitDetectionThread_;
@@ -648,25 +660,28 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
 {
   private:
     typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
-    typedef typename _StringType::value_type _CharType;
 
   public:
-    BasicRunnableSessionProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
-                                const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
-                                const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
+    BasicRunnableSessionProcess(const StringType &ExecutablePath,
+                                const Optional<const StringType &> &Arguments = None(),
+                                const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
+                                const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
                                 BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
+        : BasicRunnableProcess<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
         _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
-    BasicRunnableSessionProcess(DWORD SessionId, const _StringType &ExecutablePath,
-                                const _StringType &Arguments = _StringType(),
-                                const _StringType &CurrentDirectory = _StringType(), DWORD CreationFlags = 0L,
-                                const typename Win32Ex::STARTUPINFOT<_CharType>::Type *StartupInfo = NULL,
+    BasicRunnableSessionProcess(DWORD SessionId, const StringType &ExecutablePath,
+                                const Optional<const StringType &> &Arguments = None(),
+                                const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
+                                const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
                                 BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
+        : BasicRunnableProcess<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
         _BasicRunnableProcess::sessionId_ = SessionId;
@@ -680,20 +695,20 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         return _BasicRunnableProcess::IsAdmin();
     }
 
-    DWORD GetMainThreadId() const
+    DWORD MainThreadId() const
     {
         return _BasicRunnableProcess::processInfo_.dwThreadId;
     }
 
-    HANDLE GetMainThreadHandle() const
+    HANDLE MainThreadHandle() const
     {
         return _BasicRunnableProcess::processInfo_.hThread;
     }
 
-    bool Run(Optional<DWORD> SessionId = None(), Optional<_StringType> Arguments = None(),
-             Optional<_StringType> CurrentDirectory = None(), Optional<DWORD> CreationFlags = None(),
-             Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
-             Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None())
+    bool Run(const Optional<DWORD> &SessionId = None(), const Optional<const StringType &> &Arguments = None(),
+             const Optional<const StringType &> &CurrentDirectory = None(), Optional<DWORD> CreationFlags = None(),
+             const Optional<typename Win32Ex::STARTUPINFOT<CharType>::Type *> &StartupInfo = None(),
+             const Optional<BOOL> &InheritHandles = None(), const Optional<LPVOID> &EnvironmentBlock = None())
     {
         if (SessionId.IsSome())
             _BasicRunnableProcess::sessionId_ = SessionId;
@@ -703,10 +718,11 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
             .Wait();
     }
 
-    Waitable RunAsync(DWORD SessionId, Optional<_StringType> Arguments = None(),
-                      Optional<_StringType> CurrentDirectory = None(), Optional<DWORD> CreationFlags = None(),
-                      Optional<typename Win32Ex::STARTUPINFOT<_CharType>::Type *> StartupInfo = None(),
-                      Optional<BOOL> InheritHandles = None(), Optional<LPVOID> EnvironmentBlock = None())
+    Waitable RunAsync(DWORD SessionId, const Optional<const StringType &> &Arguments = None(),
+                      const Optional<const StringType &> &CurrentDirectory = None(),
+                      const Optional<DWORD> &CreationFlags = None(),
+                      const Optional<typename Win32Ex::STARTUPINFOT<CharType>::Type *> &StartupInfo = None(),
+                      const Optional<BOOL> &InheritHandles = None(), const Optional<LPVOID> &EnvironmentBlock = None())
     {
         if (!_BasicRunnableProcess::Prepare())
             return Waitable(*this);
@@ -732,7 +748,7 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         if (EnvironmentBlock.IsSome())
             environmentBlock_ = EnvironmentBlock;
 
-        typename Win32Ex::STARTUPINFOEXT<_CharType>::Type si;
+        typename Win32Ex::STARTUPINFOEXT<CharType>::Type si;
         if (startupInfo_)
         {
 #ifdef min
@@ -744,22 +760,23 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         else
         {
             ZeroMemory(&si, sizeof(si));
-            si.StartupInfo.cb = sizeof(typename Win32Ex::STARTUPINFOT<_CharType>::Type);
+            si.StartupInfo.cb = sizeof(typename Win32Ex::STARTUPINFOT<CharType>::Type);
         }
 
-        _StringType command = (_BasicRunnableProcess::arguments_.empty())
-                                  ? _BasicRunnableProcess::executablePath_
-                                  : _BasicRunnableProcess::executablePath_ +
-                                        Details::ConstValue<typename _StringType::value_type>::Space() +
-                                        _BasicRunnableProcess::arguments_;
+        StringType command = _BasicRunnableProcess::executablePath_;
+        if (_BasicRunnableProcess::arguments_.IsSome())
+        {
+            command += Details::Process::ConstValue<CharType>::Space();
+            command += _BasicRunnableProcess::arguments_;
+        }
 
         if (_Type == SystemAccount)
         {
-            if (!CreateSystemAccountProcessT<typename _StringType::value_type>(
+            if (!CreateSystemAccountProcessT<CharType>(
                     _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
                     (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
-                    _BasicRunnableProcess::currentDirectory_.empty() ? NULL
-                                                                     : _BasicRunnableProcess::currentDirectory_.c_str(),
+                    _BasicRunnableProcess::currentDirectory_.IsSome() ? _BasicRunnableProcess::currentDirectory_.Get()
+                                                                      : NULL,
                     &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
             {
                 if (_BasicRunnableProcess::errorCallbackWithSelf_)
@@ -770,11 +787,11 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         }
         else if (_Type == UserAccount)
         {
-            if (!CreateUserAccountProcessT<typename _StringType::value_type>(
+            if (!CreateUserAccountProcessT<CharType>(
                     _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
                     (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
-                    _BasicRunnableProcess::currentDirectory_.empty() ? NULL
-                                                                     : _BasicRunnableProcess::currentDirectory_.c_str(),
+                    _BasicRunnableProcess::currentDirectory_.IsSome() ? _BasicRunnableProcess::currentDirectory_.Get()
+                                                                      : NULL,
                     &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
             {
                 if (_BasicRunnableProcess::errorCallbackWithSelf_)
@@ -800,7 +817,7 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
     DWORD creationFlags_;
     BOOL inheritHandles_;
     LPVOID environmentBlock_;
-    const typename Win32Ex::STARTUPINFOT<_CharType>::Type *startupInfo_;
+    const typename Win32Ex::STARTUPINFOT<CharType>::Type *startupInfo_;
 
     //
     // BasicRunnableProcess Interface Implementations.
@@ -816,24 +833,26 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
 {
   private:
     typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
-    typedef typename _StringType::value_type _CharType;
 
   public:
-    BasicElevatedProcess(const _StringType &ExecutablePath, const _StringType &Arguments = _StringType(),
-                         const _StringType &CurrentDirectory = _StringType(), DWORD CmdShow = SW_SHOWDEFAULT)
-        : BasicRunnableProcess<_StringType>(ExecutablePath, Arguments, CurrentDirectory)
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
+    BasicElevatedProcess(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
+                         const Optional<const StringType &> &CurrentDirectory = None(), DWORD CmdShow = SW_SHOWDEFAULT)
+        : _BasicRunnableProcess(ExecutablePath, Arguments, CurrentDirectory)
     {
         ZeroMemory(&executeInfo_, sizeof(executeInfo_));
 
         executeInfo_.cbSize = sizeof(executeInfo_);
         executeInfo_.fMask |= SEE_MASK_NOCLOSEPROCESS;
-        executeInfo_.lpVerb = Details::ConstValue<_CharType>::RunAs();
+        executeInfo_.lpVerb = Details::Process::ConstValue<CharType>::RunAs();
         executeInfo_.lpFile = _BasicRunnableProcess::executablePath_.c_str();
 
-        if (!_BasicRunnableProcess::arguments_.empty())
-            executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.c_str();
-        if (!_BasicRunnableProcess::currentDirectory_.empty())
-            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.c_str();
+        if (_BasicRunnableProcess::arguments_.IsSome())
+            executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
+        if (_BasicRunnableProcess::currentDirectory_.IsSome())
+            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
 
         executeInfo_.nShow = CmdShow;
         if (CmdShow == SW_HIDE)
@@ -842,20 +861,20 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
         _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
-    BasicElevatedProcess(typename SHELLEXECUTEINFOT<_CharType>::Type &ExecuteInfo)
-        : BasicRunnableProcess<_StringType>(ExecuteInfo.lpFile, ExecuteInfo.lpParameters, ExecuteInfo.lpDirectory)
+    BasicElevatedProcess(typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
+        : _BasicRunnableProcess(ExecuteInfo.lpFile, ExecuteInfo.lpParameters, ExecuteInfo.lpDirectory)
     {
         executeInfo_ = ExecuteInfo;
         _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
-    bool Run(const typename SHELLEXECUTEINFOT<_CharType>::Type &ExecuteInfo)
+    bool Run(const typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
     {
         return RunAsync(ExecuteInfo).Wait();
     }
 
-    bool Run(Optional<_StringType> Arguments = None(), Optional<_StringType> CurrentDirectory = None(),
-             Optional<DWORD> CmdShow = None())
+    bool Run(const Optional<const StringType &> &Arguments = None(),
+             const Optional<const StringType &> &CurrentDirectory = None(), const Optional<DWORD> &CmdShow = None())
     {
         if (Arguments.IsSome())
             _BasicRunnableProcess::arguments_ = Arguments;
@@ -863,25 +882,28 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
         return RunAsync(_BasicRunnableProcess::arguments_, CurrentDirectory, CmdShow).Wait();
     }
 
-    Waitable RunAsync(_StringType Arguments, Optional<_StringType> CurrentDirectory = None(),
-                      Optional<DWORD> CmdShow = None())
+    Waitable RunAsync(const Optional<StringType> &Arguments,
+                      const Optional<const StringType &> &CurrentDirectory = None(),
+                      const Optional<DWORD> &CmdShow = None())
     {
         if (!_BasicRunnableProcess::Prepare())
             return Waitable(*this);
 
         executeInfo_.cbSize = sizeof(executeInfo_);
         executeInfo_.fMask |= SEE_MASK_NOCLOSEPROCESS;
-        executeInfo_.lpVerb = Details::ConstValue<_CharType>::RunAs();
+        executeInfo_.lpVerb = Details::Process::ConstValue<CharType>::RunAs();
         executeInfo_.lpFile = _BasicRunnableProcess::executablePath_.c_str();
 
-        if (_BasicRunnableProcess::arguments_ != Arguments)
+        if (Arguments.IsSome())
+        {
             _BasicRunnableProcess::arguments_ = Arguments;
-        executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.c_str();
+            executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
+        }
 
         if (CurrentDirectory.IsSome())
         {
             _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
-            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.c_str();
+            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
         }
 
         if (CmdShow.IsSome())
@@ -894,7 +916,7 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
         return RunAsync();
     }
 
-    Waitable RunAsync(typename SHELLEXECUTEINFOT<_CharType>::Type &ExecuteInfo)
+    Waitable RunAsync(typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
     {
         if (!_BasicRunnableProcess::Prepare())
             return Waitable(*this);
@@ -907,7 +929,7 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
             executeInfo_ = ExecuteInfo;
         }
 
-        if (!ShellExecuteExT<_CharType>(&ExecuteInfo))
+        if (!ShellExecuteExT<CharType>(&ExecuteInfo))
         {
             if (_BasicRunnableProcess::errorCallbackWithSelf_)
                 _BasicRunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
@@ -924,7 +946,7 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
     }
 
   private:
-    typename SHELLEXECUTEINFOT<_CharType>::Type executeInfo_;
+    typename SHELLEXECUTEINFOT<CharType>::Type executeInfo_;
 
     //
     // BasicRunnableProcess Interface Implementations.
@@ -938,59 +960,27 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
 
 typedef BasicProcess<String> Process;
 typedef BasicProcess<StringW> ProcessW;
+typedef BasicProcess<StringT> ProcessT;
 
 typedef BasicRunnableProcess<String> RunnableProcess;
 typedef BasicRunnableProcess<StringW> RunnableProcessW;
+typedef BasicRunnableProcess<StringT> RunnableProcessT;
 
 typedef BasicElevatedProcess<String> ElevatedProcess;
 typedef BasicElevatedProcess<StringW> ElevatedProcessW;
+typedef BasicElevatedProcess<StringT> ElevatedProcessT;
 
 typedef BasicRunnableSessionProcess<String, UserAccount> UserAccountProcess;
 typedef BasicRunnableSessionProcess<StringW, UserAccount> UserAccountProcessW;
+typedef BasicRunnableSessionProcess<StringT, UserAccount> UserAccountProcessT;
 
 typedef BasicRunnableSessionProcess<String, SystemAccount> SystemAccountProcess;
 typedef BasicRunnableSessionProcess<StringW, SystemAccount> SystemAccountProcessW;
+typedef BasicRunnableSessionProcess<StringT, SystemAccount> SystemAccountProcessT;
 } // namespace System
 
 namespace ThisProcess
 {
-template <class _StringType> static _StringType &GetExecutablePathT()
-{
-    static _StringType executablePath_(MAX_PATH, 0);
-    size_t returnSize =
-        GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0], (DWORD)executablePath_.size());
-    for (;;)
-    {
-        if (returnSize < executablePath_.size())
-        {
-            executablePath_.resize(returnSize);
-            break;
-        }
-        else
-        {
-            executablePath_.resize(returnSize + MAX_PATH);
-            returnSize = GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0],
-                                                                              (DWORD)executablePath_.size());
-            executablePath_.resize(returnSize);
-        }
-        if (GetLastError() == ERROR_SUCCESS)
-        {
-            break;
-        }
-    }
-    return executablePath_;
-}
-
-static String &GetExecutablePath()
-{
-    return GetExecutablePathT<String>();
-}
-
-static StringW &GetExecutablePathW()
-{
-    return GetExecutablePathT<StringW>();
-}
-
 namespace Details
 {
 static DWORD mainThreadId = GetCurrentThreadId();
@@ -1012,27 +1002,75 @@ static HANDLE OpenMainThread()
 }
 } // namespace Details
 
-static DWORD GetMainThreadId()
+static DWORD MainThreadId()
 {
     return Details::mainThreadId;
 }
 
-static HANDLE GetMainThreadHandle()
+static HANDLE MainThreadHandle()
 {
     return Details::mainThreadHandle;
 }
 
-static DWORD GetId()
+static DWORD Id()
 {
     return GetCurrentProcessId();
 }
 
-static HANDLE GetHandle()
+static HANDLE Handle()
 {
     return GetCurrentProcess();
 }
 
-template <class _StringType> static _StringType GetCurrentDirectoryT()
+static bool IsAdmin()
+{
+    return IsUserAdmin(GetCurrentProcessToken()) == TRUE;
+}
+
+#if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
+template <class _StringType = StringT>
+#else
+template <class _StringType>
+#endif
+static _StringType &ExecutablePathT()
+{
+    static _StringType executablePath_(MAX_PATH, 0);
+    size_t returnSize =
+        GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0], (DWORD)executablePath_.size());
+    for (;;)
+    {
+        if (returnSize < executablePath_.size())
+        {
+            executablePath_.resize(returnSize);
+            break;
+        }
+        else
+        {
+            executablePath_.resize(returnSize + MAX_PATH);
+            returnSize = GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0],
+                                                                              (DWORD)executablePath_.size());
+            executablePath_.resize(returnSize);
+        }
+        if (GetLastError() == ERROR_SUCCESS)
+            break;
+    }
+    return executablePath_;
+}
+static String ExecutablePath()
+{
+    return ExecutablePathT<String>();
+}
+static StringW ExecutablePathW()
+{
+    return ExecutablePathT<StringW>();
+}
+
+#if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
+template <class _StringType = StringT>
+#else
+template <class _StringType>
+#endif
+static _StringType CurrentDirectoryT()
 {
     _StringType cwd(MAX_PATH, 0);
     size_t length = Win32Ex::GetCurrentDirectoryT<typename _StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
@@ -1044,36 +1082,31 @@ template <class _StringType> static _StringType GetCurrentDirectoryT()
     cwd.resize(length);
     return cwd;
 }
+static String CurrentDirectory()
+{
+    return CurrentDirectoryT<String>();
+}
+static StringW CurrentDirectoryW()
+{
+    return CurrentDirectoryT<StringW>();
+}
 
-#if defined(UNICODE)
-#undef GetCurrentDirectory
+#if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
+template <class _StringType = StringT>
+#else
+template <class _StringType>
 #endif
-static String GetCurrentDirectory()
+inline System::BasicProcess<_StringType> ParentT()
 {
-    return GetCurrentDirectoryT<String>();
+    return System::BasicProcess<_StringType>(GetParentProcessId(ThisProcess::Id()));
 }
-
-static StringW GetCurrentDirectoryW()
+inline System::Process Parent()
 {
-    return GetCurrentDirectoryT<StringW>();
+    return System::Process(GetParentProcessId(ThisProcess::Id()));
 }
-
-static bool IsAdmin()
+inline System::ProcessW ParentW()
 {
-    return IsUserAdmin(GetCurrentProcessToken()) == TRUE;
-}
-
-inline System::Process GetParent()
-{
-    return System::Process(GetParentProcessId(ThisProcess::GetId()));
-}
-inline System::ProcessW GetParentW()
-{
-    return System::ProcessW(GetParentProcessId(ThisProcess::GetId()));
-}
-template <typename _StringType> inline System::BasicProcess<_StringType> GetParentT()
-{
-    return System::BasicProcess<_StringType>(GetParentProcessId(ThisProcess::GetId()));
+    return System::ProcessW(GetParentProcessId(ThisProcess::Id()));
 }
 } // namespace ThisProcess
 } // namespace Win32Ex

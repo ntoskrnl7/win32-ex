@@ -8,7 +8,9 @@ Module Name:
 
 Abstract:
 
-    This Module implements the ServiceConfig / Service / Services class.
+    This Module implements the ServiceConfig, ServiceConfigW, ServiceConfigT, BasicServiceConfig /
+                                Service,  ServiceW, ServiceT, BasicService /
+                                Services, ServicesW, ServicesT, BasicServices class.
 
 Author:
 
@@ -31,6 +33,7 @@ Environment:
 #define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
 
 #include <functional>
+#include <list>
 #include <map>
 #include <stdexcept>
 
@@ -42,11 +45,14 @@ Environment:
 #endif
 #include <windows.h>
 
-#ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
 #include <wtsapi32.h>
 #pragma comment(lib, "Wtsapi32.lib")
 #endif
 
+#include "../Optional.hpp"
+#include "../T/winsvc.hpp"
+#include "../T/winuser.hpp"
 #include "Process.hpp"
 
 #ifdef _INC__MINGW_H
@@ -133,16 +139,110 @@ namespace Win32Ex
 {
 namespace System
 {
-inline bool IsServiceMode()
+namespace Details
 {
-    // https://docs.microsoft.com/en-us/windows/win32/services/service-user-accounts
-    return IsLocalSystemToken(GetCurrentProcessToken()) || IsLocalServiceToken(GetCurrentProcessToken()) ||
-           IsNetworkServiceToken(GetCurrentProcessToken());
+template <typename T> inline HANDLE CreateStopEvent(const T &Name);
+
+template <> inline HANDLE CreateStopEvent(const String &Name)
+{
+    return CreateEventA(NULL, TRUE, FALSE, (Name + "StopEvent").c_str());
 }
 
-class ServiceConfig
+template <> inline HANDLE CreateStopEvent(const StringW &Name)
+{
+    return CreateEventW(NULL, TRUE, FALSE, (Name + L"StopEvent").c_str());
+}
+
+template <typename T> inline HANDLE OpenStopEvent(const T &Name);
+
+template <> inline HANDLE OpenStopEvent(const String &Name)
+{
+    return OpenEventA(EVENT_ALL_ACCESS, FALSE, (Name + "StopEvent").c_str());
+}
+
+template <> inline HANDLE OpenStopEvent(const StringW &Name)
+{
+    return OpenEventW(EVENT_ALL_ACCESS, FALSE, (Name + L"StopEvent").c_str());
+}
+} // namespace Details
+
+inline bool IsServiceMode()
+{
+    static bool isServiceMode = false;
+    if (isServiceMode)
+        return isServiceMode;
+
+    std::string servicesProcessPath = "%SYSTEMROOT%\\System32\\services.exe";
+    DWORD len = ExpandEnvironmentStringsA("%SYSTEMROOT%\\System32\\services.exe", &servicesProcessPath[0],
+                                          (DWORD)servicesProcessPath.size());
+    if (len > servicesProcessPath.size())
+    {
+        servicesProcessPath.resize(len);
+        len = ExpandEnvironmentStringsA("%SYSTEMROOT%\\System32\\services.exe", &servicesProcessPath[0],
+                                        (DWORD)servicesProcessPath.size());
+    }
+    servicesProcessPath.resize(len - 1);
+
+    isServiceMode = lstrcmpiA(servicesProcessPath.c_str(), ThisProcess::Parent().ExecutablePath().c_str()) == 0;
+    return isServiceMode;
+}
+
+template <typename _StringType> class BasicServices
 {
   public:
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
+#if defined(__cpp_variadic_templates)
+    template <class... ServiceType> static bool Run(ServiceType &... service)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(CharType *)service.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType::ServiceMain_}...,
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+#else
+    template <typename ServiceType0, typename ServiceType1>
+    static bool Run(ServiceType0 &service0, ServiceType1 &service1)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(CharType *)service0.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType0::ServiceMain_},
+            {(CharType *)service1.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType1::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+    template <typename ServiceType0, typename ServiceType1, typename ServiceType2>
+    static bool Run(ServiceType0 &service0, ServiceType1 &service1, ServiceType2 &service2)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(CharType *)service0.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType0::ServiceMain_},
+            {(CharType *)service1.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType1::ServiceMain_},
+            {(CharType *)service2.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType2::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+#endif
+};
+
+typedef BasicServices<String> Services;
+typedef BasicServices<StringW> ServicesW;
+typedef BasicServices<StringT> ServicesT;
+
+template <class _StringType> class BasicServiceConfig
+{
+  public:
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
     typedef std::function<bool()> AcceptStopCallback;
     typedef std::function<bool()> AcceptPauseCallback;
 
@@ -165,21 +265,17 @@ class ServiceConfig
 
     } SC_HANDLES, *PSC_HANDLES;
 
-    ServiceConfig(const std::string &Name, const std::string &DisplayName = std::string(),
-                  const std::string &Description = std::string())
+    BasicServiceConfig(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
+                       const Optional<const StringType &> &Description = None())
         : name_(Name)
     {
-        if (!DisplayName.empty())
-        {
+        if (DisplayName.IsSome())
             displayName_ = DisplayName;
-        }
 
-        if (!Description.empty())
-        {
+        if (Description.IsSome())
             description_ = Description;
-        }
 
-        LPQUERY_SERVICE_CONFIGA config = QueryConfig_();
+        QUERY_SERVICE_CONFIGT<CharType> *config = QueryConfig_();
 
         if (config)
         {
@@ -201,76 +297,87 @@ class ServiceConfig
     }
 
     bool Install(DWORD ServiceType = SERVICE_WIN32_OWN_PROCESS, DWORD StartType = SERVICE_AUTO_START,
-                 PCSTR BinaryPathName = NULL, PCSTR DisplayName = NULL, PCSTR Description = NULL,
-                 PCSTR LoadOrderGroup = NULL, PDWORD TagId = NULL, PCSTR Dependencies = NULL,
-                 PCSTR ServiceStartName = NULL, PCSTR Password = NULL)
+                 const Optional<const StringType &> BinaryPathName = None(),
+                 const Optional<const StringType &> DisplayName = None(),
+                 const Optional<const StringType &> Description = None(), DWORD ErrorControl = SERVICE_ERROR_IGNORE,
+                 const Optional<const StringType &> LoadOrderGroup = None(), _Out_ PDWORD TagId = NULL,
+                 const std::list<StringType> Dependencies = std::list<StringType>(),
+                 const Optional<const StringType &> ServiceStartName = None(),
+                 const Optional<const StringType &> Password = None())
     {
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CREATE_SERVICE));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CREATE_SERVICE));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = CreateServiceA(
-            handles.hSCManager, name_.c_str(), DisplayName ? DisplayName : displayName_.c_str(), SERVICE_CHANGE_CONFIG,
-            ServiceType, StartType, errorControl_, BinaryPathName ? BinaryPathName : GetBinaryPathName().c_str(),
-            LoadOrderGroup, TagId, Dependencies, ServiceStartName, Password);
+        if (BinaryPathName.IsSome())
+            binaryPathName_ = BinaryPathName;
+
+        if (DisplayName.IsSome())
+            displayName_ = DisplayName;
+
+        if (LoadOrderGroup.IsSome())
+            loadOrderGroup_ = LoadOrderGroup;
+
+        errorControl_ = ErrorControl;
+
+        StringType dependencies;
+        for (typename std::list<StringType>::const_iterator it = Dependencies.begin(); it != Dependencies.end(); ++it)
+        {
+            dependencies.append(it->c_str());
+            dependencies.push_back(0);
+        }
+        dependencies.push_back(0);
+
+        handles.hService = CreateServiceT<CharType>(
+            handles.hSCManager, name_.c_str(), displayName_.empty() ? NULL : displayName_.c_str(),
+            SERVICE_CHANGE_CONFIG, ServiceType, StartType, ErrorControl, binaryPathName_.c_str(),
+            loadOrderGroup_.empty() ? NULL : loadOrderGroup_.c_str(), TagId,
+            dependencies.empty() ? NULL : dependencies.c_str(),
+            ServiceStartName.IsSome() ? ServiceStartName.Get() : NULL, Password.IsSome() ? Password.Get() : NULL);
+
         if (handles.hService == NULL)
             return false;
 
         serviceType_ = ServiceType;
         startType_ = StartType;
 
-        if (DisplayName)
-            displayName_ = std::string(DisplayName);
+        if (Description.IsSome())
+            description_ = Description;
 
-        if (BinaryPathName)
-            binaryPathName_ = std::string(BinaryPathName);
-
-        SERVICE_DESCRIPTIONA desc;
-        desc.lpDescription = (PSTR)(Description ? Description : description_.c_str());
-        if (ChangeServiceConfig2A(handles.hService, SERVICE_CONFIG_DESCRIPTION, &desc) && Description)
-            description_ = std::string(Description);
+        if (!description_.empty())
+        {
+            SERVICE_DESCRIPTIONT<CharType> desc;
+            desc.lpDescription = &description_[0];
+            ChangeServiceConfig2T<CharType>(handles.hService, SERVICE_CONFIG_DESCRIPTION, &desc);
+        }
 
         return true;
     }
 
     bool Uninstall(Duration Timeout = Duration::Second(30))
     {
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_ALL_ACCESS));
         if (handles.hSCManager == NULL)
-        {
             return false;
-        }
 
-        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), DELETE);
+        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), DELETE);
         if (handles.hService == NULL)
-        {
             return false;
-        }
 
         SERVICE_STATUS ss = {0};
-        if (QueryServiceStatus(ss))
-        {
-            if (ss.dwCurrentState != SERVICE_STOPPED)
-            {
-                if (!Stop(Timeout))
-                {
-                    return false;
-                }
-            }
-        }
+        if (QueryServiceStatus(ss) && (ss.dwCurrentState != SERVICE_STOPPED) && (!Stop(Timeout)))
+            return false;
 
         if (DeleteService(handles.hService))
         {
             CloseServiceHandle(handles.hService);
-            handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), DELETE);
+            handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), DELETE);
             if (handles.hService == NULL)
-            {
                 return true;
-            }
+
             if (DeleteService(handles.hService))
-            {
                 return true;
-            }
+
             return GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE;
         }
         return false;
@@ -285,12 +392,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return false;
 
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL);
+        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(),
+                                                  SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL);
         if (handles.hService == NULL)
             return false;
 
@@ -306,11 +413,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_RUNNING)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
+        handles.hService =
+            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
         if (handles.hService == NULL)
             return false;
 
@@ -322,6 +430,10 @@ class ServiceConfig
 
     bool Stop(Duration Timeout = Duration::Second(30))
     {
+        HANDLE stopEvent = Details::OpenStopEvent<StringType>(name_);
+        if (stopEvent)
+            return SetEvent(stopEvent) == TRUE;
+
         SERVICE_STATUS ss = {0};
         if (!QueryServiceStatus(ss))
             return false;
@@ -329,11 +441,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP);
+        handles.hService =
+            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP);
         if (handles.hService == NULL)
             return false;
 
@@ -355,12 +468,12 @@ class ServiceConfig
         if (ss.dwCurrentState == SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
         handles.hService =
-            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
+            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
         if (handles.hService == NULL)
             return false;
 
@@ -382,12 +495,12 @@ class ServiceConfig
         if (ss.dwCurrentState != SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
         handles.hService =
-            OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
+            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
         if (handles.hService == NULL)
             return false;
 
@@ -432,21 +545,21 @@ class ServiceConfig
 
     bool Installed() const
     {
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
+        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
         return (handles.hService != NULL);
     }
 
     bool QueryServiceStatus(SERVICE_STATUS &ss) const
     {
-        SC_HANDLES handles(OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT));
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceA(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
+        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
         if (handles.hService == NULL)
             return false;
 
@@ -464,7 +577,7 @@ class ServiceConfig
         return true;
     }
 
-    const std::string &Name() const
+    const StringType &Name() const
     {
         return name_;
     }
@@ -474,20 +587,20 @@ class ServiceConfig
         return serviceType_;
     }
 
-    std::string &GetBinaryPathName() const
+    StringType &BinaryPathName() const
     {
         if (binaryPathName_.empty())
-            binaryPathName_ = ThisProcess::GetExecutablePath();
+            binaryPathName_ = ThisProcess::ExecutablePathT<StringType>();
 
         return binaryPathName_;
     }
 
-    SC_HANDLE GetServiceHandle(DWORD DesiredAccess) const
+    SC_HANDLE ServiceHandle(DWORD DesiredAccess) const
     {
-        SC_HANDLE hSCManager = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+        SC_HANDLE hSCManager = OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT);
         if (hSCManager == NULL)
             return NULL;
-        return ::OpenServiceA(hSCManager, name_.c_str(), DesiredAccess);
+        return OpenServiceT<CharType>(hSCManager, name_.c_str(), DesiredAccess);
     }
 
     bool CloseHandle(SC_HANDLE ServiceHandle) const
@@ -495,13 +608,13 @@ class ServiceConfig
         return ::CloseServiceHandle(ServiceHandle) == TRUE;
     }
 
-    ServiceConfig &SetAcceptStop(AcceptStopCallback Callback)
+    BasicServiceConfig &SetAcceptStop(AcceptStopCallback Callback)
     {
         acceptStopCallback_ = Callback;
         return *this;
     }
 
-    ServiceConfig &SetAcceptPause(AcceptPauseCallback Callback)
+    BasicServiceConfig &SetAcceptPause(AcceptPauseCallback Callback)
     {
         acceptPauseCallback_ = Callback;
         return *this;
@@ -528,7 +641,7 @@ class ServiceConfig
             }
         }
 
-        SC_HANDLE hService = GetServiceHandle(desireAccess);
+        SC_HANDLE hService = ServiceHandle(desireAccess);
 
         if (hService != NULL)
         {
@@ -538,7 +651,8 @@ class ServiceConfig
                 needToAcquireShutdownPrivilege = EnablePrivilege(TRUE, SE_SHUTDOWN_NAME, &prevState, NULL);
             }
 
-            bool ret = ChangeServiceConfig2A(hService, SERVICE_CONFIG_FAILURE_ACTIONS, (PVOID)&FailureActions) == TRUE;
+            bool ret = ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_FAILURE_ACTIONS,
+                                                       (PVOID)&FailureActions) == TRUE;
 
             if (needToAcquireShutdownPrivilege)
             {
@@ -559,11 +673,12 @@ class ServiceConfig
             return false;
         }
 
-        SC_HANDLE hService = GetServiceHandle(SERVICE_CHANGE_CONFIG);
+        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
 
         if (hService != NULL)
         {
-            bool ret = ChangeServiceConfig2A(hService, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, (PVOID)&Flags) == TRUE;
+            bool ret =
+                ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, (PVOID)&Flags) == TRUE;
             CloseHandle(hService);
             return ret;
         }
@@ -574,10 +689,11 @@ class ServiceConfig
 #ifdef SERVICE_CONFIG_TRIGGER_INFO
     bool SetTrigger(const SERVICE_TRIGGER_INFO &TriggerInfo) const
     {
-        SC_HANDLE hService = GetServiceHandle(SERVICE_CHANGE_CONFIG);
+        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
         if (hService != NULL)
         {
-            bool ret = ChangeServiceConfig2A(hService, SERVICE_CONFIG_TRIGGER_INFO, (PVOID)&TriggerInfo) == TRUE;
+            bool ret =
+                ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_TRIGGER_INFO, (PVOID)&TriggerInfo) == TRUE;
             CloseHandle(hService);
             return ret;
         }
@@ -588,39 +704,35 @@ class ServiceConfig
 #ifdef SERVICE_CONFIG_PRESHUTDOWN_INFO
     bool SetPreshutdownTimeout(Duration PreshutdownTimeout) const
     {
-        SC_HANDLE hService = GetServiceHandle(SERVICE_CHANGE_CONFIG);
-        if (hService != NULL)
-        {
-            SERVICE_PRESHUTDOWN_INFO info = {PreshutdownTimeout};
-            bool ret = ChangeServiceConfig2(hService, SERVICE_CONFIG_PRESHUTDOWN_INFO, &info) == TRUE;
-            CloseHandle(hService);
-            return ret;
-        }
+        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
+        if (hService == NULL)
+            return false;
 
-        return false;
+        SERVICE_PRESHUTDOWN_INFO info = {PreshutdownTimeout};
+        bool ret = ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_PRESHUTDOWN_INFO, &info) == TRUE;
+        CloseHandle(hService);
+        return ret;
     }
 #endif
   private:
-    LPQUERY_SERVICE_CONFIGA QueryConfig_() const
+    QUERY_SERVICE_CONFIGT<CharType> *QueryConfig_() const
     {
         DWORD dwBytesNeeded;
         DWORD cbBufSize = 0;
-        LPQUERY_SERVICE_CONFIGA lpsc = NULL;
+        QUERY_SERVICE_CONFIGT<CharType> *lpsc = NULL;
         SC_HANDLES handles;
 
-        SC_HANDLE schSCManager = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
-        SC_HANDLE schService = OpenServiceA(schSCManager, name_.c_str(), SERVICE_QUERY_CONFIG);
+        SC_HANDLE schSCManager = OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT);
+        SC_HANDLE schService = OpenServiceT<CharType>(schSCManager, name_.c_str(), SERVICE_QUERY_CONFIG);
         if (!schService)
-        {
             return NULL;
-        }
 
-        if (!QueryServiceConfigA(schService, NULL, 0, &dwBytesNeeded))
+        if (!QueryServiceConfigT<CharType>(schService, NULL, 0, &dwBytesNeeded))
         {
             if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
             {
                 cbBufSize = dwBytesNeeded;
-                lpsc = (LPQUERY_SERVICE_CONFIGA)LocalAlloc(LMEM_FIXED, cbBufSize);
+                lpsc = (QUERY_SERVICE_CONFIGT<CharType> *)LocalAlloc(LMEM_FIXED, cbBufSize);
             }
             else
             {
@@ -635,7 +747,7 @@ class ServiceConfig
             return NULL;
         }
 
-        if (!QueryServiceConfigA(schService, lpsc, cbBufSize, &dwBytesNeeded))
+        if (!QueryServiceConfigT<CharType>(schService, lpsc, cbBufSize, &dwBytesNeeded))
         {
             if (lpsc)
                 LocalFree(lpsc);
@@ -648,38 +760,46 @@ class ServiceConfig
         return lpsc;
     }
 
-    void FreeConfig_(LPQUERY_SERVICE_CONFIGA Config)
+    void FreeConfig_(QUERY_SERVICE_CONFIGT<CharType> *Config)
     {
         if (Config)
             LocalFree(Config);
     }
 
   private:
-    std::string name_;
-
+    StringType name_;
     DWORD serviceType_;
     DWORD startType_;
     DWORD errorControl_;
-    mutable std::string binaryPathName_;
-    std::string loadOrderGroup_;
+    mutable StringType binaryPathName_;
+    StringType loadOrderGroup_;
     DWORD TagId_;
-    std::string dependencies_;
-    std::string serviceStartName_;
-    std::string displayName_;
+    StringType dependencies_;
+    StringType serviceStartName_;
+    StringType displayName_;
 
-    std::string description_;
+    StringType description_;
 
     AcceptStopCallback acceptStopCallback_;
     AcceptPauseCallback acceptPauseCallback_;
 };
 
-template <const ServiceConfig &Config> class Service
+typedef BasicServiceConfig<String> ServiceConfig;
+typedef BasicServiceConfig<StringW> ServiceConfigW;
+typedef BasicServiceConfig<StringT> ServiceConfigT;
+
+template <typename _StringType, const BasicServiceConfig<_StringType> &Config> class BasicService
 {
-    friend class Services;
+    friend class BasicServices<String>;
+    friend class BasicServices<StringW>;
+    friend class BasicServices<StringT>;
 
   public:
+    typedef _StringType StringType;
+    typedef typename StringType::value_type CharType;
+
     typedef std::function<void()> StartCallback;
-    typedef std::function<DWORD(DWORD, PSTR[])> StartCallbackEx;
+    typedef std::function<DWORD(DWORD, CharType *[])> StartCallbackEx;
     typedef std::function<void()> StopCallback;
     typedef std::function<void()> PauseCallback;
     typedef std::function<void()> ContinueCallback;
@@ -707,31 +827,31 @@ template <const ServiceConfig &Config> class Service
     typedef std::function<void(DWORD ErrorCode, PCSTR Message)> ErrorCallback;
 
   public:
-    Service &On(DWORD Control, OtherCallback Callback)
+    BasicService &On(DWORD Control, OtherCallback Callback)
     {
         otherCallbackMap_[Control] = Callback;
         return *this;
     }
 
-    Service &OnEx(DWORD Control, OtherCallbackEx Callback)
+    BasicService &OnEx(DWORD Control, OtherCallbackEx Callback)
     {
         otherCallbackExMap_[Control] = Callback;
         return *this;
     }
 
-    Service &OnStart(StartCallback Callback)
+    BasicService &OnStart(StartCallback Callback)
     {
         startCallback_ = Callback;
         return *this;
     }
 
-    Service &OnStartEx(StartCallbackEx Callback)
+    BasicService &OnStartEx(StartCallbackEx Callback)
     {
         startCallbackEx_ = Callback;
         return *this;
     }
 
-    Service &OnStop(StopCallback Callback = NULL)
+    BasicService &OnStop(StopCallback Callback = NULL)
     {
         stopCallback_ = Callback;
 
@@ -743,7 +863,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnPause(PauseCallback Callback = NULL)
+    BasicService &OnPause(PauseCallback Callback = NULL)
     {
         pauseCallback_ = Callback;
 
@@ -755,7 +875,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnContinue(ContinueCallback Callback = NULL)
+    BasicService &OnContinue(ContinueCallback Callback = NULL)
     {
         continueCallback_ = Callback;
 
@@ -767,7 +887,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnShutdown(ShutdownCallback Callback = NULL)
+    BasicService &OnShutdown(ShutdownCallback Callback = NULL)
     {
         shutdownCallback_ = Callback;
 
@@ -779,7 +899,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnParamChange(ParamChangeCallback Callback = NULL)
+    BasicService &OnParamChange(ParamChangeCallback Callback = NULL)
     {
         paramChangeCallback_ = Callback;
 
@@ -791,7 +911,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnNetbindAdd(NetbindAddCallback Callback = NULL)
+    BasicService &OnNetbindAdd(NetbindAddCallback Callback = NULL)
     {
         netbindAddCallback_ = Callback;
 
@@ -804,7 +924,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnNetbindRemove(NetbindAddCallback Callback = NULL)
+    BasicService &OnNetbindRemove(NetbindAddCallback Callback = NULL)
     {
         netbindRemoveCallback_ = Callback;
 
@@ -816,7 +936,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnNetbindEnable(NetbindAddCallback Callback = NULL)
+    BasicService &OnNetbindEnable(NetbindAddCallback Callback = NULL)
     {
         netbindEnableCallback_ = Callback;
 
@@ -828,7 +948,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnNetbindDisable(NetbindAddCallback Callback = NULL)
+    BasicService &OnNetbindDisable(NetbindAddCallback Callback = NULL)
     {
         netbindDisableCallback_ = Callback;
 
@@ -840,18 +960,24 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnDeviceEvent(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
+    BasicService &OnDeviceEvent(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
+    {
+        return OnDeviceEventT<CharType>(NotificationFilter, Callback);
+    }
+
+    template <typename T>
+    BasicService &OnDeviceEventT(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
     {
         deviceEventCallback_ = Callback;
 
         if (deviceEventCallback_)
         {
             if (serviceStatusHandle_)
-                deviceNotifyHandle_ =
-                    RegisterDeviceNotificationA(serviceStatusHandle_, NotificationFilter, DEVICE_NOTIFY_SERVICE_HANDLE);
+                deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(serviceStatusHandle_, NotificationFilter,
+                                                                     DEVICE_NOTIFY_SERVICE_HANDLE);
             else if (hWndConsoleService_)
-                deviceNotifyHandle_ =
-                    RegisterDeviceNotificationA(hWndConsoleService_, NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
+                deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(hWndConsoleService_, NotificationFilter,
+                                                                     DEVICE_NOTIFY_WINDOW_HANDLE);
         }
         else
         {
@@ -865,7 +991,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnHardwareProfileChange(HardwareProfileChangeCallback Callback = NULL)
+    BasicService &OnHardwareProfileChange(HardwareProfileChangeCallback Callback = NULL)
     {
         hardwareProfileChangeCallback_ = Callback;
 
@@ -877,7 +1003,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnPowerEvent(PowerEventCallback Callback = NULL)
+    BasicService &OnPowerEvent(PowerEventCallback Callback = NULL)
     {
         powerEventCallback_ = Callback;
 
@@ -889,7 +1015,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 
-    Service &OnSessionChanage(SessionChangeCallback Callback = NULL)
+    BasicService &OnSessionChanage(SessionChangeCallback Callback = NULL)
     {
         sessionChangeCallback_ = Callback;
 
@@ -901,13 +1027,13 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
-    Service &OnPreShutdown(Duration PreshutdownTimeout, PreShutdownCallback Callback = NULL)
+    BasicService &OnPreShutdown(Duration PreshutdownTimeout, PreShutdownCallback Callback = NULL)
     {
         Config.SetPreshutdownTimeout(PreshutdownTimeout);
         return OnPreShutdown(Callback);
     }
 
-    Service &OnPreShutdown(PreShutdownCallback Callback = NULL)
+    BasicService &OnPreShutdown(PreShutdownCallback Callback = NULL)
     {
         preShutdownCallback_ = Callback;
 
@@ -920,7 +1046,7 @@ template <const ServiceConfig &Config> class Service
     }
 #endif
 #ifdef SERVICE_CONTROL_TIMECHANGE
-    Service &OnTimeChange(TimeChangeCallback Callback = NULL)
+    BasicService &OnTimeChange(TimeChangeCallback Callback = NULL)
     {
         timeChangeCallback_ = Callback;
 
@@ -933,13 +1059,13 @@ template <const ServiceConfig &Config> class Service
     }
 #endif
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
-    Service &OnTriggerEvent(const SERVICE_TRIGGER_INFO &TriggerInfo, TriggerEventallback Callback = NULL)
+    BasicService &OnTriggerEvent(const SERVICE_TRIGGER_INFO &TriggerInfo, TriggerEventallback Callback = NULL)
     {
         Config.SetTrigger(TriggerInfo);
         return OnTriggerEvent(Callback);
     }
 
-    Service &OnTriggerEvent(TriggerEventallback Callback = NULL)
+    BasicService &OnTriggerEvent(TriggerEventallback Callback = NULL)
     {
         triggerEventCallback_ = Callback;
 
@@ -951,7 +1077,7 @@ template <const ServiceConfig &Config> class Service
         return *this;
     }
 #endif
-    Service &OnError(ErrorCallback Callback)
+    BasicService &OnError(ErrorCallback Callback)
     {
         errorCallback_ = Callback;
         return *this;
@@ -984,7 +1110,12 @@ template <const ServiceConfig &Config> class Service
 
     HANDLE StatusHandle() const
     {
-        return ((GetConsoleWindow() == NULL) ? (HANDLE)serviceStatusHandle_ : (HANDLE)hWndConsoleService_);
+        return (IsServiceMode() ? (HANDLE)serviceStatusHandle_ : (HANDLE)hWndConsoleService_);
+    }
+
+    DWORD ControlsAccepted() const
+    {
+        return serviceStatus_.dwControlsAccepted;
     }
 
     bool SetStatus(DWORD Status, DWORD Win32ExitCode = ERROR_SUCCESS)
@@ -1009,36 +1140,56 @@ template <const ServiceConfig &Config> class Service
 
     bool Run()
     {
-#ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-        if (GetConsoleWindow())
+        if (IsServiceMode())
         {
-#if _CRT_DECLARE_GLOBAL_VARIABLES_DIRECTLY || (defined(__argc) && defined(__argv))
-            ServiceMain_(__argc, __argv);
+            typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+                {(CharType *)Config.Name().c_str(), (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceMain_},
+                {NULL, NULL}};
+
+            return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+        }
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+        else
+        {
+#if _CRT_DECLARE_GLOBAL_VARIABLES_DIRECTLY
+#if (defined(__argc) && defined(__argv))
+            if (typeid(CharType) == typeid(CHAR))
+            {
+                ServiceMain_(__argc, __argv);
+            }
+            else
+            {
+                ServiceMain_(0, NULL);
+            }
+
+#elif (defined(__argc) && defined(__wargv))
+            if (typeid(CharType) == typeid(WCHAR))
+            {
+                ServiceMain_(__argc, __argv);
+            }
+            else
+            {
+                ServiceMain_(0, NULL);
+            }
+#endif
 #else
             ServiceMain_(0, NULL);
 #endif
             return true;
         }
-        else
 #endif
-        {
-            SERVICE_TABLE_ENTRYA DispatchTable[] = {
-                {(PSTR)Config.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceMain_}, {NULL, NULL}};
-
-            return StartServiceCtrlDispatcherA(DispatchTable) == TRUE;
-        }
         return false;
     }
 
-  private:
-    Service()
+  protected:
+    BasicService()
         : serviceStatusHandle_(NULL), deviceNotifyHandle_(NULL), hCleanupCompleteEvent_(NULL), hStopedEvent_(NULL),
           hWndConsoleService_(NULL), Config_(Config)
     {
         ZeroMemory(&serviceStatus_, sizeof(serviceStatus_));
     }
 
-    ~Service()
+    ~BasicService()
     {
         if (deviceNotifyHandle_)
             UnregisterDeviceNotification(deviceNotifyHandle_);
@@ -1049,6 +1200,7 @@ template <const ServiceConfig &Config> class Service
         Cleanup_();
     }
 
+  private:
     void Cleanup_()
     {
         if (hStopedEvent_)
@@ -1076,9 +1228,9 @@ template <const ServiceConfig &Config> class Service
     }
 
   public:
-    static Service &Instance()
+    static BasicService &Instance()
     {
-        static Service service;
+        static BasicService service;
         return service;
     }
 
@@ -1090,7 +1242,7 @@ template <const ServiceConfig &Config> class Service
         SetWin32ExitCode(ErrorCode);
     }
 
-#ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
     static BOOL WINAPI ConsoleHandlerRoutine_(DWORD dwCtrlType)
     {
         ServiceHandlerEx_(SERVICE_CONTROL_STOP, dwCtrlType, NULL, NULL);
@@ -1139,7 +1291,7 @@ template <const ServiceConfig &Config> class Service
 
     struct CONSOLE_WND_THREAD_PARAM
     {
-        CONSOLE_WND_THREAD_PARAM(Service &Service, HINSTANCE hInstance, PCSTR ClassName)
+        CONSOLE_WND_THREAD_PARAM(BasicService &Service, HINSTANCE hInstance, PCSTR ClassName)
             : Service(Service), hWnd(NULL), hInstance(hInstance), ClassName(ClassName), hEventWndCreatedOrFailed(NULL)
         {
         }
@@ -1153,7 +1305,7 @@ template <const ServiceConfig &Config> class Service
         PCSTR ClassName;
         HANDLE hEventWndCreatedOrFailed;
         HWND hWnd;
-        Service &Service;
+        BasicService &Service;
     };
 
     static DWORD WINAPI ConsoleWndThreadProc_(LPVOID lpThreadParameter)
@@ -1161,7 +1313,7 @@ template <const ServiceConfig &Config> class Service
         CONSOLE_WND_THREAD_PARAM *param = (CONSOLE_WND_THREAD_PARAM *)lpThreadParameter;
 
         DWORD errorCode;
-        Service &service = param->Service;
+        BasicService &service = param->Service;
 
         HWND hWndSvc =
             CreateWindowExA(0, param->ClassName, "ConsoleServiceWindow", 0, 0, 0, 0, 0, 0, 0, param->hInstance, 0);
@@ -1210,7 +1362,7 @@ template <const ServiceConfig &Config> class Service
     static DWORD WINAPI ServiceHandlerEx_(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
     {
         DWORD result = NO_ERROR;
-        Service &service = Service::Instance();
+        BasicService &service = BasicService::Instance();
 
         UNREFERENCED_PARAMETER(lpContext);
 
@@ -1326,17 +1478,10 @@ template <const ServiceConfig &Config> class Service
         return result;
     }
 
-    static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, PSTR *lpServiceArgVectors)
+    static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, CharType **lpServiceArgVectors)
     {
         DWORD errorCode;
-        Service &service = Service::Instance();
-
-        service.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-        if (service.hStopedEvent_ == NULL)
-        {
-            service.RaiseError_(GetLastError(), "Failed to CreateEventW");
-            return;
-        }
+        BasicService &service = BasicService::Instance();
 
         service.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (service.hCleanupCompleteEvent_ == NULL)
@@ -1346,27 +1491,75 @@ template <const ServiceConfig &Config> class Service
             return;
         }
 
-#ifdef WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-#define _SERVICE_MAIN_CLEANUP_AND_EXIT_                                                                                \
-    {                                                                                                                  \
-        service.Cleanup_();                                                                                            \
-        if (isConsoleMode)                                                                                             \
-            SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);                                                      \
-        return;                                                                                                        \
-    }
-
-        bool isConsoleMode = (GetConsoleWindow() != NULL);
-
-        if (isConsoleMode)
+        if (IsServiceMode())
         {
+            service.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+            if (service.hStopedEvent_ == NULL)
+            {
+                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                return;
+            }
+
+            service.serviceStatusHandle_ =
+                RegisterServiceCtrlHandlerExT<CharType>((CharType *)Config.Name().c_str(), ServiceHandlerEx_, &service);
+
+            if (!service.serviceStatusHandle_)
+            {
+                errorCode = GetLastError();
+                CloseHandle(service.hStopedEvent_);
+                service.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
+                service.Cleanup_();
+                return;
+            }
+
+            service.SetStatus(SERVICE_START_PENDING);
+
+            if (service.startCallbackEx_)
+            {
+                errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
+                if (errorCode != ERROR_SUCCESS)
+                {
+                    service.RaiseError_(errorCode, "Failed to start service.");
+                    service.SetStatus(SERVICE_STOPPED, errorCode);
+                    service.Cleanup_();
+                    return;
+                }
+            }
+            else if (service.startCallback_)
+            {
+                service.startCallback_();
+            }
+
+            service.SetStatus(SERVICE_RUNNING);
+            WaitForSingleObject(service.hStopedEvent_, INFINITE);
+
+            service.Cleanup_();
+            return;
+        }
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+        else
+        {
+            service.hStopedEvent_ = Details::CreateStopEvent(service.Config_.Name());
+            if (service.hStopedEvent_ == NULL)
+            {
+                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                return;
+            }
+
             if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine_, TRUE))
             {
                 errorCode = GetLastError();
                 service.RaiseError_(GetLastError(), "Failed to SetConsoleCtrlHandler");
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
             }
 
-            std::string className = Config.Name();
+            using namespace Convert::String;
+
+            std::string className =
+                typeid(StringType) == typeid(String) ? (PCSTR)Config.Name().c_str() : (PCSTR)(!Config.Name()).c_str();
             className.append("Class");
 
             HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -1388,7 +1581,10 @@ template <const ServiceConfig &Config> class Service
             {
                 errorCode = GetLastError();
                 service.RaiseError_(errorCode, "Failed to RegisterClassExA");
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
             }
 
             CONSOLE_WND_THREAD_PARAM param(service, hInstance, className.c_str());
@@ -1400,27 +1596,36 @@ template <const ServiceConfig &Config> class Service
                 errorCode = GetLastError();
                 UnregisterClassA(className.c_str(), hInstance);
                 service.RaiseError_(errorCode, "Failed to CreateEvent");
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
             }
 
             HANDLE hThraed = CreateThread(NULL, 0, ConsoleWndThreadProc_, &param, 0, NULL);
-
             if (!hThraed)
             {
                 errorCode = GetLastError();
                 UnregisterClassA(className.c_str(), hInstance);
                 service.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
             }
 
             service.SetStatus(SERVICE_START_PENDING);
             WaitForSingleObject(param.hEventWndCreatedOrFailed, INFINITE);
 
             if (param.hWnd == NULL)
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
+            {
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
+            }
 
             service.hWndConsoleService_ = param.hWnd;
-
             if (service.startCallbackEx_)
             {
                 errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
@@ -1432,7 +1637,11 @@ template <const ServiceConfig &Config> class Service
                     SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
                     WaitForSingleObject(hThraed, INFINITE);
                     CloseHandle(hThraed);
-                    _SERVICE_MAIN_CLEANUP_AND_EXIT_
+
+                    service.Cleanup_();
+                    if (!IsServiceMode())
+                        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                    return;
                 }
             }
             else if (service.startCallback_)
@@ -1448,49 +1657,13 @@ template <const ServiceConfig &Config> class Service
             WaitForSingleObject(hThraed, INFINITE);
             CloseHandle(hThraed);
             UnregisterClassA(className.c_str(), hInstance);
+
+            service.Cleanup_();
+            if (!IsServiceMode())
+                SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+            return;
         }
-        else
-#else
-#define _SERVICE_MAIN_CLEANUP_AND_EXIT_                                                                                \
-    {                                                                                                                  \
-        service.Cleanup_();                                                                                            \
-        return;                                                                                                        \
-    }
-#endif // WIN32EX_USE_SERVICE_SIMULATE_CONSOLE_MODE
-        {
-            service.serviceStatusHandle_ =
-                RegisterServiceCtrlHandlerExA((PSTR)Config.Name().c_str(), ServiceHandlerEx_, &service);
-
-            if (!service.serviceStatusHandle_)
-            {
-                errorCode = GetLastError();
-                CloseHandle(service.hStopedEvent_);
-                service.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
-                _SERVICE_MAIN_CLEANUP_AND_EXIT_
-            }
-
-            service.SetStatus(SERVICE_START_PENDING);
-
-            if (service.startCallbackEx_)
-            {
-                errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
-                if (errorCode != ERROR_SUCCESS)
-                {
-                    service.RaiseError_(errorCode, "Failed to start service.");
-                    service.SetStatus(SERVICE_STOPPED, errorCode);
-                    _SERVICE_MAIN_CLEANUP_AND_EXIT_
-                }
-            }
-            else if (service.startCallback_)
-            {
-                service.startCallback_();
-            }
-
-            service.SetStatus(SERVICE_RUNNING);
-            WaitForSingleObject(service.hStopedEvent_, INFINITE);
-        }
-
-        _SERVICE_MAIN_CLEANUP_AND_EXIT_
+#endif // TWIN32EX_USE_SERVICE_SIMULATE_MODE
     }
 
   protected:
@@ -1533,44 +1706,58 @@ template <const ServiceConfig &Config> class Service
 
     HDEVNOTIFY deviceNotifyHandle_;
 
-    const ServiceConfig &Config_;
-};
+    const BasicServiceConfig<StringType> &Config_;
+}; // namespace Win32Ex
 
-class Services
+template <const ServiceConfig &Config> class Service : public BasicService<String, Config>
 {
   public:
-#if defined(__cpp_variadic_templates)
-    template <class... ServiceType> static bool Run(ServiceType &... service)
-    {
-        SERVICE_TABLE_ENTRYA DispatchTable[] = {
-            {(PSTR)service.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType::ServiceMain_}...,
-            {NULL, NULL}};
+    typedef String StringType;
+    typedef typename StringType::value_type CharType;
 
-        return StartServiceCtrlDispatcherA(DispatchTable) == TRUE;
-    }
-#else
-    template <typename ServiceType0, typename ServiceType1>
-    static bool Run(ServiceType0 &service0, ServiceType1 &service1)
+    static Service &Instance()
     {
-        SERVICE_TABLE_ENTRYA DispatchTable[] = {
-            {(PSTR)service0.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType0::ServiceMain_},
-            {(PSTR)service1.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType1::ServiceMain_},
-            {NULL, NULL}};
-
-        return StartServiceCtrlDispatcherA(DispatchTable) == TRUE;
+        return (Service &)BasicService<StringType, Config>::Instance();
     }
-    template <typename ServiceType0, typename ServiceType1, typename ServiceType2>
-    static bool Run(ServiceType0 &service0, ServiceType1 &service1, ServiceType2 &service2)
+
+  private:
+    Service() : BasicService<StringType, Config>()
     {
-        SERVICE_TABLE_ENTRYA DispatchTable[] = {
-            {(PSTR)service0.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType0::ServiceMain_},
-            {(PSTR)service1.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType1::ServiceMain_},
-            {(PSTR)service2.Config_.Name().c_str(), (LPSERVICE_MAIN_FUNCTIONA)ServiceType2::ServiceMain_},
-            {NULL, NULL}};
-
-        return StartServiceCtrlDispatcherA(DispatchTable) == TRUE;
     }
-#endif
+};
+
+template <const ServiceConfigW &Config> class ServiceW : public BasicService<StringW, Config>
+{
+  public:
+    typedef StringW StringType;
+    typedef typename StringType::value_type CharType;
+
+    static ServiceW &Instance()
+    {
+        return (ServiceW &)BasicService<StringType, Config>::Instance();
+    }
+
+  private:
+    ServiceW() : BasicService<StringType, Config>()
+    {
+    }
+};
+
+template <const ServiceConfigT &Config> class ServiceT : public BasicService<StringT, Config>
+{
+  public:
+    typedef StringT StringType;
+    typedef typename StringType::value_type CharType;
+
+    static ServiceT &Instance()
+    {
+        return (ServiceT &)BasicService<StringType, Config>::Instance();
+    }
+
+  private:
+    ServiceT() : BasicService<StringType, Config>()
+    {
+    }
 };
 } // namespace System
 } // namespace Win32Ex
