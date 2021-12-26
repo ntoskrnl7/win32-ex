@@ -112,7 +112,7 @@ void OnTestSvcStart()
 }
 void OnTest2SvcStart()
 {
-    Test2ServiceConfig.Stop();
+    TestServiceConfigW.Stop();
 }
 
 TEST(ServiceTest, SimulateMode)

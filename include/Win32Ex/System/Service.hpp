@@ -432,7 +432,11 @@ template <class _StringType> class BasicServiceConfig
     {
         HANDLE stopEvent = Details::OpenStopEvent<StringType>(name_);
         if (stopEvent)
-            return SetEvent(stopEvent) == TRUE;
+        {
+            BOOL ret = SetEvent(stopEvent);
+            ::CloseHandle(stopEvent);
+            return ret == TRUE;
+        }
 
         SERVICE_STATUS ss = {0};
         if (!QueryServiceStatus(ss))
