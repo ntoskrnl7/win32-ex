@@ -34,10 +34,6 @@ Environment:
 #include <string>
 #include <tchar.h>
 
-#if defined(_MSC_VER)
-#include <atlconv.h>
-#endif
-
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -221,32 +217,34 @@ namespace String
 {
 inline std::wstring operator!(const std::string &rhs)
 {
-#if defined(_MSC_VER)
-    USES_CONVERSION;
-    return A2W(rhs.c_str());
-#else
     std::wstring ret(rhs.size() + 1, '\0');
+#if defined(_MSC_VER)
+    size_t len;
+    if (mbstowcs_s(&len, &ret[0], ret.size(), rhs.c_str(), ret.size()))
+        return L"";
+#else
     size_t len = mbstowcs(&ret[0], rhs.c_str(), ret.size());
+#endif
     if (len == -1)
         return L"";
     ret.resize(len);
     return ret;
-#endif
 }
 
 inline std::string operator!(const std::wstring &rhs)
 {
-#if defined(_MSC_VER)
-    USES_CONVERSION;
-    return W2A(rhs.c_str());
-#else
     std::string ret(rhs.size() + 1, '\0');
+#if defined(_MSC_VER)
+    size_t len;
+    if (wcstombs_s(&len, &ret[0], ret.size(), rhs.c_str(), (int)ret.size()))
+        return "";
+#else
     size_t len = wcstombs(&ret[0], rhs.c_str(), (int)ret.size());
+#endif
     if (len == -1)
         return "";
     ret.resize(len);
     return ret;
-#endif
 }
 } // namespace String
 } // namespace Convert
