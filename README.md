@@ -33,11 +33,13 @@ Win32 API Experimental(or Extension) features
       - [Authorization [Privileges]](#authorization-privileges)
         - [Reference](#reference-3)
           - [Functions](#functions-2)
+          - [Classes](#classes-2)
           - [Macros](#macros)
           - [Example](#example-3)
       - [Authorization [Access Tokens]](#authorization-access-tokens)
         - [Reference](#reference-4)
           - [Functions](#functions-3)
+          - [Classes](#classes-3)
           - [Example](#example-4)
       - [Authorization [Security Descriptors]](#authorization-security-descriptors)
         - [Reference](#reference-5)
@@ -48,7 +50,7 @@ Win32 API Experimental(or Extension) features
           - [Variables](#variables)
     - [Etc](#etc)
       - [Optional](#optional)
-        - [Classes](#classes-2)
+        - [Classes](#classes-4)
         - [Example](#example-5)
       - [Win32 Api Template](#win32-api-template)
         - [ShellApi](#shellapi)
@@ -381,6 +383,9 @@ IsTemporaryObject(handle); // == TRUE
 - IsPrivilegesEnabledEx
 - IsPrivilegesEnabledExV
 
+###### Classes
+- TokenPrivileges
+
 ###### Macros
 
 - SE_MIN_WELL_KNOWN_PRIVILEGE
@@ -393,11 +398,13 @@ IsTemporaryObject(handle); // == TRUE
 using namespace Win32Ex;
 
 Security::TokenPrivileges priv({Security::SeDebugPrivilege, Security::SeShutdownPrivilege});
-if (priv.AcquiredPrivileges().size() == 2){
+if (priv.AcquiredPrivileges().size() == 2)
+{
     // TODO
 }
 
-if (priv.IsAcquired()) {
+if (priv.IsAcquired())
+{
     // TODO
 }
 ```
@@ -410,22 +417,35 @@ using namespace Win32Ex;
 
 {
   Security::TokenPrivileges priv(Security::SeDebugPrivilege);
-  if (priv.IsAcquired()) {
+  if (priv.IsAcquired())
+  {
       // TODO
   }
 }
 
 // Debug privilege released.
 
+```
+
+```C++
+#include <Win32Ex\System\Privilege.hpp>
+using namespace Win32Ex;
+
 {
   Security::TokenPrivileges priv(Security::SeDebugPrivilege);
-  if (priv.IsAcquired()) {
-      // TODO
+  if (priv.IsAcquired())
+  {
       priv.SetPermanent(TRUE);
+
+      // TODO
   }
 }
 
 // Debug privilege still acquired.
+
+priv.Release();
+
+// Debug privilege released.
 
 ```
 
@@ -458,6 +478,9 @@ using namespace Win32Ex;
 - LookupTokenEx2
 - GetLocalSystemToken
 
+###### Classes
+- Token
+
 ###### Example
 
 C++
@@ -467,15 +490,15 @@ C++
 using namespace Win32Ex;
 
 Security::Token token = Security::Token::Current();
-if (token.IsValid()) {
+if (token.IsValid())
+{
   Security::TokenPrivileges privs = token.AdjustPrivileges({Security::SeShutdownPrivilege});
-  // TODO
-  if (token.IsAcquired(Security::SeShutdownPrivilege)) {
-    //...
+  if (token.IsAcquired(Security::SeShutdownPrivilege))
+  {
+    // TODO
   }
-  // ...
+  // TODO
 }
-
 
 ```
 
