@@ -227,11 +227,10 @@ TEST(TokenTest, TokenClassTest)
         Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasCreatePermanentPrivilege);
 #endif
         EXPECT_TRUE(token.IsValid() == TRUE);
-#ifdef __cpp_rvalue_references
-        Security::Token token2 = std::move(token);
+
+        Security::Token token2 = token;
         EXPECT_FALSE(token.IsValid() == TRUE);
         EXPECT_TRUE(token2.IsValid() == TRUE);
-#endif
     }
     else
     {
@@ -245,10 +244,9 @@ TEST(TokenTest, TokenClassTest)
         Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasChangeNotifyPrivilege);
 #endif
         EXPECT_TRUE(token.IsValid() == TRUE);
-#ifdef __cpp_rvalue_references
-        Security::Token token2 = std::move(token);
+
+        Security::Token token2 = token;
         EXPECT_FALSE(token.IsValid() == TRUE);
         EXPECT_TRUE(token2.IsValid() == TRUE);
-#endif
     }
 }

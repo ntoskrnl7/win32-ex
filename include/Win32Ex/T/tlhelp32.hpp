@@ -58,7 +58,7 @@ inline BOOL Process32FirstT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType
 
 template <> inline BOOL Process32FirstT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {
-    return ::Process32First(hSnapshot, NULL);
+    return ::Process32First(hSnapshot, lppe);
 }
 
 template <> inline BOOL Process32FirstT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY32W lppe)
@@ -71,7 +71,7 @@ inline BOOL Process32NextT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType>
 
 template <> inline BOOL Process32NextT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {
-    return ::Process32Next(hSnapshot, NULL);
+    return ::Process32Next(hSnapshot, lppe);
 }
 
 template <> inline BOOL Process32NextT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY32W lppe)

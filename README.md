@@ -49,19 +49,20 @@ Win32 API Experimental(or Extension) features
     - [Etc](#etc)
       - [Optional](#optional)
         - [Classes](#classes-2)
+        - [Example](#example-5)
       - [Win32 Api Template](#win32-api-template)
         - [ShellApi](#shellapi)
           - [Functions](#functions-6)
           - [Structures](#structures)
-          - [Example](#example-5)
+          - [Example](#example-6)
         - [Processes and Threads](#processes-and-threads-1)
           - [Functions](#functions-7)
           - [Structures](#structures-1)
-          - [Example](#example-6)
+          - [Example](#example-7)
         - [TlHelp32](#tlhelp32)
           - [Functions](#functions-8)
           - [Structures](#structures-2)
-          - [Example](#example-7)
+          - [Example](#example-8)
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
@@ -534,6 +535,53 @@ if (token.IsValid()) {
 - Optional\<const StringW &\>
 - Optional\<const StringT &\>
 
+##### Example
+
+```C++
+
+using namespace Win32Ex;
+
+void TestFn(Optional<int> arg0, Optional<double> arg1 = None(), Optional<String> arg2 = None())
+{
+  if (arg0.IsSome())
+  {
+    int val = arg0;
+  }
+
+  if (arg1.IsSome())
+  {
+    double val = arg1;
+  }
+
+  if (arg2.IsSome())
+  {
+    String val = arg2;
+  }
+
+  if (IsAll(arg0, arg1, arg2))
+  {
+    int val0 = arg0;
+    double val1 = arg1;
+    String val2 = arg2;
+    ...
+  }
+
+  if (IsNone(arg0, arg1, arg2))
+  {
+    ...
+  }
+}
+
+TestFn();
+TestFn(1);
+TestFn(None(), 2, None());
+TestFn(None(), None(), "3");
+TestFn(None(), 2, "3");
+TestFn(1, None(), "3");
+TestFn(1, 2);
+TestFn(1, 2, "3");
+```
+
 #### Win32 Api Template
 
 ##### ShellApi
@@ -652,7 +700,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.3")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.4")
 
 # link dependencies
 target_link_libraries(tests win32ex)

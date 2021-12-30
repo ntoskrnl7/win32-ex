@@ -583,3 +583,134 @@ TEST(OptionalTest, OptionalPrimitiveTypePtr)
 
     // int numGet = optIntPtr.Get(); // complie error
 }
+
+TEST(OptionalTest, OptionalStringClone)
+{
+    Optional<String> optStr = "Test";
+    Optional<String> optStr2;
+    EXPECT_STREQ(optStr.Get(), "Test");
+    EXPECT_TRUE(optStr2.IsNone());
+
+    optStr2 = optStr;
+    EXPECT_TRUE(optStr.IsNone());
+    EXPECT_STREQ(optStr2.Get(), "Test");
+
+    Optional<String> optStr3 = optStr2.Clone();
+    EXPECT_STREQ(optStr2.Get(), "Test");
+    EXPECT_STREQ(optStr3.Get(), "Test");
+
+    optStr = optStr2.Clone();
+    EXPECT_STREQ(optStr2.Get(), "Test");
+    EXPECT_STREQ(optStr.Get(), "Test");
+
+    optStr3 = optStr2;
+    EXPECT_TRUE(optStr2.IsNone());
+    EXPECT_STREQ(optStr3.Get(), "Test");
+}
+
+TEST(OptionalTest, OptionalStringRefClone)
+{
+    String val = "Test";
+    Optional<String &> optStr = val;
+    Optional<String &> optStr2;
+    EXPECT_EQ(((String &)optStr).c_str(), val.c_str());
+    EXPECT_TRUE(optStr2.IsNone());
+
+    optStr2 = optStr;
+    EXPECT_TRUE(optStr.IsNone());
+    EXPECT_EQ(((String &)optStr2).c_str(), val.c_str());
+
+    Optional<String &> optStr3 = optStr2.Clone();
+    EXPECT_EQ(((String &)optStr2).c_str(), val.c_str());
+    EXPECT_EQ(((String &)optStr3).c_str(), val.c_str());
+
+    val = "TestNew";
+    EXPECT_STREQ(((String &)optStr2).c_str(), "TestNew");
+    EXPECT_STREQ(((String &)optStr3).c_str(), "TestNew");
+
+    optStr = optStr2.Clone();
+    EXPECT_EQ(((String &)optStr2).c_str(), val.c_str());
+    EXPECT_EQ(((String &)optStr).c_str(), val.c_str());
+
+    optStr3 = optStr2;
+    EXPECT_TRUE(optStr2.IsNone());
+    EXPECT_EQ(((String &)optStr3).c_str(), val.c_str());
+}
+
+TEST(OptionalTest, OptionalConstStringRefClone)
+{
+    String val = "Test";
+    Optional<const String &> optStr = val;
+    Optional<const String &> optStr2;
+    EXPECT_EQ(((const String &)optStr).c_str(), val.c_str());
+    EXPECT_TRUE(optStr2.IsNone());
+
+    optStr2 = optStr;
+    EXPECT_TRUE(optStr.IsNone());
+    EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
+
+    Optional<const String &> optStr3 = optStr2.Clone();
+    EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
+    EXPECT_EQ(((const String &)optStr3).c_str(), val.c_str());
+
+    optStr = optStr2.Clone();
+    EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
+    EXPECT_EQ(((const String &)optStr).c_str(), val.c_str());
+
+    optStr3 = optStr2;
+    EXPECT_TRUE(optStr2.IsNone());
+    EXPECT_EQ(((const String &)optStr3).c_str(), val.c_str());
+}
+
+TEST(OptionalTest, OptionalPrimitiveTypeClone)
+{
+    Optional<int> optNum = 1;
+    Optional<int> optNum2 = None();
+    EXPECT_EQ(optNum.Get(), 1);
+    EXPECT_TRUE(optNum2.IsNone());
+
+    optNum2 = optNum;
+    EXPECT_TRUE(optNum.IsNone());
+    EXPECT_EQ(optNum2.Get(), 1);
+
+    Optional<int> optNum3 = optNum2.Clone();
+    EXPECT_EQ(optNum2.Get(), 1);
+    EXPECT_EQ(optNum3.Get(), 1);
+
+    optNum = optNum2.Clone();
+    EXPECT_EQ(optNum2.Get(), 1);
+    EXPECT_EQ(optNum.Get(), 1);
+
+    optNum3 = optNum2;
+    EXPECT_TRUE(optNum2.IsNone());
+    EXPECT_EQ(optNum3.Get(), 1);
+}
+
+TEST(OptionalTest, OptionalPrimitiveRefTypeClone)
+{
+    int val = 1;
+    Optional<int &> opt = val;
+    Optional<int &> opt2;
+    EXPECT_EQ(&((int &)opt), &val);
+    EXPECT_TRUE(opt2.IsNone());
+
+    opt2 = opt;
+    EXPECT_TRUE(opt.IsNone());
+    EXPECT_EQ(&((int &)opt2), &val);
+
+    Optional<int &> opt3 = opt2.Clone();
+    EXPECT_EQ(&((int &)opt2), &val);
+    EXPECT_EQ(&((int &)opt3), &val);
+
+    val = 2;
+    EXPECT_EQ(((int &)opt2), 2);
+    EXPECT_EQ(((int &)opt3), 2);
+
+    opt = opt2.Clone();
+    EXPECT_EQ(&((int &)opt2), &val);
+    EXPECT_EQ(&((int &)opt), &val);
+
+    opt3 = opt2;
+    EXPECT_TRUE(opt2.IsNone());
+    EXPECT_EQ(&((int &)opt3), &val);
+}

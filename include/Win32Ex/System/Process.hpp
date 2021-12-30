@@ -121,46 +121,30 @@ template <typename _StringType> class BasicProcess : public WaitableObject
 {
     friend class BasicRunnableProcess<_StringType>;
 
+    WIN32EX_MOVE_ALWAYS_CLASS(BasicProcess)
+
+  private:
+    void Move(BasicProcess &To)
+    {
+        To.processInfo_ = processInfo_;
+        To.sessionId_ = sessionId_;
+        executablePath_.swap(To.executablePath_);
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
+        sessionId_ = MAXDWORD;
+        executablePath_.clear();
+    }
+
   public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
-#if defined(__cpp_rvalue_references)
-    BasicProcess(BasicProcess &&other)
-    {
-        Init_();
-        Swap(other);
-    }
-
-    BasicProcess &operator=(BasicProcess &&rhs)
-    {
-        return Swap(rhs);
-    }
-
-    BasicProcess(const BasicProcess &other) = delete;
-    BasicProcess &operator=(const BasicProcess &rhs) = delete;
-#else
-    BasicProcess(BasicProcess &other)
-    {
-        Init_();
-        Swap(other);
-    }
-
-    BasicProcess &operator=(BasicProcess &rhs)
-    {
-        return Swap(rhs);
-    }
-#endif
-
     BasicProcess(ProcessHandle ProcessHandle)
     {
-        Init_();
         Attach_(ProcessHandle.value);
     }
 
     BasicProcess(ProcessId ProcessId)
     {
-        Init_();
         HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
         if (hProcess)
         {
@@ -169,12 +153,7 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         }
 
         typename PROCESSENTRY32T<CharType>::Type pe32;
-        if (GetProcessEntry_(ProcessId, pe32))
-        {
-            processInfo_.dwProcessId = pe32.th32ProcessID;
-            executablePath_ = pe32.szExeFile;
-            ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_);
-        }
+        *this = GetProcessEntry_(ProcessId, pe32) ? BasicProcess(pe32) : BasicProcess();
     }
 
     ~BasicProcess()
@@ -191,14 +170,6 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         }
         Attach_(ProcessHandle.value);
         return TRUE;
-    }
-
-    BasicProcess &Swap(BasicProcess &other)
-    {
-        std::swap(processInfo_, other.processInfo_);
-        std::swap(sessionId_, other.sessionId_);
-        executablePath_.swap(other.executablePath_);
-        return *this;
     }
 
     bool IsValid() const
@@ -245,16 +216,19 @@ template <typename _StringType> class BasicProcess : public WaitableObject
     }
 
   private:
-    BasicProcess()
+    BasicProcess() : sessionId_(MAXDWORD)
     {
-        Init_();
+        ZeroMemory(&processInfo_, sizeof(processInfo_));
     }
 
     BasicProcess(const typename PROCESSENTRY32T<CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
     {
-        Init_();
+        if (!ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_))
+            sessionId_ = MAXDWORD;
         processInfo_.dwProcessId = pe32.th32ProcessID;
-        ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_);
+        processInfo_.dwThreadId = 0;
+        processInfo_.hProcess = NULL;
+        processInfo_.hThread = NULL;
     }
 
     bool GetProcessEntry_(DWORD ProcessId, typename PROCESSENTRY32T<CharType>::Type &pe32)
@@ -265,9 +239,11 @@ template <typename _StringType> class BasicProcess : public WaitableObject
             return false;
 
         pe32.dwSize = sizeof(pe32);
-
         if (!Process32FirstT<CharType>(hSnapshot, &pe32))
+        {
+            CloseHandle(hSnapshot);
             return false;
+        }
 
         do
         {
@@ -282,10 +258,11 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         return false;
     }
 
-  protected:
+  private:
     void Attach_(HANDLE ProcessHandle)
     {
-        DWORD length = 10;
+        DWORD processId = GetProcessId(ProcessHandle);
+        DWORD length = MAX_PATH;
         StringType executablePath;
         executablePath.resize(length);
         while (!QueryFullProcessImageNameT<CharType>(ProcessHandle, 0, &executablePath[0], &length))
@@ -304,14 +281,20 @@ template <typename _StringType> class BasicProcess : public WaitableObject
             executablePath.resize(length);
             executablePath_.swap(executablePath);
         }
+        else
+        {
+            typename PROCESSENTRY32T<CharType>::Type pe32;
+            if (GetProcessEntry_(processId, pe32))
+                executablePath_ = pe32.szExeFile;
+        }
 
-        DWORD processId = GetProcessId(ProcessHandle);
-        processInfo_.hProcess = ProcessHandle;
+        if (!ProcessIdToSessionId(processId, &sessionId_))
+            sessionId_ = MAXDWORD;
+
         processInfo_.dwProcessId = processId;
         processInfo_.dwThreadId = 0;
+        processInfo_.hProcess = ProcessHandle;
         processInfo_.hThread = NULL;
-
-        ProcessIdToSessionId(processId, &sessionId_);
     }
 
     void Detach_()
@@ -324,12 +307,6 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         handle = InterlockedExchangePointer(&processInfo_.hThread, NULL);
         if (handle)
             CloseHandle(handle);
-    }
-
-    void Init_()
-    {
-        ZeroMemory(&processInfo_, sizeof(processInfo_));
-        sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
   protected:
@@ -896,13 +873,13 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
 
         if (Arguments.IsSome())
         {
-            _BasicRunnableProcess::arguments_ = Arguments;
+            _BasicRunnableProcess::arguments_ = Arguments.Clone();
             executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
         }
 
         if (CurrentDirectory.IsSome())
         {
-            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
+            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory.Clone();
             executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
         }
 

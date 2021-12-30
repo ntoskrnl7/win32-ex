@@ -151,6 +151,24 @@ DECLSPEC_SELECTANY LUID SeDelegateSessionUserImpersonatePrivilege =
 
 class TokenPrivileges
 {
+    WIN32EX_MOVE_ALWAYS_CLASS(TokenPrivileges)
+
+  private:
+    void Move(TokenPrivileges &To)
+    {
+        To.isPermanent_ = isPermanent_;
+        To.enabled_ = enabled_;
+        To.isAcquired_ = isAcquired_;
+        To.previousPrivileges_ = previousPrivileges_;
+        To.acquiredPrivileges_.swap(acquiredPrivileges_);
+
+        isPermanent_ = false;
+        enabled_ = false;
+        isAcquired_ = false;
+        ZeroMemory(&previousPrivileges_, sizeof(previousPrivileges_));
+        acquiredPrivileges_.clear();
+    }
+
   private:
     bool IsAcquired_(HANDLE TokenHandle, const std::vector<LUID> &Privileges)
     {
@@ -251,9 +269,7 @@ class TokenPrivileges
     ~TokenPrivileges()
     {
         if (!isPermanent_)
-        {
             Release();
-        }
     }
 
     void SetPermanent(bool IsPermanent)
@@ -281,12 +297,11 @@ class TokenPrivileges
     }
 
   private:
+    bool isPermanent_;
     bool enabled_;
     bool isAcquired_;
-    bool isPermanent_;
-
-    std::vector<StringT> acquiredPrivileges_;
     _PREVIOUS_TOKEN_PRIVILEGES previousPrivileges_;
+    std::vector<StringT> acquiredPrivileges_;
 };
 } // namespace Security
 } // namespace Win32Ex

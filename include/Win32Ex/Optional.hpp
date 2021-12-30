@@ -25,12 +25,12 @@ Environment:
 #ifndef _WIN32EX_OPTIONAL_HPP_
 #define _WIN32EX_OPTIONAL_HPP_
 
-#include "internal/version.h"
+#include "Internal/version.h"
 #define WIN32EX_OPTIONAL_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
 #define WIN32EX_OPTIONAL_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
 #define WIN32EX_OPTIONAL_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
 
-#include "internal/misc.hpp"
+#include "Internal/misc.hpp"
 
 namespace Win32Ex
 {
@@ -40,9 +40,32 @@ struct None
 {
 };
 
+namespace Details
+{
 template <class _StringType> class OptionalConstStringRef
 {
-    friend class Optional<_StringType>;
+    friend class Optional<const _StringType &>;
+
+    WIN32EX_MOVE_ALWAYS_CLASS(OptionalConstStringRef)
+
+  public:
+    OptionalConstStringRef Clone() const
+    {
+        OptionalConstStringRef clone;
+        clone.Value_ = Value_;
+        clone.Ref_ = Ref_;
+        clone.IsNone_ = IsNone_;
+        return clone;
+    }
+
+  protected:
+    void Move(OptionalConstStringRef &To)
+    {
+        To.Value_ = Value_;
+        To.Ref_ = Ref_;
+        To.IsNone_ = IsNone_;
+        IsNone_ = true;
+    }
 
   public:
     typedef _StringType Type;
@@ -127,52 +150,34 @@ template <class _StringType> class OptionalConstStringRef
   private:
     ConstPtrType Value_;
     const Type *Ref_;
-
     bool IsNone_;
-};
-
-template <> class Optional<const String &> : public OptionalConstStringRef<String>
-{
-  public:
-    Optional() : OptionalConstStringRef()
-    {
-    }
-
-    Optional(None none) : OptionalConstStringRef(none)
-    {
-    }
-
-    Optional(OptionalConstStringRef::ConstTypeRefType Value) : OptionalConstStringRef(Value)
-    {
-    }
-
-    Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
-    {
-    }
-};
-
-template <> class Optional<const StringW &> : public OptionalConstStringRef<StringW>
-{
-  public:
-    Optional() : OptionalConstStringRef()
-    {
-    }
-
-    Optional(None none) : OptionalConstStringRef(none)
-    {
-    }
-
-    Optional(OptionalConstStringRef::ConstTypeRefType Value) : OptionalConstStringRef(Value)
-    {
-    }
-
-    Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
-    {
-    }
 };
 
 template <class _StringType> class OptionalString
 {
+    friend class Optional<_StringType>;
+
+    WIN32EX_MOVE_ALWAYS_CLASS(OptionalString)
+
+  public:
+    OptionalString Clone() const
+    {
+        OptionalString clone;
+        clone.Value_ = Value_;
+        clone.IsNull_ = IsNull_;
+        clone.IsNone_ = IsNone_;
+        return clone;
+    }
+
+  protected:
+    void Move(OptionalString &To)
+    {
+        To.Value_ = Value_;
+        To.IsNull_ = IsNull_;
+        To.IsNone_ = IsNone_;
+        IsNone_ = true;
+    }
+
   public:
     typedef _StringType Type;
     typedef const Type &ConstRefType;
@@ -270,8 +275,161 @@ template <class _StringType> class OptionalString
     bool IsNull_;
     bool IsNone_;
 };
+} // namespace Details
 
-template <> class Optional<String> : public OptionalString<String>
+template <> class Optional<const String &> : public Details::OptionalConstStringRef<String>
+{
+    WIN32EX_MOVE_ALWAYS_CLASS(Optional)
+
+  public:
+    Optional Clone() const
+    {
+        Optional clone(OptionalConstStringRef<String>::Clone());
+        return clone;
+    }
+
+  private:
+    void Move(Optional &To)
+    {
+        OptionalConstStringRef<String>::Move(To);
+    }
+
+  public:
+    Optional() : OptionalConstStringRef()
+    {
+    }
+
+    Optional(None none) : OptionalConstStringRef(none)
+    {
+    }
+
+    Optional(OptionalConstStringRef::ConstTypeRefType Value) : OptionalConstStringRef(Value)
+    {
+    }
+
+    Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
+    {
+    }
+};
+
+template <> class Optional<const StringW &> : public Details::OptionalConstStringRef<StringW>
+{
+    WIN32EX_MOVE_ALWAYS_CLASS(Optional)
+
+  public:
+    Optional Clone() const
+    {
+        Optional clone(OptionalConstStringRef<StringW>::Clone());
+        return clone;
+    }
+
+  private:
+    void Move(Optional &To)
+    {
+        OptionalConstStringRef<StringW>::Move(To);
+    }
+
+  public:
+    Optional() : OptionalConstStringRef()
+    {
+    }
+
+    Optional(None none) : OptionalConstStringRef(none)
+    {
+    }
+
+    Optional(OptionalConstStringRef::ConstTypeRefType Value) : OptionalConstStringRef(Value)
+    {
+    }
+
+    Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
+    {
+    }
+};
+
+template <> class Optional<String> : public Details::OptionalString<String>
+{
+    WIN32EX_MOVE_ALWAYS_CLASS(Optional)
+
+  public:
+    Optional Clone() const
+    {
+        Optional clone(OptionalString<String>::Clone());
+        return clone;
+    }
+
+  private:
+    void Move(Optional &To)
+    {
+        OptionalString<String>::Move(To);
+    }
+
+  public:
+    Optional(Details::OptionalString<String> &Other) : OptionalString(Other)
+    {
+    }
+
+    Optional() : OptionalString()
+    {
+    }
+
+    Optional(None none) : OptionalString(none)
+    {
+    }
+
+    Optional(OptionalString::ConstOptionalRefType Value) : OptionalString(Value)
+    {
+    }
+
+    Optional(OptionalString::ConstPtrType Value) : OptionalString(Value)
+    {
+    }
+
+    Optional(OptionalString::ConstRefType Value) : OptionalString(Value)
+    {
+    }
+};
+
+template <> class Optional<StringW> : public Details::OptionalString<StringW>
+{
+    WIN32EX_MOVE_ALWAYS_CLASS(Optional)
+
+  public:
+    Optional Clone() const
+    {
+        Optional clone(OptionalString<StringW>::Clone());
+        return clone;
+    }
+
+  private:
+    void Move(Optional &To)
+    {
+        OptionalString<StringW>::Move(To);
+    }
+
+  public:
+    Optional() : OptionalString()
+    {
+    }
+
+    Optional(None none) : OptionalString(none)
+    {
+    }
+
+    Optional(OptionalString::ConstOptionalRefType Value) : OptionalString(Value)
+    {
+    }
+
+    Optional(OptionalString::ConstPtrType Value) : OptionalString(Value)
+    {
+    }
+
+    Optional(OptionalString::ConstRefType Value) : OptionalString(Value)
+    {
+    }
+};
+
+template <> class Optional<const String> : public Details::OptionalString<const String>
 {
   public:
     Optional() : OptionalString()
@@ -295,7 +453,7 @@ template <> class Optional<String> : public OptionalString<String>
     }
 };
 
-template <> class Optional<StringW> : public OptionalString<StringW>
+template <> class Optional<const StringW> : public Details::OptionalString<const StringW>
 {
   public:
     Optional() : OptionalString()
@@ -319,56 +477,99 @@ template <> class Optional<StringW> : public OptionalString<StringW>
     }
 };
 
-template <> class Optional<const String> : public OptionalString<const String>
+template <typename T> class Optional<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
+    WIN32EX_MOVE_ALWAYS_CLASS_EX(Optional, Value_(Other.Value_))
+
   public:
-    Optional() : OptionalString()
+    Optional Clone() const
+    {
+        Optional clone;
+        clone.Value_ = Value_;
+        clone.IsNone_ = IsNone_;
+        return clone;
+    }
+
+  private:
+    void Move(Optional &To)
+    {
+        To.Value_ = Value_;
+        To.IsNone_ = IsNone_;
+        IsNone_ = true;
+    }
+
+  public:
+    typedef T Type;
+
+    Optional() : Value_(NULL), IsNone_(true)
     {
     }
 
-    Optional(None none) : OptionalString(none)
+    Optional(None) : Value_(NULL), IsNone_(true)
     {
     }
 
-    Optional(OptionalString::ConstOptionalRefType Value) : OptionalString(Value)
+    Optional(T Value) : Value_(&Value), IsNone_(false)
     {
     }
 
-    Optional(OptionalString::ConstPtrType Value) : OptionalString(Value)
+    T Get() const
     {
+        if (IsNone_)
+            throw Exception();
+
+        return *Value_;
     }
 
-    Optional(OptionalString::ConstRefType Value) : OptionalString(Value)
+    operator T() const
     {
+        return Get();
     }
+
+    T operator->() const
+    {
+        if (IsNone_)
+            throw Exception();
+
+        return Value_;
+    }
+
+    bool IsSome() const
+    {
+        return !IsNone_;
+    }
+
+    bool IsNone() const
+    {
+        return IsNone_;
+    }
+
+  private:
+    typename std::remove_reference<T>::type *Value_;
+    bool IsNone_;
 };
 
-template <> class Optional<const StringW> : public OptionalString<const StringW>
+template <typename T> class Optional<T, typename std::enable_if<!std::is_reference<T>::value>::type>
 {
+    WIN32EX_MOVE_ALWAYS_CLASS_EX(Optional, Value_(Other.Value_))
+
   public:
-    Optional() : OptionalString()
+    Optional Clone() const
     {
+        Optional clone;
+        clone.Value_ = Value_;
+        clone.IsNone_ = IsNone_;
+        return clone;
     }
 
-    Optional(None none) : OptionalString(none)
+  private:
+    void Move(Optional &To)
     {
+        To.Value_ = Value_;
+        To.IsNone_ = IsNone_;
+        IsNone_ = true;
     }
 
-    Optional(OptionalString::ConstOptionalRefType Value) : OptionalString(Value)
-    {
-    }
-
-    Optional(OptionalString::ConstPtrType Value) : OptionalString(Value)
-    {
-    }
-
-    Optional(OptionalString::ConstRefType Value) : OptionalString(Value)
-    {
-    }
-};
-
-template <typename T> class Optional<T>
-{
   public:
     typedef T Type;
 
@@ -427,12 +628,12 @@ template <typename T> class Optional<T>
     }
 
   private:
-    T Value_;
+    typename std::remove_const<T>::type Value_;
     bool IsNone_;
 };
 
 #if defined(__cpp_variadic_templates)
-template <typename... Args> bool IsAll(const Optional<Args> &... args)
+template <typename... Args> bool IsAll(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsNone()...,
@@ -446,7 +647,7 @@ template <typename... Args> bool IsAll(const Optional<Args> &... args)
     return true;
 }
 
-template <typename... Args> bool IsSome(const Optional<Args> &... args)
+template <typename... Args> bool IsSome(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsSome()...,
@@ -460,12 +661,12 @@ template <typename... Args> bool IsSome(const Optional<Args> &... args)
     return false;
 }
 
-template <typename... Args> bool IsAny(const Optional<Args> &... args)
+template <typename... Args> bool IsAny(const Optional<Args> &...args)
 {
     return IsSome(args...);
 }
 
-template <typename... Args> bool IsNone(const Optional<Args> &... args)
+template <typename... Args> bool IsNone(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsSome()...,

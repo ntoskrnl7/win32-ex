@@ -194,7 +194,7 @@ template <typename _StringType> class BasicServices
     typedef typename StringType::value_type CharType;
 
 #if defined(__cpp_variadic_templates)
-    template <class... ServiceType> static bool Run(ServiceType &... service)
+    template <class... ServiceType> static bool Run(ServiceType &...service)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(CharType *)service.Config_.Name().c_str(),
@@ -1711,7 +1711,7 @@ template <typename _StringType, const BasicServiceConfig<_StringType> &Config> c
     HDEVNOTIFY deviceNotifyHandle_;
 
     const BasicServiceConfig<StringType> &Config_;
-}; // namespace Win32Ex
+};
 
 template <const ServiceConfig &Config> class Service : public BasicService<String, Config>
 {

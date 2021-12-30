@@ -50,6 +50,20 @@ namespace Security
 {
 class Token
 {
+    WIN32EX_MOVE_ALWAYS_CLASS(Token)
+
+  private:
+    void Move(Token &To)
+    {
+        To.autoClose_ = autoClose_;
+        To.tokenHandle_ = tokenHandle_;
+        To.groups_ = groups_;
+
+        autoClose_ = true;
+        tokenHandle_ = NULL;
+        groups_ = NULL;
+    }
+
   public:
     Token(HANDLE TokenHandle, bool autoClose = true) : autoClose_(autoClose), tokenHandle_(TokenHandle), groups_(NULL)
     {
@@ -59,71 +73,64 @@ class Token
     {
         tokenHandle_ = LookupToken2(MAXIMUM_ALLOWED, condition);
     }
-#ifdef __cpp_rvalue_references
-    Token(Token &&Other) noexcept
-    {
-        tokenHandle_ = Other.tokenHandle_;
-        Other.tokenHandle_ = NULL;
-        groups_ = Other.groups_;
-        Other.groups_ = NULL;
-        autoClose_ = Other.autoClose_;
-        Other.autoClose_ = false;
-    }
-#endif
+
     ~Token()
     {
         if (IsValid() && autoClose_)
             CloseHandle(tokenHandle_);
+
         if (groups_)
             FreeTokenGroups(groups_);
     }
 
-    BOOL IsValid()
+    bool IsValid() const
     {
         return tokenHandle_ != NULL;
     }
 
-    operator HANDLE()
+    operator HANDLE() const
     {
         return tokenHandle_;
     }
 
-    TokenPrivileges AdjustPrivileges(const std::vector<LUID> &Privileges)
+    TokenPrivileges AdjustPrivileges(const std::vector<LUID> &Privileges) const
     {
         return TokenPrivileges(Privileges, tokenHandle_);
     }
 
-    std::vector<LUID_AND_ATTRIBUTES> GetPrivileges()
+    std::vector<LUID_AND_ATTRIBUTES> GetPrivileges() const
     {
         std::vector<LUID_AND_ATTRIBUTES> luids;
         PTOKEN_PRIVILEGES privs = GetTokenPrivileges(tokenHandle_);
         if (!privs)
             return std::vector<LUID_AND_ATTRIBUTES>();
+
         for (DWORD i = 0; i < privs->PrivilegeCount; ++i)
             luids.push_back(privs->Privileges[i]);
+
         return luids;
     }
 
-    bool IsAcquired(const LUID &Privilege)
+    bool IsAcquired(const LUID &Privilege) const
     {
         PRIVILEGE_SET set;
         set.Control = PRIVILEGE_SET_ALL_NECESSARY;
         set.PrivilegeCount = 1;
         set.Privilege[0].Luid = Privilege;
         set.Privilege[0].Attributes = SE_PRIVILEGE_ENABLED;
+
         BOOL result;
         PrivilegeCheck(tokenHandle_, &set, &result);
         return result == TRUE;
     }
 
-    bool IsAcquired(const std::vector<LUID> &Privileges)
+    bool IsAcquired(const std::vector<LUID> &Privileges) const
     {
         PPRIVILEGE_SET set =
             (PPRIVILEGE_SET)malloc(sizeof(PRIVILEGE_SET) + (sizeof(LUID_AND_ATTRIBUTES) * (Privileges.size() - 1)));
         if (!set)
-        {
             return false;
-        }
+
         set->Control = PRIVILEGE_SET_ALL_NECESSARY;
         set->PrivilegeCount = (DWORD)Privileges.size();
         PLUID_AND_ATTRIBUTES priv = set->Privilege;
@@ -132,21 +139,24 @@ class Token
             priv->Luid = *it;
             priv->Attributes = SE_PRIVILEGE_ENABLED;
         }
+
         BOOL result;
         PrivilegeCheck(tokenHandle_, set, &result);
         free(set);
         return result == TRUE;
     }
 
-    std::vector<SID_AND_ATTRIBUTES> GetGroups()
+    std::vector<SID_AND_ATTRIBUTES> GetGroups() const
     {
         std::vector<SID_AND_ATTRIBUTES> ret;
         if (groups_)
             FreeTokenGroups(groups_);
+
         groups_ = GetTokenGroups(tokenHandle_);
         if (groups_)
             for (DWORD i = 0; i < groups_->GroupCount; ++i)
                 ret.push_back(groups_->Groups[i]);
+
         return ret;
     }
 
@@ -202,8 +212,8 @@ class Token
 
   private:
     bool autoClose_;
-    PTOKEN_GROUPS groups_;
     HANDLE tokenHandle_;
+    mutable PTOKEN_GROUPS groups_;
 };
 } // namespace Security
 } // namespace Win32Ex
