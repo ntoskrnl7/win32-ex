@@ -1,6 +1,6 @@
 ﻿#include <Win32Ex/System/Object.h>
 
-BOOL MakePermanentObjectTestC()
+BOOL MakePermanentObjectC()
 {
     HANDLE handle = CreateMutex(NULL, FALSE, TEXT("Test"));
     if (handle != NULL)

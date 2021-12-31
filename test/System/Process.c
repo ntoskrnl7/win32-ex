@@ -11,7 +11,7 @@
 #endif
 #endif
 
-BOOL CreateUserAccountProcessTestC()
+BOOL CreateUserAccountProcessAllSessionsC()
 {
     BOOL result = TRUE;
     PVOID OldValue = NULL;
@@ -76,7 +76,7 @@ BOOL CreateUserAccountProcessTestC()
     return result;
 }
 
-BOOL CreateSystemAccountProcessTestC()
+BOOL CreateSystemAccountProcessAllSessionsC()
 {
     if (!IsUserAdmin(NULL))
         return TRUE;

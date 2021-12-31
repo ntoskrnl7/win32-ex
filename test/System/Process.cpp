@@ -12,7 +12,7 @@
 #endif
 #endif
 
-TEST(ProcessTest, ThisProcessTest)
+TEST(ProcessTest, ThisProcess)
 {
     Win32Ex::String path = Win32Ex::ThisProcess::ExecutablePath();
     EXPECT_EQ(path, Win32Ex::ThisProcess::ExecutablePath());
@@ -20,54 +20,61 @@ TEST(ProcessTest, ThisProcessTest)
     EXPECT_EQ(path, Win32Ex::ThisProcess::CurrentDirectory());
 }
 
-TEST(ProcessTest, ParentTest)
+TEST(ProcessTest, Parent)
 {
     Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
     while (parent.IsValid())
     {
         EXPECT_STREQ(parent.ExecutablePath().c_str(), Win32Ex::System::Process(parent.Id()).ExecutablePath().c_str());
+        if (parent.IsAttached())
+            parent.Wait(Win32Ex::Duration(100));
         parent = parent.Parent();
     }
 }
 
-TEST(ProcessTest, ParentWTest)
+TEST(ProcessTest, ParentW)
 {
     Win32Ex::System::ProcessW parent = Win32Ex::ThisProcess::ParentW();
     while (parent.IsValid())
     {
         EXPECT_STREQ(parent.ExecutablePath().c_str(), Win32Ex::System::ProcessW(parent.Id()).ExecutablePath().c_str());
+        if (parent.IsAttached())
+            parent.Wait(Win32Ex::Duration(100));
         parent = parent.Parent();
     }
 }
 
-TEST(ProcessTest, ParentTTest)
+TEST(ProcessTest, ParentT)
 {
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-    Win32Ex::System::ProcessT parent = Win32Ex::ThisProcess::ParentT();
+    Win32Ex::System::ProcessT<> parent = Win32Ex::ThisProcess::ParentT();
 #else
-    Win32Ex::System::ProcessT parent = Win32Ex::ThisProcess::ParentT<Win32Ex::StringT>();
+    Win32Ex::System::ProcessT<> parent = Win32Ex::ThisProcess::ParentT<Win32Ex::StringT>();
 #endif
     while (parent.IsValid())
     {
-        EXPECT_STREQ(parent.ExecutablePath().c_str(), Win32Ex::System::ProcessT(parent.Id()).ExecutablePath().c_str());
+        EXPECT_STREQ(parent.ExecutablePath().c_str(),
+                     Win32Ex::System::ProcessT<>(parent.Id()).ExecutablePath().c_str());
+        if (parent.IsAttached())
+            parent.Wait(Win32Ex::Duration(100));
         parent = parent.Parent();
     }
 }
 
-TEST(ProcessTest, RunInvalidProcessTest)
+TEST(ProcessTest, RunInvalidProcess)
 {
     Win32Ex::System::UserAccountProcess process("!@#$test");
     EXPECT_FALSE(process.Run());
 }
 
-TEST(ProcessTest, AttachByProcessIdTest)
+TEST(ProcessTest, AttachByProcessId)
 {
     Win32Ex::System::Process process(GetCurrentProcessId());
     EXPECT_TRUE(process.IsAttached());
     EXPECT_STRCASEEQ(process.ExecutablePath().c_str(), Win32Ex::ThisProcess::ExecutablePath().c_str());
 }
 
-TEST(ProcessTest, AttachByHandleTest)
+TEST(ProcessTest, AttachByHandle)
 {
     Win32Ex::System::Process process(Win32Ex::System::ProcessHandle::FromHANDLE(GetCurrentProcess()));
     EXPECT_TRUE(process.IsAttached());
@@ -78,29 +85,29 @@ TEST(ProcessTest, AttachByHandleTest)
     EXPECT_STRCASEEQ(process.ExecutablePath().c_str(), Win32Ex::ThisProcess::ExecutablePath().c_str());
 }
 
-TEST(ProcessTest, RunnableProcessTest)
+TEST(ProcessTest, RunnableProcess)
 {
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
-    Win32Ex::System::UserAccountProcess process("CMD", "/C QUERY SESSION");
+    Win32Ex::System::UserAccountProcess process("CMD", "/C WHOAMI");
     Win32Ex::System::RunnableProcess &runnable = process;
     EXPECT_TRUE(runnable.Run());
 
     if (Win32Ex::ThisProcess::IsAdmin())
     {
-        Win32Ex::System::SystemAccountProcess process("CMD", "/C QUERY SESSION");
+        Win32Ex::System::SystemAccountProcess process("CMD", "/C WHOAMI");
         Win32Ex::System::RunnableProcess &runnable = process;
         EXPECT_TRUE(runnable.Run());
     }
 
     {
-        Win32Ex::System::ElevatedProcess process("CMD.exe", "/C QUERY SESSION");
+        Win32Ex::System::ElevatedProcess process("CMD.exe", "/C WHOAMI");
         Win32Ex::System::RunnableProcess &runnable = process;
         runnable.Run(); // EXPECT_TRUE(runnable.Run());
     }
 
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
 #if !defined(__cpp_lambdas)
@@ -114,7 +121,7 @@ void onEnterW(Win32Ex::System::RunnableProcessW *process)
     Sleep(500);
     process->Exit();
 }
-void onEnterT(Win32Ex::System::RunnableProcessT *process)
+void onEnterT(Win32Ex::System::RunnableProcessT<> *process)
 {
     Sleep(500);
     process->Exit();
@@ -153,16 +160,16 @@ void onError(bool *terminated, DWORD, const std::exception &)
 #define _STD_NS_ std
 #endif
 
-TEST(ProcessTest, UserAccountProcessTest)
+TEST(ProcessTest, UserAccountProcess)
 {
     {
-        PVOID OldValue = NULL;
-        Wow64DisableWow64FsRedirection(&OldValue);
+        PVOID oldValue = NULL;
+        Wow64DisableWow64FsRedirection(&oldValue);
 
         Win32Ex::System::UserAccountProcess process("CMD");
         EXPECT_TRUE(process.Run(Win32Ex::None(), "/C QUERY SESSION"));
 
-        Wow64RevertWow64FsRedirection(OldValue);
+        Wow64RevertWow64FsRedirection(oldValue);
     }
 
     Win32Ex::System::UserAccountProcess process("notepad.exe");
@@ -187,16 +194,16 @@ TEST(ProcessTest, UserAccountProcessTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, UserAccountProcessWTest)
+TEST(ProcessTest, UserAccountProcessW)
 {
     {
-        PVOID OldValue = NULL;
-        Wow64DisableWow64FsRedirection(&OldValue);
+        PVOID oldValue = NULL;
+        Wow64DisableWow64FsRedirection(&oldValue);
 
         Win32Ex::System::UserAccountProcessW process(L"CMD", L"/C QUERY SESSION");
         EXPECT_TRUE(process.Run());
 
-        Wow64RevertWow64FsRedirection(OldValue);
+        Wow64RevertWow64FsRedirection(oldValue);
     }
     Win32Ex::System::UserAccountProcessW process(L"notepad.exe");
     bool terminated = false;
@@ -220,16 +227,16 @@ TEST(ProcessTest, UserAccountProcessWTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, UserAccountProcessTTest)
+TEST(ProcessTest, UserAccountProcessT)
 {
     {
-        PVOID OldValue = NULL;
-        Wow64DisableWow64FsRedirection(&OldValue);
+        PVOID oldValue = NULL;
+        Wow64DisableWow64FsRedirection(&oldValue);
 
         Win32Ex::System::UserAccountProcessT process(TEXT("CMD"), TEXT("/C QUERY SESSION"));
         EXPECT_TRUE(process.Run());
 
-        Wow64RevertWow64FsRedirection(OldValue);
+        Wow64RevertWow64FsRedirection(oldValue);
     }
     Win32Ex::System::UserAccountProcessT process(TEXT("notepad.exe"));
     bool terminated = false;
@@ -253,7 +260,7 @@ TEST(ProcessTest, UserAccountProcessTTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, ElevatedProcessTest)
+TEST(ProcessTest, ElevatedProcess)
 {
     Win32Ex::System::ElevatedProcess process("notepad.exe");
     bool terminated = false;
@@ -276,7 +283,7 @@ TEST(ProcessTest, ElevatedProcessTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, ElevatedProcessWTest)
+TEST(ProcessTest, ElevatedProcessW)
 {
     Win32Ex::System::ElevatedProcessW process(L"notepad.exe");
     bool terminated = false;
@@ -299,9 +306,9 @@ TEST(ProcessTest, ElevatedProcessWTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, ElevatedProcessTTest)
+TEST(ProcessTest, ElevatedProcessT)
 {
-    Win32Ex::System::ElevatedProcessT process(TEXT("notepad.exe"));
+    Win32Ex::System::ElevatedProcessT<> process(TEXT("notepad.exe"));
     bool terminated = false;
 #if defined(__cpp_lambdas)
     process
@@ -322,18 +329,18 @@ TEST(ProcessTest, ElevatedProcessTTest)
     EXPECT_TRUE(terminated);
 }
 
-TEST(ProcessTest, SystemAccountProcessTest)
+TEST(ProcessTest, SystemAccountProcess)
 {
     if (Win32Ex::ThisProcess::IsAdmin())
     {
         {
-            PVOID OldValue = NULL;
-            Wow64DisableWow64FsRedirection(&OldValue);
+            PVOID oldValue = NULL;
+            Wow64DisableWow64FsRedirection(&oldValue);
 
-            Win32Ex::System::SystemAccountProcess process("CMD", "/C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcess process("CMD", "/C WHOAMI");
             EXPECT_TRUE(process.Run());
 
-            Wow64RevertWow64FsRedirection(OldValue);
+            Wow64RevertWow64FsRedirection(oldValue);
         }
 
         Win32Ex::System::SystemAccountProcess process("notepad.exe");
@@ -362,18 +369,18 @@ TEST(ProcessTest, SystemAccountProcessTest)
     }
 }
 
-TEST(ProcessTest, SystemAccountProcessWTest)
+TEST(ProcessTest, SystemAccountProcessW)
 {
     if (Win32Ex::ThisProcess::IsAdmin())
     {
         {
-            PVOID OldValue = NULL;
-            Wow64DisableWow64FsRedirection(&OldValue);
+            PVOID oldValue = NULL;
+            Wow64DisableWow64FsRedirection(&oldValue);
 
-            Win32Ex::System::SystemAccountProcessW process(L"CMD", L"/C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcessW process(L"CMD", L"/C WHOAMI");
             EXPECT_TRUE(process.Run());
 
-            Wow64RevertWow64FsRedirection(OldValue);
+            Wow64RevertWow64FsRedirection(oldValue);
         }
 
         Win32Ex::System::SystemAccountProcessW process(L"notepad.exe");
@@ -402,18 +409,18 @@ TEST(ProcessTest, SystemAccountProcessWTest)
     }
 }
 
-TEST(ProcessTest, SystemAccountProcessTTest)
+TEST(ProcessTest, SystemAccountProcessT)
 {
     if (Win32Ex::ThisProcess::IsAdmin())
     {
         {
-            PVOID OldValue = NULL;
-            Wow64DisableWow64FsRedirection(&OldValue);
+            PVOID oldValue = NULL;
+            Wow64DisableWow64FsRedirection(&oldValue);
 
-            Win32Ex::System::SystemAccountProcessT process(TEXT("CMD"), TEXT("/C QUERY SESSION"));
+            Win32Ex::System::SystemAccountProcessT process(TEXT("CMD"), TEXT("/C WHOAMI"));
             EXPECT_TRUE(process.Run());
 
-            Wow64RevertWow64FsRedirection(OldValue);
+            Wow64RevertWow64FsRedirection(oldValue);
         }
 
         Win32Ex::System::SystemAccountProcessT process(TEXT("notepad.exe"));
@@ -455,7 +462,7 @@ void onErrorCV(PCONDITION_VARIABLE cv, bool *terminated, DWORD, const std::excep
 }
 #endif
 
-TEST(ProcessTest, ElevatedProcessRunAsyncTest)
+TEST(ProcessTest, ElevatedProcessRunAsync)
 {
     CRITICAL_SECTION cs;
     CONDITION_VARIABLE cv;
@@ -492,7 +499,7 @@ TEST(ProcessTest, ElevatedProcessRunAsyncTest)
     EXPECT_FALSE(waitable);
 }
 
-TEST(ProcessTest, UserAccountProcessRunAsyncTest)
+TEST(ProcessTest, UserAccountProcessRunAsync)
 {
     CRITICAL_SECTION cs;
     CONDITION_VARIABLE cv;
@@ -529,10 +536,10 @@ TEST(ProcessTest, UserAccountProcessRunAsyncTest)
     EXPECT_FALSE(waitable);
 }
 
-TEST(ProcessTest, UserAccountProcessAllSessionsTest)
+TEST(ProcessTest, UserAccountProcessAllSessions)
 {
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -570,13 +577,13 @@ TEST(ProcessTest, UserAccountProcessAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, UserAccountProcessWAllSessionsTest)
+TEST(ProcessTest, UserAccountProcessWAllSessions)
 {
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -614,13 +621,13 @@ TEST(ProcessTest, UserAccountProcessWAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, UserAccountProcessTAllSessionsTest)
+TEST(ProcessTest, UserAccountProcessTAllSessions)
 {
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -659,16 +666,16 @@ TEST(ProcessTest, UserAccountProcessTAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, SystemAccountProcessAllSessionsTest)
+TEST(ProcessTest, SystemAccountProcessAllSessions)
 {
     if (!Win32Ex::ThisProcess::IsAdmin())
         return;
 
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -706,16 +713,16 @@ TEST(ProcessTest, SystemAccountProcessAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, SystemAccountProcessWAllSessionsTest)
+TEST(ProcessTest, SystemAccountProcessWAllSessions)
 {
     if (!Win32Ex::ThisProcess::IsAdmin())
         return;
 
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -753,16 +760,16 @@ TEST(ProcessTest, SystemAccountProcessWAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, SystemAccountProcessTAllSessionsTest)
+TEST(ProcessTest, SystemAccountProcessTAllSessions)
 {
     if (!Win32Ex::ThisProcess::IsAdmin())
         return;
 
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -801,15 +808,15 @@ TEST(ProcessTest, SystemAccountProcessTAllSessionsTest)
 
         WTSFreeMemory(sessionInfo);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
 #include <Win32Ex/Security/Token.hpp>
 
-TEST(ProcessTest, CreateUserAccountProcessTest)
+TEST(ProcessTest, CreateUserAccountProcessAllSessions)
 {
-    PVOID OldValue = NULL;
-    Wow64DisableWow64FsRedirection(&OldValue);
+    PVOID oldValue = NULL;
+    Wow64DisableWow64FsRedirection(&oldValue);
 
     PWTS_SESSION_INFO sessionInfo = NULL;
     DWORD count = 0;
@@ -868,15 +875,15 @@ TEST(ProcessTest, CreateUserAccountProcessTest)
         }
         free(cmd);
     }
-    Wow64RevertWow64FsRedirection(OldValue);
+    Wow64RevertWow64FsRedirection(oldValue);
 }
 
-TEST(ProcessTest, CreateSystemAccountProcessTest)
+TEST(ProcessTest, CreateSystemAccountProcessAllSessions)
 {
     if (IsUserAdmin())
     {
-        PVOID OldValue = NULL;
-        Wow64DisableWow64FsRedirection(&OldValue);
+        PVOID oldValue = NULL;
+        Wow64DisableWow64FsRedirection(&oldValue);
 
         PWTS_SESSION_INFO sessionInfo = NULL;
         DWORD count = 0;
@@ -932,7 +939,7 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
             }
             free(cmd);
         }
-        Wow64RevertWow64FsRedirection(OldValue);
+        Wow64RevertWow64FsRedirection(oldValue);
     }
 }
 
@@ -942,16 +949,16 @@ TEST(ProcessTest, CreateSystemAccountProcessTest)
  */
 extern "C"
 {
-    extern BOOL CreateUserAccountProcessTestC();
-    extern BOOL CreateSystemAccountProcessTestC();
+    extern BOOL CreateUserAccountProcessAllSessionsC();
+    extern BOOL CreateSystemAccountProcessAllSessionsC();
 }
 
-TEST(ProcessTest, CreateUserAccountProcessTestC)
+TEST(ProcessTest, CreateUserAccountProcessAllSessionsC)
 {
-    EXPECT_TRUE(CreateUserAccountProcessTestC() == TRUE);
+    EXPECT_TRUE(CreateUserAccountProcessAllSessionsC() == TRUE);
 }
 
-TEST(ProcessTest, CreateSystemAccountProcessTestC)
+TEST(ProcessTest, CreateSystemAccountProcessAllSessionsC)
 {
-    EXPECT_TRUE(CreateSystemAccountProcessTestC() == TRUE);
+    EXPECT_TRUE(CreateSystemAccountProcessAllSessionsC() == TRUE);
 }

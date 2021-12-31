@@ -11,9 +11,8 @@ Abstract:
     This Module implements the Process, ProcessW, ProcessT /
                                 ElevatedProcess, ElevatedProcessW, ElevatedProcessT /
                                 UserAccountProcess, UserAccountProcessW, UserAccountProcessT /
-                                SystemAccountProcess, SystemAccountProcessW, SystemAccountProcessT
-                                BasicProcess, BasicRunnableProcess, BasicElevatedProcess, BasicRunnableSessionProcess
-class.
+                                SystemAccountProcess, SystemAccountProcessW, SystemAccountProcessT /
+                                RunnableSessionProcessT class.
 
 Author:
 
@@ -115,16 +114,16 @@ struct ProcessHandle
     }
 };
 
-template <typename _StringType> class BasicRunnableProcess;
+template <typename _StringType> class RunnableProcessT;
 
-template <typename _StringType> class BasicProcess : public WaitableObject
+template <typename _StringType = StringT> class ProcessT : public WaitableObject
 {
-    friend class BasicRunnableProcess<_StringType>;
+    friend class RunnableProcessT<_StringType>;
 
-    WIN32EX_MOVE_ALWAYS_CLASS(BasicProcess)
+    WIN32EX_MOVE_ALWAYS_CLASS(ProcessT)
 
   private:
-    void Move(BasicProcess &To)
+    void Move(ProcessT &To)
     {
         To.processInfo_ = processInfo_;
         To.sessionId_ = sessionId_;
@@ -138,12 +137,12 @@ template <typename _StringType> class BasicProcess : public WaitableObject
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
-    BasicProcess(ProcessHandle ProcessHandle)
+    ProcessT(ProcessHandle ProcessHandle)
     {
         Attach_(ProcessHandle.value);
     }
 
-    BasicProcess(ProcessId ProcessId)
+    ProcessT(ProcessId ProcessId)
     {
         HANDLE hProcess = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, ProcessId);
         if (hProcess)
@@ -153,10 +152,10 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         }
 
         typename PROCESSENTRY32T<CharType>::Type pe32;
-        *this = GetProcessEntry_(ProcessId, pe32) ? BasicProcess(pe32) : BasicProcess();
+        *this = GetProcessEntry_(ProcessId, pe32) ? ProcessT(pe32) : ProcessT();
     }
 
-    ~BasicProcess()
+    ~ProcessT()
     {
         Detach_();
     }
@@ -204,24 +203,24 @@ template <typename _StringType> class BasicProcess : public WaitableObject
         return processInfo_.hProcess;
     }
 
-    BasicProcess<StringType> Parent()
+    ProcessT<StringType> Parent()
     {
         DWORD parentProcessId = GetParentProcessId(processInfo_.dwProcessId);
-        BasicProcess<StringType> process = BasicProcess<StringType>(parentProcessId);
+        ProcessT<StringType> process = ProcessT<StringType>(parentProcessId);
         if (process.IsValid())
             return process;
 
         typename PROCESSENTRY32T<CharType>::Type pe32;
-        return GetProcessEntry_(parentProcessId, pe32) ? BasicProcess<StringType>(pe32) : BasicProcess<StringType>();
+        return GetProcessEntry_(parentProcessId, pe32) ? ProcessT<StringType>(pe32) : ProcessT<StringType>();
     }
 
   private:
-    BasicProcess() : sessionId_(MAXDWORD)
+    ProcessT() : sessionId_(MAXDWORD)
     {
         ZeroMemory(&processInfo_, sizeof(processInfo_));
     }
 
-    BasicProcess(const typename PROCESSENTRY32T<CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
+    ProcessT(const typename PROCESSENTRY32T<CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
     {
         if (!ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_))
             sessionId_ = MAXDWORD;
@@ -318,12 +317,12 @@ template <typename _StringType> class BasicProcess : public WaitableObject
     // WaitableObject Interface Implementations.
     //
   public:
-    bool IsWaitable()
+    bool IsWaitable() override
     {
         return processInfo_.hProcess != NULL;
     }
 
-    bool Wait(Duration Timeout)
+    bool Wait(Duration Timeout) override
     {
         return WaitForSingleObject(processInfo_.hProcess, Timeout) == WAIT_OBJECT_0;
     }
@@ -335,26 +334,26 @@ enum ProcessAccountType
     UserAccount
 };
 
-template <typename _StringType, ProcessAccountType _Type> class BasicRunnableSessionProcess;
-template <typename _StringType> class BasicElevatedProcess;
+template <ProcessAccountType _Type, typename _StringType> class RunnableSessionProcessT;
+template <typename _StringType> class ElevatedProcessT;
 
-template <typename _StringType> class BasicRunnableProcess : public BasicProcess<_StringType>
+template <typename _StringType = StringT> class RunnableProcessT : public ProcessT<_StringType>
 {
-    friend class BasicRunnableSessionProcess<_StringType, SystemAccount>;
-    friend class BasicRunnableSessionProcess<_StringType, UserAccount>;
-    friend class BasicElevatedProcess<_StringType>;
-    friend class BasicElevatedProcess<_StringType>;
+    friend class RunnableSessionProcessT<SystemAccount, _StringType>;
+    friend class RunnableSessionProcessT<UserAccount, _StringType>;
+    friend class ElevatedProcessT<_StringType>;
+    friend class ElevatedProcessT<_StringType>;
 
   public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
   private:
-    typedef BasicProcess<StringType> _BasicProcess;
+    typedef ProcessT<StringType> _Process;
 
-    typedef std::function<void(BasicRunnableProcess &)> ProcessEnterCallbackWithSelf;
-    typedef std::function<void(BasicRunnableProcess &)> ProcessExitCallbackWithSelf;
-    typedef std::function<void(BasicRunnableProcess &, DWORD, const std::exception &)> ProcessErrorCallbackWithSelf;
+    typedef std::function<void(RunnableProcessT &)> ProcessEnterCallbackWithSelf;
+    typedef std::function<void(RunnableProcessT &)> ProcessExitCallbackWithSelf;
+    typedef std::function<void(RunnableProcessT &, DWORD, const std::exception &)> ProcessErrorCallbackWithSelf;
 
     typedef std::function<void()> ProcessEnterCallback;
     typedef std::function<void()> ProcessExitCallback;
@@ -363,27 +362,27 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     void InitCallbacks_()
     {
         enterCallbackWithSelf_ =
-            _STD_NS_::bind(&BasicRunnableProcess::EnterCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
+            _STD_NS_::bind(&RunnableProcessT::EnterCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
         exitCallbackWithSelf_ =
-            _STD_NS_::bind(&BasicRunnableProcess::ExitCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
+            _STD_NS_::bind(&RunnableProcessT::ExitCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1);
         errorCallbackWithSelf_ =
-            _STD_NS_::bind(&BasicRunnableProcess::ErrorCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1,
+            _STD_NS_::bind(&RunnableProcessT::ErrorCallbackWithSelfDefault_, this, _STD_NS_::placeholders::_1,
                            _STD_NS_::placeholders::_2, _STD_NS_::placeholders::_3);
     }
 
-    void EnterCallbackWithSelfDefault_(BasicRunnableProcess &)
+    void EnterCallbackWithSelfDefault_(RunnableProcessT &)
     {
         if (enterCallback_)
             enterCallback_();
     };
 
-    void ExitCallbackWithSelfDefault_(BasicRunnableProcess &)
+    void ExitCallbackWithSelfDefault_(RunnableProcessT &)
     {
         if (exitCallback_)
             exitCallback_();
     };
 
-    void ErrorCallbackWithSelfDefault_(BasicRunnableProcess &, DWORD LastError, const std::exception &e)
+    void ErrorCallbackWithSelfDefault_(RunnableProcessT &, DWORD LastError, const std::exception &e)
     {
         if (errorCallback_)
             errorCallback_(LastError, e);
@@ -391,7 +390,7 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
 
     static DWORD WINAPI ExitDetectionThreadProc_(PVOID lpThreadParameter)
     {
-        BasicRunnableProcess *self = (BasicRunnableProcess *)lpThreadParameter;
+        RunnableProcessT *self = (RunnableProcessT *)lpThreadParameter;
         HANDLE handles[2] = {self->hThreadStopEvent_, self->processInfo_.hProcess};
         switch (WaitForMultipleObjects(2, handles, FALSE, INFINITE))
         {
@@ -425,25 +424,25 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     }
 
   protected:
-    BasicRunnableProcess(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
-                         const Optional<const StringType &> &CurrentDirectory = None())
-        : _BasicProcess(), exitDetectionThread_(NULL), hThreadStopEvent_(NULL), arguments_(Arguments),
+    RunnableProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
+                     const Optional<const StringType &> &CurrentDirectory = None())
+        : _Process(), exitDetectionThread_(NULL), hThreadStopEvent_(NULL), arguments_(Arguments),
           currentDirectory_(CurrentDirectory)
     {
-        _BasicProcess::executablePath_ = ExecutablePath;
+        _Process::executablePath_ = ExecutablePath;
         InitCallbacks_();
     }
 
     bool Prepare()
     {
-        if (_BasicProcess::IsRunning())
+        if (_Process::IsRunning())
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, ERROR_BUSY, std::runtime_error("Already running"));
             return false;
         }
 
-        if (_BasicProcess::executablePath_.empty())
+        if (_Process::executablePath_.empty())
         {
             if (errorCallbackWithSelf_)
                 errorCallbackWithSelf_(*this, ERROR_INVALID_NAME,
@@ -500,7 +499,7 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     }
 
   public:
-    ~BasicRunnableProcess()
+    ~RunnableProcessT()
     {
         HANDLE handle = InterlockedExchangePointer(&hThreadStopEvent_, NULL);
         if (handle)
@@ -517,15 +516,15 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
 
     bool Exit()
     {
-        if (_BasicProcess::IsRunning())
-            return TerminateProcess(_BasicProcess::processInfo_.hProcess, ERROR_PROCESS_ABORTED) == TRUE;
+        if (_Process::IsRunning())
+            return TerminateProcess(_Process::processInfo_.hProcess, ERROR_PROCESS_ABORTED) == TRUE;
         return false;
     }
 
     bool IsAdmin() const
     {
         HANDLE hToken;
-        if (!OpenProcessToken(_BasicProcess::processInfo_.hProcess, TOKEN_QUERY | TOKEN_IMPERSONATE, &hToken))
+        if (!OpenProcessToken(_Process::processInfo_.hProcess, TOKEN_QUERY | TOKEN_IMPERSONATE, &hToken))
             return FALSE;
 
         bool bRet = FALSE;
@@ -547,37 +546,37 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     virtual Waitable RunAsync() = 0;
 
   public:
-    BasicRunnableProcess &OnEnterEx(ProcessEnterCallbackWithSelf Callback)
+    RunnableProcessT &OnEnterEx(ProcessEnterCallbackWithSelf Callback)
     {
         enterCallbackWithSelf_ = Callback;
         return *this;
     }
 
-    BasicRunnableProcess &OnExitEx(ProcessExitCallbackWithSelf Callback)
+    RunnableProcessT &OnExitEx(ProcessExitCallbackWithSelf Callback)
     {
         exitCallbackWithSelf_ = Callback;
         return *this;
     }
 
-    BasicRunnableProcess &OnErrorEx(ProcessErrorCallbackWithSelf Callback)
+    RunnableProcessT &OnErrorEx(ProcessErrorCallbackWithSelf Callback)
     {
         errorCallbackWithSelf_ = Callback;
         return *this;
     }
 
-    BasicRunnableProcess &OnEnter(ProcessEnterCallback Callback)
+    RunnableProcessT &OnEnter(ProcessEnterCallback Callback)
     {
         enterCallback_ = Callback;
         return *this;
     }
 
-    BasicRunnableProcess &OnExit(ProcessExitCallback Callback)
+    RunnableProcessT &OnExit(ProcessExitCallback Callback)
     {
         exitCallback_ = Callback;
         return *this;
     }
 
-    BasicRunnableProcess &OnError(ProcessErrorCallback Callback)
+    RunnableProcessT &OnError(ProcessErrorCallback Callback)
     {
         errorCallback_ = Callback;
         return *this;
@@ -602,9 +601,9 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     // WaitableObject Interface Implementations.
     //
   public:
-    bool Wait(Duration Timeout)
+    bool Wait(Duration Timeout) override
     {
-        if (WaitForSingleObject(_BasicProcess::processInfo_.hProcess, Timeout) == WAIT_OBJECT_0)
+        if (WaitForSingleObject(_Process::processInfo_.hProcess, Timeout) == WAIT_OBJECT_0)
         {
             //
             //  프로세스 종료 스레드가 동작중인지 확인합니다.
@@ -632,36 +631,35 @@ template <typename _StringType> class BasicRunnableProcess : public BasicProcess
     }
 };
 
-template <typename _StringType, ProcessAccountType _Type>
-class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
+template <ProcessAccountType _Type, typename _StringType = StringT>
+class RunnableSessionProcessT : public RunnableProcessT<_StringType>
 {
   private:
-    typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
+    typedef RunnableProcessT<_StringType> _RunnableProcess;
 
   public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
-    BasicRunnableSessionProcess(const StringType &ExecutablePath,
-                                const Optional<const StringType &> &Arguments = None(),
-                                const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
-                                const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
-                                BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : BasicRunnableProcess<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
+    RunnableSessionProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
+                            const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
+                            const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
+                            BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : RunnableProcessT<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
-        _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
+        _RunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
-    BasicRunnableSessionProcess(DWORD SessionId, const StringType &ExecutablePath,
-                                const Optional<const StringType &> &Arguments = None(),
-                                const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
-                                const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
-                                BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
-        : BasicRunnableProcess<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
+    RunnableSessionProcessT(DWORD SessionId, const StringType &ExecutablePath,
+                            const Optional<const StringType &> &Arguments = None(),
+                            const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
+                            const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
+                            BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+        : RunnableProcessT<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
-        _BasicRunnableProcess::sessionId_ = SessionId;
+        _RunnableProcess::sessionId_ = SessionId;
     }
 
     bool IsAdmin() const
@@ -669,17 +667,17 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         if (_Type == SystemAccount)
             return true;
 
-        return _BasicRunnableProcess::IsAdmin();
+        return _RunnableProcess::IsAdmin();
     }
 
     DWORD MainThreadId() const
     {
-        return _BasicRunnableProcess::processInfo_.dwThreadId;
+        return _RunnableProcess::processInfo_.dwThreadId;
     }
 
     HANDLE MainThreadHandle() const
     {
-        return _BasicRunnableProcess::processInfo_.hThread;
+        return _RunnableProcess::processInfo_.hThread;
     }
 
     bool Run(const Optional<DWORD> &SessionId = None(), const Optional<const StringType &> &Arguments = None(),
@@ -688,9 +686,9 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
              const Optional<BOOL> &InheritHandles = None(), const Optional<LPVOID> &EnvironmentBlock = None())
     {
         if (SessionId.IsSome())
-            _BasicRunnableProcess::sessionId_ = SessionId;
+            _RunnableProcess::sessionId_ = SessionId;
 
-        return RunAsync(_BasicRunnableProcess::sessionId_, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
+        return RunAsync(_RunnableProcess::sessionId_, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
                         InheritHandles, EnvironmentBlock)
             .Wait();
     }
@@ -701,17 +699,17 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
                       const Optional<typename Win32Ex::STARTUPINFOT<CharType>::Type *> &StartupInfo = None(),
                       const Optional<BOOL> &InheritHandles = None(), const Optional<LPVOID> &EnvironmentBlock = None())
     {
-        if (!_BasicRunnableProcess::Prepare())
+        if (!_RunnableProcess::Prepare())
             return Waitable(*this);
 
-        if (_BasicRunnableProcess::sessionId_ != SessionId)
-            _BasicRunnableProcess::sessionId_ = SessionId;
+        if (_RunnableProcess::sessionId_ != SessionId)
+            _RunnableProcess::sessionId_ = SessionId;
 
         if (Arguments.IsSome())
-            _BasicRunnableProcess::arguments_ = Arguments;
+            _RunnableProcess::arguments_ = Arguments;
 
         if (CurrentDirectory.IsSome())
-            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
+            _RunnableProcess::currentDirectory_ = CurrentDirectory;
 
         if (CreationFlags.IsSome())
             creationFlags_ = CreationFlags;
@@ -740,24 +738,23 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
             si.StartupInfo.cb = sizeof(typename Win32Ex::STARTUPINFOT<CharType>::Type);
         }
 
-        StringType command = _BasicRunnableProcess::executablePath_;
-        if (_BasicRunnableProcess::arguments_.IsSome())
+        StringType command = _RunnableProcess::executablePath_;
+        if (_RunnableProcess::arguments_.IsSome())
         {
             command += Details::Process::ConstValue<CharType>::Space();
-            command += _BasicRunnableProcess::arguments_;
+            command += _RunnableProcess::arguments_;
         }
 
         if (_Type == SystemAccount)
         {
             if (!CreateSystemAccountProcessT<CharType>(
-                    _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
+                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
                     (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
-                    _BasicRunnableProcess::currentDirectory_.IsSome() ? _BasicRunnableProcess::currentDirectory_.Get()
-                                                                      : NULL,
-                    &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
+                    _RunnableProcess::currentDirectory_.IsSome() ? _RunnableProcess::currentDirectory_.Get() : NULL,
+                    &si.StartupInfo, &(_RunnableProcess::processInfo_)))
             {
-                if (_BasicRunnableProcess::errorCallbackWithSelf_)
-                    _BasicRunnableProcess::errorCallbackWithSelf_(
+                if (_RunnableProcess::errorCallbackWithSelf_)
+                    _RunnableProcess::errorCallbackWithSelf_(
                         *this, GetLastError(), std::runtime_error("Failed to CreateSystemAccountProcessT"));
                 return Waitable(*this);
             }
@@ -765,27 +762,26 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
         else if (_Type == UserAccount)
         {
             if (!CreateUserAccountProcessT<CharType>(
-                    _BasicRunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
+                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
                     (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
-                    _BasicRunnableProcess::currentDirectory_.IsSome() ? _BasicRunnableProcess::currentDirectory_.Get()
-                                                                      : NULL,
-                    &si.StartupInfo, &(_BasicRunnableProcess::processInfo_)))
+                    _RunnableProcess::currentDirectory_.IsSome() ? _RunnableProcess::currentDirectory_.Get() : NULL,
+                    &si.StartupInfo, &(_RunnableProcess::processInfo_)))
             {
-                if (_BasicRunnableProcess::errorCallbackWithSelf_)
-                    _BasicRunnableProcess::errorCallbackWithSelf_(
-                        *this, GetLastError(), std::runtime_error("Failed to CreateUserAccountProcessT"));
+                if (_RunnableProcess::errorCallbackWithSelf_)
+                    _RunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
+                                                             std::runtime_error("Failed to CreateUserAccountProcessT"));
                 return Waitable(*this);
             }
         }
         else
         {
-            if (_BasicRunnableProcess::errorCallbackWithSelf_)
-                _BasicRunnableProcess::errorCallbackWithSelf_(*this, ERROR_CLASS_DOES_NOT_EXIST,
-                                                              std::runtime_error("Unknown process type"));
+            if (_RunnableProcess::errorCallbackWithSelf_)
+                _RunnableProcess::errorCallbackWithSelf_(*this, ERROR_CLASS_DOES_NOT_EXIST,
+                                                         std::runtime_error("Unknown process type"));
             return Waitable(*this);
         }
 
-        _BasicRunnableProcess::Finish();
+        _RunnableProcess::Finish();
 
         return Waitable(*this);
     }
@@ -797,52 +793,52 @@ class BasicRunnableSessionProcess : public BasicRunnableProcess<_StringType>
     const typename Win32Ex::STARTUPINFOT<CharType>::Type *startupInfo_;
 
     //
-    // BasicRunnableProcess Interface Implementations.
+    // RunnableProcessT Interface Implementations.
     //
   public:
-    virtual Waitable RunAsync()
+    Waitable RunAsync() override
     {
-        return RunAsync(_BasicRunnableProcess::sessionId_);
+        return RunAsync(_RunnableProcess::sessionId_);
     }
 };
 
-template <typename _StringType> class BasicElevatedProcess : public BasicRunnableProcess<_StringType>
+template <typename _StringType = StringT> class ElevatedProcessT : public RunnableProcessT<_StringType>
 {
   private:
-    typedef BasicRunnableProcess<_StringType> _BasicRunnableProcess;
+    typedef RunnableProcessT<_StringType> _RunnableProcess;
 
   public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
-    BasicElevatedProcess(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
-                         const Optional<const StringType &> &CurrentDirectory = None(), DWORD CmdShow = SW_SHOWDEFAULT)
-        : _BasicRunnableProcess(ExecutablePath, Arguments, CurrentDirectory)
+    ElevatedProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
+                     const Optional<const StringType &> &CurrentDirectory = None(), DWORD CmdShow = SW_SHOWDEFAULT)
+        : _RunnableProcess(ExecutablePath, Arguments, CurrentDirectory)
     {
         ZeroMemory(&executeInfo_, sizeof(executeInfo_));
 
         executeInfo_.cbSize = sizeof(executeInfo_);
         executeInfo_.fMask |= SEE_MASK_NOCLOSEPROCESS;
         executeInfo_.lpVerb = Details::Process::ConstValue<CharType>::RunAs();
-        executeInfo_.lpFile = _BasicRunnableProcess::executablePath_.c_str();
+        executeInfo_.lpFile = _RunnableProcess::executablePath_.c_str();
 
-        if (_BasicRunnableProcess::arguments_.IsSome())
-            executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
-        if (_BasicRunnableProcess::currentDirectory_.IsSome())
-            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
+        if (_RunnableProcess::arguments_.IsSome())
+            executeInfo_.lpParameters = _RunnableProcess::arguments_.Get();
+        if (_RunnableProcess::currentDirectory_.IsSome())
+            executeInfo_.lpDirectory = _RunnableProcess::currentDirectory_.Get();
 
         executeInfo_.nShow = CmdShow;
         if (CmdShow == SW_HIDE)
             executeInfo_.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
 
-        _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
+        _RunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
-    BasicElevatedProcess(typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
-        : _BasicRunnableProcess(ExecuteInfo.lpFile, ExecuteInfo.lpParameters, ExecuteInfo.lpDirectory)
+    ElevatedProcessT(typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
+        : _RunnableProcess(ExecuteInfo.lpFile, ExecuteInfo.lpParameters, ExecuteInfo.lpDirectory)
     {
         executeInfo_ = ExecuteInfo;
-        _BasicRunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
+        _RunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
 
     bool Run(const typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
@@ -854,33 +850,33 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
              const Optional<const StringType &> &CurrentDirectory = None(), const Optional<DWORD> &CmdShow = None())
     {
         if (Arguments.IsSome())
-            _BasicRunnableProcess::arguments_ = Arguments;
+            _RunnableProcess::arguments_ = Arguments;
 
-        return RunAsync(_BasicRunnableProcess::arguments_, CurrentDirectory, CmdShow).Wait();
+        return RunAsync(_RunnableProcess::arguments_, CurrentDirectory, CmdShow).Wait();
     }
 
     Waitable RunAsync(const Optional<const StringType &> &Arguments,
                       const Optional<const StringType &> &CurrentDirectory = None(),
                       const Optional<DWORD> &CmdShow = None())
     {
-        if (!_BasicRunnableProcess::Prepare())
+        if (!_RunnableProcess::Prepare())
             return Waitable(*this);
 
         executeInfo_.cbSize = sizeof(executeInfo_);
         executeInfo_.fMask |= SEE_MASK_NOCLOSEPROCESS;
         executeInfo_.lpVerb = Details::Process::ConstValue<CharType>::RunAs();
-        executeInfo_.lpFile = _BasicRunnableProcess::executablePath_.c_str();
+        executeInfo_.lpFile = _RunnableProcess::executablePath_.c_str();
 
         if (Arguments.IsSome())
         {
-            _BasicRunnableProcess::arguments_ = Arguments;
-            executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
+            _RunnableProcess::arguments_ = Arguments;
+            executeInfo_.lpParameters = _RunnableProcess::arguments_.Get();
         }
 
         if (CurrentDirectory.IsSome())
         {
-            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
-            executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
+            _RunnableProcess::currentDirectory_ = CurrentDirectory;
+            executeInfo_.lpDirectory = _RunnableProcess::currentDirectory_.Get();
         }
 
         if (CmdShow.IsSome())
@@ -895,29 +891,29 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
 
     Waitable RunAsync(typename SHELLEXECUTEINFOT<CharType>::Type &ExecuteInfo)
     {
-        if (!_BasicRunnableProcess::Prepare())
+        if (!_RunnableProcess::Prepare())
             return Waitable(*this);
 
         if (&ExecuteInfo != &executeInfo_)
         {
-            _BasicRunnableProcess::executablePath_ = ExecuteInfo.lpFile;
-            _BasicRunnableProcess::arguments_ = ExecuteInfo.lpParameters;
-            _BasicRunnableProcess::currentDirectory_ = ExecuteInfo.lpDirectory;
+            _RunnableProcess::executablePath_ = ExecuteInfo.lpFile;
+            _RunnableProcess::arguments_ = ExecuteInfo.lpParameters;
+            _RunnableProcess::currentDirectory_ = ExecuteInfo.lpDirectory;
             executeInfo_ = ExecuteInfo;
         }
 
         if (!ShellExecuteExT<CharType>(&ExecuteInfo))
         {
-            if (_BasicRunnableProcess::errorCallbackWithSelf_)
-                _BasicRunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
-                                                              std::runtime_error("Failed to ShellExecuteExT"));
+            if (_RunnableProcess::errorCallbackWithSelf_)
+                _RunnableProcess::errorCallbackWithSelf_(*this, GetLastError(),
+                                                         std::runtime_error("Failed to ShellExecuteExT"));
             return Waitable(*this);
         }
 
-        _BasicRunnableProcess::processInfo_.dwProcessId = GetProcessId(ExecuteInfo.hProcess);
-        _BasicRunnableProcess::processInfo_.hProcess = ExecuteInfo.hProcess;
+        _RunnableProcess::processInfo_.dwProcessId = GetProcessId(ExecuteInfo.hProcess);
+        _RunnableProcess::processInfo_.hProcess = ExecuteInfo.hProcess;
 
-        _BasicRunnableProcess::Finish();
+        _RunnableProcess::Finish();
 
         return Waitable(*this);
     }
@@ -926,34 +922,31 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
     typename SHELLEXECUTEINFOT<CharType>::Type executeInfo_;
 
     //
-    // BasicRunnableProcess Interface Implementations.
+    // RunnableProcessT Interface Implementations.
     //
   public:
-    virtual Waitable RunAsync()
+    Waitable RunAsync() override
     {
         return RunAsync(executeInfo_);
     }
 };
 
-typedef BasicProcess<String> Process;
-typedef BasicProcess<StringW> ProcessW;
-typedef BasicProcess<StringT> ProcessT;
+typedef ProcessT<String> Process;
+typedef ProcessT<StringW> ProcessW;
 
-typedef BasicRunnableProcess<String> RunnableProcess;
-typedef BasicRunnableProcess<StringW> RunnableProcessW;
-typedef BasicRunnableProcess<StringT> RunnableProcessT;
+typedef RunnableProcessT<String> RunnableProcess;
+typedef RunnableProcessT<StringW> RunnableProcessW;
 
-typedef BasicElevatedProcess<String> ElevatedProcess;
-typedef BasicElevatedProcess<StringW> ElevatedProcessW;
-typedef BasicElevatedProcess<StringT> ElevatedProcessT;
+typedef ElevatedProcessT<String> ElevatedProcess;
+typedef ElevatedProcessT<StringW> ElevatedProcessW;
 
-typedef BasicRunnableSessionProcess<String, UserAccount> UserAccountProcess;
-typedef BasicRunnableSessionProcess<StringW, UserAccount> UserAccountProcessW;
-typedef BasicRunnableSessionProcess<StringT, UserAccount> UserAccountProcessT;
+typedef RunnableSessionProcessT<UserAccount, String> UserAccountProcess;
+typedef RunnableSessionProcessT<UserAccount, StringW> UserAccountProcessW;
+typedef RunnableSessionProcessT<UserAccount, StringT> UserAccountProcessT;
 
-typedef BasicRunnableSessionProcess<String, SystemAccount> SystemAccountProcess;
-typedef BasicRunnableSessionProcess<StringW, SystemAccount> SystemAccountProcessW;
-typedef BasicRunnableSessionProcess<StringT, SystemAccount> SystemAccountProcessT;
+typedef RunnableSessionProcessT<SystemAccount, String> SystemAccountProcess;
+typedef RunnableSessionProcessT<SystemAccount, StringW> SystemAccountProcessW;
+typedef RunnableSessionProcessT<SystemAccount, StringT> SystemAccountProcessT;
 } // namespace System
 
 namespace ThisProcess
@@ -1073,9 +1066,9 @@ template <class _StringType = StringT>
 #else
 template <class _StringType>
 #endif
-inline System::BasicProcess<_StringType> ParentT()
+inline System::ProcessT<_StringType> ParentT()
 {
-    return System::BasicProcess<_StringType>(GetParentProcessId(ThisProcess::Id()));
+    return System::ProcessT<_StringType>(GetParentProcessId(ThisProcess::Id()));
 }
 inline System::Process Parent()
 {

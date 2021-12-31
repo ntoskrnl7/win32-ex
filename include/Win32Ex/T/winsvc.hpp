@@ -39,6 +39,7 @@ namespace Win32Ex
 WIN32EX_API_DEFINE_STRUCT_T(QUERY_SERVICE_CONFIG);
 WIN32EX_API_DEFINE_STRUCT_T(SERVICE_DESCRIPTION);
 WIN32EX_API_DEFINE_STRUCT_T(SERVICE_TABLE_ENTRY);
+WIN32EX_API_DEFINE_STRUCT_T(ENUM_SERVICE_STATUS);
 
 #ifdef SERVICE_MAIN_FUNCTION
 #undef SERVICE_MAIN_FUNCTION
@@ -167,6 +168,26 @@ inline BOOL WINAPI QueryServiceConfigT<WCHAR>(_In_ SC_HANDLE hService,
                                               _Out_ LPDWORD pcbBytesNeeded)
 {
     return QueryServiceConfigW(hService, lpServiceConfig, cbBufSize, pcbBytesNeeded);
+}
+
+template <typename _CharType>
+inline BOOL WINAPI EnumDependentServicesT(_In_ SC_HANDLE hService, _In_ DWORD dwServiceState,
+                                          _Out_ ENUM_SERVICE_STATUST<_CharType> *lpServices, _In_ DWORD cbBufSize,
+                                          _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned);
+template <>
+inline BOOL WINAPI EnumDependentServicesT<CHAR>(_In_ SC_HANDLE hService, _In_ DWORD dwServiceState,
+                                                _Out_ ENUM_SERVICE_STATUST<CHAR> *lpServices, _In_ DWORD cbBufSize,
+                                                _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned)
+{
+    return EnumDependentServicesA(hService, dwServiceState, lpServices, cbBufSize, pcbBytesNeeded, lpServicesReturned);
+}
+
+template <>
+inline BOOL WINAPI EnumDependentServicesT<WCHAR>(_In_ SC_HANDLE hService, _In_ DWORD dwServiceState,
+                                                 _Out_ ENUM_SERVICE_STATUST<WCHAR> *lpServices, _In_ DWORD cbBufSize,
+                                                 _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned)
+{
+    return EnumDependentServicesW(hService, dwServiceState, lpServices, cbBufSize, pcbBytesNeeded, lpServicesReturned);
 }
 
 template <typename _CharType>

@@ -8,7 +8,7 @@ Module Name:
 
 Abstract:
 
-    This Module implements the Service, ServiceW, ServiceT, BasicService class.
+    This Module implements the Service, ServiceW, ServiceT class.
 
 Author:
 
@@ -185,7 +185,7 @@ inline bool IsServiceMode()
     return isServiceMode;
 }
 
-template <class _StringType> class BasicService
+template <class _StringType = StringT> class ServiceT
 {
   public:
     typedef _StringType StringType;
@@ -213,8 +213,8 @@ template <class _StringType> class BasicService
 
     } SC_HANDLES, *PSC_HANDLES;
 
-    BasicService(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
-                 const Optional<const StringType &> &Description = None())
+    ServiceT(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
+             const Optional<const StringType &> &Description = None())
         : name_(Name)
     {
         if (DisplayName.IsSome())
@@ -235,7 +235,15 @@ template <class _StringType> class BasicService
                 loadOrderGroup_ = config->lpLoadOrderGroup;
             TagId_ = config->dwTagId;
             if (config->lpDependencies)
-                dependencies_ = config->lpDependencies;
+            {
+                const CharType *dep = config->lpDependencies;
+                while (dep[0])
+                {
+                    StringType name = dep;
+                    dependencies_.push_back(ServiceT(dep));
+                    dep += name.size() + 1;
+                }
+            }
             if (config->lpServiceStartName)
                 serviceStartName_ = config->lpServiceStartName;
             displayName_ = config->lpDisplayName;
@@ -249,7 +257,7 @@ template <class _StringType> class BasicService
                  const Optional<const StringType &> DisplayName = None(),
                  const Optional<const StringType &> Description = None(), DWORD ErrorControl = SERVICE_ERROR_IGNORE,
                  const Optional<const StringType &> LoadOrderGroup = None(), _Out_ PDWORD TagId = NULL,
-                 const std::list<StringType> Dependencies = std::list<StringType>(),
+                 const std::list<ServiceT> Dependencies = std::list<ServiceT>(),
                  const Optional<const StringType &> ServiceStartName = None(),
                  const Optional<const StringType &> Password = None())
     {
@@ -269,9 +277,9 @@ template <class _StringType> class BasicService
         errorControl_ = ErrorControl;
 
         StringType dependencies;
-        for (typename std::list<StringType>::const_iterator it = Dependencies.begin(); it != Dependencies.end(); ++it)
+        for (typename std::list<ServiceT>::const_iterator it = Dependencies.begin(); it != Dependencies.end(); ++it)
         {
-            dependencies.append(it->c_str());
+            dependencies.append(it->Name().c_str());
             dependencies.push_back(0);
         }
         dependencies.push_back(0);
@@ -288,6 +296,7 @@ template <class _StringType> class BasicService
 
         serviceType_ = ServiceType;
         startType_ = StartType;
+        dependencies_ = Dependencies;
 
         if (Description.IsSome())
             description_ = Description;
@@ -382,7 +391,7 @@ template <class _StringType> class BasicService
         if (stopEvent)
         {
             BOOL ret = SetEvent(stopEvent);
-            ::CloseHandle(stopEvent);
+            CloseHandle(stopEvent);
             return ret == TRUE;
         }
 
@@ -501,8 +510,47 @@ template <class _StringType> class BasicService
         if (handles.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
+        handles.hService =
+            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(),
+                                   SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS);
         return (handles.hService != NULL);
+    }
+
+    const std::list<ServiceT> &Dependencies() const
+    {
+        return dependencies_;
+    }
+
+    Optional<std::list<ServiceT>> DependentServices(DWORD ServiceState = SERVICE_STATE_ALL) const
+    {
+        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handles.hSCManager == NULL)
+            return None();
+
+        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_ENUMERATE_DEPENDENTS);
+
+        ENUM_SERVICE_STATUST<CharType> *dependencies = NULL;
+        DWORD bytesNeeded = 0;
+        DWORD count = 0;
+        if (EnumDependentServicesT<CharType>(handles.hService, ServiceState, dependencies, bytesNeeded, &bytesNeeded,
+                                             &count))
+            return std::list<ServiceT>();
+
+        dependencies = (ENUM_SERVICE_STATUST<CharType> *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
+
+        if (dependencies == NULL)
+            return None();
+
+        if (!EnumDependentServicesT<CharType>(handles.hService, ServiceState, dependencies, bytesNeeded, &bytesNeeded,
+                                              &count))
+            return None();
+
+        std::list<ServiceT> deps;
+        for (DWORD i = 0; i < count; ++i)
+            deps.push_back(ServiceT(dependencies[i].lpServiceName));
+
+        HeapFree(GetProcessHeap(), 0, dependencies);
+        return deps;
     }
 
     bool QueryServiceStatus(SERVICE_STATUS &ss) const
@@ -534,12 +582,22 @@ template <class _StringType> class BasicService
         return name_;
     }
 
+    const StringType &DisplayName() const
+    {
+        return displayName_;
+    }
+
+    const StringType &Description() const
+    {
+        return description_;
+    }
+
     DWORD ServiceType() const
     {
         return serviceType_;
     }
 
-    StringType &BinaryPathName() const
+    const StringType &BinaryPathName() const
     {
         if (binaryPathName_.empty())
             binaryPathName_ = ThisProcess::ExecutablePathT<StringType>();
@@ -555,18 +613,13 @@ template <class _StringType> class BasicService
         return OpenServiceT<CharType>(hSCManager, name_.c_str(), DesiredAccess);
     }
 
-    bool CloseHandle(SC_HANDLE ServiceHandle) const
-    {
-        return ::CloseServiceHandle(ServiceHandle) == TRUE;
-    }
-
-    BasicService &SetAcceptStop(AcceptStopCallback Callback)
+    ServiceT &SetAcceptStop(AcceptStopCallback Callback)
     {
         acceptStopCallback_ = Callback;
         return *this;
     }
 
-    BasicService &SetAcceptPause(AcceptPauseCallback Callback)
+    ServiceT &SetAcceptPause(AcceptPauseCallback Callback)
     {
         acceptPauseCallback_ = Callback;
         return *this;
@@ -611,7 +664,7 @@ template <class _StringType> class BasicService
                 RevertPrivileges(&prevState);
             }
 
-            CloseHandle(hService);
+            CloseServiceHandle(hService);
             return ret;
         }
 
@@ -631,7 +684,7 @@ template <class _StringType> class BasicService
         {
             bool ret =
                 ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, (PVOID)&Flags) == TRUE;
-            CloseHandle(hService);
+            CloseServiceHandle(hService);
             return ret;
         }
 
@@ -646,7 +699,7 @@ template <class _StringType> class BasicService
         {
             bool ret =
                 ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_TRIGGER_INFO, (PVOID)&TriggerInfo) == TRUE;
-            CloseHandle(hService);
+            CloseServiceHandle(hService);
             return ret;
         }
 
@@ -662,7 +715,7 @@ template <class _StringType> class BasicService
 
         SERVICE_PRESHUTDOWN_INFO info = {PreshutdownTimeout};
         bool ret = ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_PRESHUTDOWN_INFO, &info) == TRUE;
-        CloseHandle(hService);
+        CloseServiceHandle(hService);
         return ret;
     }
 #endif
@@ -726,7 +779,7 @@ template <class _StringType> class BasicService
     mutable StringType binaryPathName_;
     StringType loadOrderGroup_;
     DWORD TagId_;
-    StringType dependencies_;
+    mutable std::list<ServiceT> dependencies_;
     StringType serviceStartName_;
     StringType displayName_;
 
@@ -736,11 +789,11 @@ template <class _StringType> class BasicService
     AcceptPauseCallback acceptPauseCallback_;
 
   public:
-    template <const BasicService<_StringType> &Config> class Instance
+    template <const ServiceT<_StringType> &Service> class Instance
     {
-        friend class BasicService<String>;
-        friend class BasicService<StringW>;
-        friend class BasicService<StringT>;
+        friend class ServiceT<String>;
+        friend class ServiceT<StringW>;
+        friend class ServiceT<StringT>;
 
       public:
         typedef _StringType StringType;
@@ -980,7 +1033,7 @@ template <class _StringType> class BasicService
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
         Instance &OnPreShutdown(Duration PreshutdownTimeout, PreShutdownCallback Callback = NULL)
         {
-            Config.SetPreshutdownTimeout(PreshutdownTimeout);
+            Service.SetPreshutdownTimeout(PreshutdownTimeout);
             return OnPreShutdown(Callback);
         }
 
@@ -1012,7 +1065,7 @@ template <class _StringType> class BasicService
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
         Instance &OnTriggerEvent(const SERVICE_TRIGGER_INFO &TriggerInfo, TriggerEventallback Callback = NULL)
         {
-            Config.SetTrigger(TriggerInfo);
+            Service.SetTrigger(TriggerInfo);
             return OnTriggerEvent(Callback);
         }
 
@@ -1036,14 +1089,14 @@ template <class _StringType> class BasicService
 
         bool SetWin32ExitCode(DWORD Win32ExitCode)
         {
-            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwServiceType = Service.ServiceType();
             serviceStatus_.dwWin32ExitCode = Win32ExitCode;
             return UpdateServiceStatus_();
         }
 
         bool SetServiceSpecificExitCode(DWORD ServiceSpecificExitCode)
         {
-            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwServiceType = Service.ServiceType();
             serviceStatus_.dwWin32ExitCode = ERROR_SERVICE_SPECIFIC_ERROR;
             serviceStatus_.dwServiceSpecificExitCode = ServiceSpecificExitCode;
             return UpdateServiceStatus_();
@@ -1071,7 +1124,7 @@ template <class _StringType> class BasicService
 
         bool SetStatus(DWORD Status, DWORD Win32ExitCode = ERROR_SUCCESS)
         {
-            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwServiceType = Service.ServiceType();
             serviceStatus_.dwCurrentState = Status;
             serviceStatus_.dwWin32ExitCode = Win32ExitCode;
             return UpdateServiceStatus_();
@@ -1094,7 +1147,7 @@ template <class _StringType> class BasicService
             if (IsServiceMode())
             {
                 typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-                    {(CharType *)Config.Name().c_str(),
+                    {(CharType *)Service.Name().c_str(),
                      (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceMain_},
                     {NULL, NULL}};
 
@@ -1136,7 +1189,7 @@ template <class _StringType> class BasicService
       protected:
         Instance()
             : serviceStatusHandle_(NULL), deviceNotifyHandle_(NULL), hCleanupCompleteEvent_(NULL), hStopedEvent_(NULL),
-              hWndConsoleService_(NULL), Config_(Config)
+              hWndConsoleService_(NULL), Service_(Service)
         {
             ZeroMemory(&serviceStatus_, sizeof(serviceStatus_));
         }
@@ -1157,14 +1210,14 @@ template <class _StringType> class BasicService
         {
             if (hStopedEvent_)
             {
-                ::CloseHandle(hStopedEvent_);
+                CloseHandle(hStopedEvent_);
                 hStopedEvent_ = NULL;
             }
 
             if (hCleanupCompleteEvent_)
             {
                 SetEvent(hCleanupCompleteEvent_);
-                ::CloseHandle(hCleanupCompleteEvent_);
+                CloseHandle(hCleanupCompleteEvent_);
                 hCleanupCompleteEvent_ = NULL;
             }
         }
@@ -1251,7 +1304,7 @@ template <class _StringType> class BasicService
             ~CONSOLE_WND_THREAD_PARAM()
             {
                 if (hEventWndCreatedOrFailed)
-                    ::CloseHandle(hEventWndCreatedOrFailed);
+                    CloseHandle(hEventWndCreatedOrFailed);
             }
 
             HINSTANCE hInstance;
@@ -1434,76 +1487,76 @@ template <class _StringType> class BasicService
         static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, CharType **lpServiceArgVectors)
         {
             DWORD errorCode;
-            Instance &service = GetInstance();
+            Instance &instance = GetInstance();
 
-            service.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-            if (service.hCleanupCompleteEvent_ == NULL)
+            instance.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+            if (instance.hCleanupCompleteEvent_ == NULL)
             {
-                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
-                ::CloseHandle(service.hStopedEvent_);
+                instance.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                CloseHandle(instance.hStopedEvent_);
                 return;
             }
 
             if (IsServiceMode())
             {
-                service.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-                if (service.hStopedEvent_ == NULL)
+                instance.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+                if (instance.hStopedEvent_ == NULL)
                 {
-                    service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                    instance.RaiseError_(GetLastError(), "Failed to CreateEventW");
                     return;
                 }
 
-                service.serviceStatusHandle_ = RegisterServiceCtrlHandlerExT<CharType>(
-                    (CharType *)Config.Name().c_str(), ServiceHandlerEx_, &service);
+                instance.serviceStatusHandle_ = RegisterServiceCtrlHandlerExT<CharType>(
+                    (CharType *)Service.Name().c_str(), ServiceHandlerEx_, &instance);
 
-                if (!service.serviceStatusHandle_)
+                if (!instance.serviceStatusHandle_)
                 {
                     errorCode = GetLastError();
-                    ::CloseHandle(service.hStopedEvent_);
-                    service.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
-                    service.Cleanup_();
+                    CloseHandle(instance.hStopedEvent_);
+                    instance.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
+                    instance.Cleanup_();
                     return;
                 }
 
-                service.SetStatus(SERVICE_START_PENDING);
+                instance.SetStatus(SERVICE_START_PENDING);
 
-                if (service.startCallbackEx_)
+                if (instance.startCallbackEx_)
                 {
-                    errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
+                    errorCode = instance.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
                     if (errorCode != ERROR_SUCCESS)
                     {
-                        service.RaiseError_(errorCode, "Failed to start service.");
-                        service.SetStatus(SERVICE_STOPPED, errorCode);
-                        service.Cleanup_();
+                        instance.RaiseError_(errorCode, "Failed to start service.");
+                        instance.SetStatus(SERVICE_STOPPED, errorCode);
+                        instance.Cleanup_();
                         return;
                     }
                 }
-                else if (service.startCallback_)
+                else if (instance.startCallback_)
                 {
-                    service.startCallback_();
+                    instance.startCallback_();
                 }
 
-                service.SetStatus(SERVICE_RUNNING);
-                WaitForSingleObject(service.hStopedEvent_, INFINITE);
+                instance.SetStatus(SERVICE_RUNNING);
+                WaitForSingleObject(instance.hStopedEvent_, INFINITE);
 
-                service.Cleanup_();
+                instance.Cleanup_();
                 return;
             }
 #ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
             else
             {
-                service.hStopedEvent_ = Details::CreateStopEvent(service.Config_.Name());
-                if (service.hStopedEvent_ == NULL)
+                instance.hStopedEvent_ = Details::CreateStopEvent(instance.Service_.Name());
+                if (instance.hStopedEvent_ == NULL)
                 {
-                    service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                    instance.RaiseError_(GetLastError(), "Failed to CreateEventW");
                     return;
                 }
 
                 if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine_, TRUE))
                 {
                     errorCode = GetLastError();
-                    service.RaiseError_(GetLastError(), "Failed to SetConsoleCtrlHandler");
-                    service.Cleanup_();
+                    instance.RaiseError_(GetLastError(), "Failed to SetConsoleCtrlHandler");
+                    instance.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
@@ -1511,8 +1564,8 @@ template <class _StringType> class BasicService
 
                 using namespace Convert::String;
 
-                std::string className = typeid(StringType) == typeid(String) ? (PCSTR)Config.Name().c_str()
-                                                                             : (PCSTR)(!Config.Name()).c_str();
+                std::string className = typeid(StringType) == typeid(String) ? (PCSTR)Service.Name().c_str()
+                                                                             : (PCSTR)(!Service.Name()).c_str();
                 className.append("Class");
 
                 HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -1533,14 +1586,14 @@ template <class _StringType> class BasicService
                 if (!RegisterClassExA(&wndClass))
                 {
                     errorCode = GetLastError();
-                    service.RaiseError_(errorCode, "Failed to RegisterClassExA");
-                    service.Cleanup_();
+                    instance.RaiseError_(errorCode, "Failed to RegisterClassExA");
+                    instance.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
                 }
 
-                CONSOLE_WND_THREAD_PARAM param(service, hInstance, className.c_str());
+                CONSOLE_WND_THREAD_PARAM param(instance, hInstance, className.c_str());
 
                 param.hEventWndCreatedOrFailed = CreateEvent(NULL, FALSE, FALSE, NULL);
 
@@ -1548,8 +1601,8 @@ template <class _StringType> class BasicService
                 {
                     errorCode = GetLastError();
                     UnregisterClassA(className.c_str(), hInstance);
-                    service.RaiseError_(errorCode, "Failed to CreateEvent");
-                    service.Cleanup_();
+                    instance.RaiseError_(errorCode, "Failed to CreateEvent");
+                    instance.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
@@ -1560,58 +1613,58 @@ template <class _StringType> class BasicService
                 {
                     errorCode = GetLastError();
                     UnregisterClassA(className.c_str(), hInstance);
-                    service.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
-                    service.Cleanup_();
+                    instance.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
+                    instance.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
                 }
 
-                service.SetStatus(SERVICE_START_PENDING);
+                instance.SetStatus(SERVICE_START_PENDING);
                 WaitForSingleObject(param.hEventWndCreatedOrFailed, INFINITE);
 
                 if (param.hWnd == NULL)
                 {
-                    service.Cleanup_();
+                    instance.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
                 }
 
-                service.hWndConsoleService_ = param.hWnd;
-                if (service.startCallbackEx_)
+                instance.hWndConsoleService_ = param.hWnd;
+                if (instance.startCallbackEx_)
                 {
-                    errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
+                    errorCode = instance.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
                     if (errorCode != ERROR_SUCCESS)
                     {
-                        service.RaiseError_(errorCode, "Failed to start service.");
+                        instance.RaiseError_(errorCode, "Failed to start service.");
 
-                        service.SetStatus(SERVICE_STOPPED, errorCode);
-                        SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
+                        instance.SetStatus(SERVICE_STOPPED, errorCode);
+                        SendMessage(instance.hWndConsoleService_, WM_DESTROY, 0, 0);
                         WaitForSingleObject(hThraed, INFINITE);
-                        ::CloseHandle(hThraed);
+                        CloseHandle(hThraed);
 
-                        service.Cleanup_();
+                        instance.Cleanup_();
                         if (!IsServiceMode())
                             SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                         return;
                     }
                 }
-                else if (service.startCallback_)
+                else if (instance.startCallback_)
                 {
-                    service.startCallback_();
+                    instance.startCallback_();
                 }
 
-                service.SetStatus(SERVICE_RUNNING);
+                instance.SetStatus(SERVICE_RUNNING);
                 ResumeThread(hThraed);
-                WaitForSingleObject(service.hStopedEvent_, INFINITE);
+                WaitForSingleObject(instance.hStopedEvent_, INFINITE);
 
-                SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
+                SendMessage(instance.hWndConsoleService_, WM_DESTROY, 0, 0);
                 WaitForSingleObject(hThraed, INFINITE);
-                ::CloseHandle(hThraed);
+                CloseHandle(hThraed);
                 UnregisterClassA(className.c_str(), hInstance);
 
-                service.Cleanup_();
+                instance.Cleanup_();
                 if (!IsServiceMode())
                     SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                 return;
@@ -1659,7 +1712,7 @@ template <class _StringType> class BasicService
 
         HDEVNOTIFY deviceNotifyHandle_;
 
-        const BasicService<StringType> &Config_;
+        const ServiceT<StringType> &Service_;
     };
 
   public:
@@ -1667,43 +1720,68 @@ template <class _StringType> class BasicService
     template <class... InstanceType> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).Config_.Name().c_str(),
+            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
             {NULL, NULL}};
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
-    template <class... InstanceType> static bool Run(InstanceType &...service)
+    template <class... InstanceType> static bool Run(InstanceType &...instance)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType::CharType *)service.Config_.Name().c_str(),
+            {(typename InstanceType::CharType *)instance.Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
             {NULL, NULL}};
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
 #else
-    template <typename InstanceType0, typename InstanceType1>
-    static bool Run(InstanceType0 &service0, InstanceType1 &service1)
+    template <typename InstanceType0, typename InstanceType1> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)service0.Config_.Name().c_str(),
+            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)service1.Config_.Name().c_str(),
+            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).Service_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+    template <typename InstanceType0, typename InstanceType1, typename InstanceType2> static bool Run()
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).Service_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
+            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).Service_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
+            {(typename InstanceType2::CharType *)(InstanceType2::GetInstance()).Service_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+
+    template <typename InstanceType0, typename InstanceType1>
+    static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType0::CharType *)Instance0.Service_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
+            {(typename InstanceType1::CharType *)Instance1.Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
             {NULL, NULL}};
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
     template <typename InstanceType0, typename InstanceType1, typename InstanceType2>
-    static bool Run(InstanceType0 &service0, InstanceType1 &service1, InstanceType2 &service2)
+    static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1, InstanceType2 &Instance2)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)service0.Config_.Name().c_str(),
+            {(typename InstanceType0::CharType *)Instance0.Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)service1.Config_.Name().c_str(),
+            {(typename InstanceType1::CharType *)Instance1.Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
-            {(typename InstanceType2::CharType *)service2.Config_.Name().c_str(),
+            {(typename InstanceType2::CharType *)Instance2.Service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
             {NULL, NULL}};
 
@@ -1712,9 +1790,8 @@ template <class _StringType> class BasicService
 #endif
 };
 
-typedef BasicService<String> Service;
-typedef BasicService<StringW> ServiceW;
-typedef BasicService<StringT> ServiceT;
+typedef ServiceT<String> Service;
+typedef ServiceT<StringW> ServiceW;
 } // namespace System
 } // namespace Win32Ex
 

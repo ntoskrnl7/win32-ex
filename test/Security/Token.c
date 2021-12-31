@@ -1,6 +1,6 @@
 ﻿#include <Win32Ex/Security/Token.h>
 
-BOOL LookupTokenTestC()
+BOOL LookupTokenC()
 {
     HANDLE token = LookupToken(TOKEN_QUERY, NULL);
     if (token)
@@ -8,7 +8,7 @@ BOOL LookupTokenTestC()
     return token != NULL;
 }
 
-BOOL LookupToken2TestC()
+BOOL LookupToken2C()
 {
     HANDLE token = LookupToken2(TOKEN_QUERY, NULL);
     if (token)

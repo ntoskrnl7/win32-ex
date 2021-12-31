@@ -1,7 +1,7 @@
 ﻿#include <Win32Ex/System/Object.h>
 #include <gtest/gtest.h>
 
-TEST(ObjectTest, MakePermanentObjectTest)
+TEST(ObjectTest, MakePermanentObject)
 {
     HANDLE handle = CreateMutex(NULL, FALSE, TEXT("Test"));
     if (handle != NULL)
@@ -27,10 +27,10 @@ TEST(ObjectTest, MakePermanentObjectTest)
  */
 extern "C"
 {
-    extern BOOL MakePermanentObjectTestC();
+    extern BOOL MakePermanentObjectC();
 }
 
-TEST(ObjectTest, MakePermanentObjectTestC)
+TEST(ObjectTest, MakePermanentObjectC)
 {
-    EXPECT_TRUE(MakePermanentObjectTestC() == TRUE);
+    EXPECT_TRUE(MakePermanentObjectC() == TRUE);
 }

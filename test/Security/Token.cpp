@@ -5,7 +5,7 @@
 
 using namespace Win32Ex;
 
-TEST(TokenTest, GetTokenInfoTest)
+TEST(TokenTest, GetTokenInfo)
 {
     DWORD returnLength = 0;
     PVOID user = GetTokenInfo(GetCurrentProcessToken(), TokenUser, &returnLength);
@@ -15,7 +15,7 @@ TEST(TokenTest, GetTokenInfoTest)
         FreeTokenInfo(user);
 }
 
-TEST(TokenTest, GetTokenUserTest)
+TEST(TokenTest, GetTokenUser)
 {
     PTOKEN_USER user = GetTokenUser(GetCurrentProcessToken());
     EXPECT_NE(user, (PTOKEN_USER)NULL);
@@ -23,7 +23,7 @@ TEST(TokenTest, GetTokenUserTest)
         FreeTokenUser(user);
 }
 
-TEST(TokenTest, GetTokenPrivilegesTest)
+TEST(TokenTest, GetTokenPrivileges)
 {
     PTOKEN_PRIVILEGES priv = GetTokenPrivileges(GetCurrentProcessToken());
     EXPECT_NE(priv, (PTOKEN_PRIVILEGES)NULL);
@@ -46,7 +46,7 @@ BOOL HasGroupLogonID(HANDLE TokenHandle)
 }
 #endif
 
-TEST(TokenTest, LookupTokenTest)
+TEST(TokenTest, LookupToken)
 {
 #ifdef __cpp_lambdas
     HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) -> BOOL {
@@ -68,7 +68,7 @@ TEST(TokenTest, LookupTokenTest)
         CloseHandle(token);
 }
 
-TEST(TokenTest, LookupToken2Test)
+TEST(TokenTest, LookupToken2)
 {
     HANDLE token = LookupToken2(TOKEN_QUERY, NULL);
     EXPECT_NE(token, (HANDLE)NULL);
@@ -78,22 +78,22 @@ TEST(TokenTest, LookupToken2Test)
 
 extern "C"
 {
-    BOOL LookupTokenTestC();
-    BOOL LookupToken2TestC();
+    BOOL LookupTokenC();
+    BOOL LookupToken2C();
 }
 
-TEST(TokenTest, LookupTokenTestC)
+TEST(TokenTest, LookupTokenC)
 {
-    EXPECT_TRUE(LookupTokenTestC() == TRUE);
+    EXPECT_TRUE(LookupTokenC() == TRUE);
 }
 
-TEST(TokenTest, LookupToken2TestC)
+TEST(TokenTest, LookupToken2C)
 {
-    EXPECT_TRUE(LookupToken2TestC() == TRUE);
+    EXPECT_TRUE(LookupToken2C() == TRUE);
 }
 
 using namespace Win32Ex;
-TEST(TokenTest, GetLocalSystemTokenTest)
+TEST(TokenTest, GetLocalSystemToken)
 {
     if (IsUserAdmin())
     {
@@ -167,7 +167,7 @@ BOOL HasChangeNotifyPrivilege(DWORD /*ProcessId*/, HANDLE TokenHandle)
 }
 #endif
 
-TEST(TokenTest, TokenClassTest)
+TEST(TokenTest, TokenClass)
 {
     Security::Token token = Security::Token::Current();
 #ifdef __cpp_initializer_lists

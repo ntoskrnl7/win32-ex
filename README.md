@@ -7,7 +7,14 @@ Win32 API Experimental(or Extension) features
 ## Requirements
 
 - Windows 8 or later
-- Visual Studio 2008 or later
+- Visual Studio 2008 SP1 or later
+- MSYS2
+  - MSYS
+  - MinGW 32-bit
+  - MinGW 64-bit
+  - MinGW Clang 32-bit
+  - MinGW Clang 64-bit
+  - MinGW UCRT 64-bit
 
 ## Contents
 
@@ -84,34 +91,38 @@ Win32 API Experimental(or Extension) features
 
 - CreateUserAccountProcess
 - CreateSystemAccountProcess
-- CreateUserAccountProcessT\<typename CharType\> (for C++)
-- CreateSystemAccountProcessT\<typename CharType\> (for C++)
+- CreateUserAccountProcessT\<typename CharType\>
+  - C++ only
+- CreateSystemAccountProcessT\<typename CharType\>
+  - C++ only
 
 ###### Classes
 
 - Process
 - ProcessW
-- ProcessT
-- BasicProcess\<class StringType\>
+- ProcessT\<class StringType = StringT\>
 - RunnableProcess
+  - Abstract
 - RunnableProcessW
-- RunnableProcessT
-- BasicRunnableProcess\<class StringType\>
+  - Abstract
+- RunnableProcessT\<class StringType = StringT\>
+  - Abstract
 - UserAccountProcess
 - UserAccountProcessW
 - UserAccountProcessT
 - SystemAccountProcess
 - SystemAccountProcessW
 - SystemAccountProcessT
-- BasicRunnableSessionProcess\<class StringType, ProcessAccountType Type\>
+- RunnableSessionProcessT\<ProcessAccountType Type, class StringType = StringT\>
 - ElevatedProcess
 - ElevatedProcessW
-- ElevatedProcessT
-- BasicElevatedProcess\<class StringType\>
+- ElevatedProcessT\<class StringType = StringT\>
 
 ###### Example
 
 C/C++
+
+Runs system account process and user account process at the current session.
 
 ```C
 #include <Win32Ex\System\Process.h>
@@ -123,6 +134,8 @@ CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /
 
 C++
 
+Runs system account process and user account process at the current session.
+
 ```C++
 #include <Win32Ex\System\Process.h>
 
@@ -131,18 +144,51 @@ CreateUserAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /
 CreateSystemAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
 ```
 
+Runs system account process and user account process at the current session.
+
 ```C++
 #include <Win32Ex\System\Process.hpp>
 
-Win32Ex::System::UserAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
+Win32Ex::System::UserAccountProcess process("CMD.exe /C QUERY SESSION");
 process.Run();
 
-Win32Ex::System::SystemAccountProcess process(WTSGetActiveConsoleSessionId(), "CMD.exe /C QUERY SESSION");
+Win32Ex::System::SystemAccountProcess process("CMD.exe /C QUERY SESSION");
 process.Run();
+```
+
+Runs system account process and user account process at each sessions.
+
+```C++
+#include <Win32Ex\System\Process.hpp>
+
+PWTS_SESSION_INFO sessionInfo = NULL;
+DWORD count = 0;
+if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+{
+  for (DWORD i = 0; i < count; ++i)
+  {
+    if (sessionInfo[i].State == WTSListen)
+      continue;
+
+    Win32Ex::System::SystemAccountProcess systemProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
+    systemProcess.Run();
+
+    Win32Ex::System::UserAccountProcess userProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
+    userProcess.Run();
+  }
+}
+```
+
+Run with elevated permissions UAC.
+
+```C++
+#include <Win32Ex\System\Process.hpp>
 
 Win32Ex::System::ElevatedProcess process("notepad.exe");
 process.Run();
 ```
+
+Enumerate parent processes.
 
 ```C++
 Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
@@ -162,14 +208,40 @@ while (parent.IsValid())
 
 ###### Classes
 
-- Serviceg
+- Service
 - ServiceW
-- ServiceT
-- BasicService\<class StringType\>
+- ServiceT\<class StringType = Win32Ex::StringT\>
+- Service::Instance\<Service\>
+  - Singleton
+- ServiceW::Instance\<ServiceW\>
+  - Singleton
+- ServiceT::Instance\<ServiceT\>
+  - Singleton
 
 ###### Example
 
 C++
+
+```C++
+Win32Ex::System::Service service("ProfSvc");
+
+std::cout << "\n\n-----------------Dependencies-------------------\n";
+for (auto &dep : service.Dependencies())
+{
+    std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+    for (auto &dep2 : dep.Dependencies())
+      std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t" << dep2.BinaryPathName() << '\n';
+}
+
+std::cout << "\n\n-----------------DependentServices-------------------\n";
+for (auto &dep : service.DependentServices().Get({}))
+{
+    std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+    for (auto &dep2 : dep.DependentServices().Get({}))
+      std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
+                << dep2.BinaryPathName() << '\n';
+}
+```
 
 Simple service (Control Process)
 
@@ -720,7 +792,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.6")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.7")
 
 # link dependencies
 target_link_libraries(tests win32ex)

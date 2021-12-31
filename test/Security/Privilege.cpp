@@ -2,14 +2,14 @@
 
 #include <gtest/gtest.h>
 
-TEST(PrivilegeTest, EnableAvailablePrivilegesTest)
+TEST(PrivilegeTest, EnableAvailablePrivileges)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     EXPECT_TRUE(EnableAvailablePrivileges(TRUE, &prev, NULL) == TRUE);
     EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
-TEST(PrivilegeTest, EnablePrivilegesVTest)
+TEST(PrivilegeTest, EnablePrivilegesV)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
@@ -17,7 +17,7 @@ TEST(PrivilegeTest, EnablePrivilegesVTest)
     EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
-TEST(PrivilegeTest, EnablePrivilegesExVTest)
+TEST(PrivilegeTest, EnablePrivilegesExV)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     EXPECT_TRUE(EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME) == TRUE);
@@ -26,7 +26,7 @@ TEST(PrivilegeTest, EnablePrivilegesExVTest)
 }
 
 using namespace Win32Ex;
-TEST(PrivilegeTest, PrivilegeClassTest)
+TEST(PrivilegeTest, PrivilegeClass)
 {
     Security::TokenPrivileges priv(Security::SeIncreaseWorkingSetPrivilege);
     EXPECT_TRUE(priv.IsAcquired());
@@ -124,32 +124,32 @@ TEST(PrivilegeTest, PrivilegeClassTest)
  */
 extern "C"
 {
-    extern BOOL EnableAvailablePrivilegesTestC();
-    extern BOOL IsPrivilegeEnabledTestC(LPCTSTR PrivilegeNames);
-    extern BOOL IsPrivilegesEnabledTestC(DWORD NumberOfPrivilegeNames, /*LPCTSTR PrivilegeNames[]*/...);
+    extern BOOL EnableAvailablePrivilegesC();
+    extern BOOL IsPrivilegeEnabledC(LPCTSTR PrivilegeNames);
+    extern BOOL IsPrivilegesEnabledC(DWORD NumberOfPrivilegeNames, /*LPCTSTR PrivilegeNames[]*/...);
 }
 
-TEST(PrivilegeTest, EnableAvailablePrivilegesTestC)
+TEST(PrivilegeTest, EnableAvailablePrivilegesC)
 {
-    EXPECT_TRUE(EnableAvailablePrivilegesTestC() == TRUE);
+    EXPECT_TRUE(EnableAvailablePrivilegesC() == TRUE);
 }
 
-TEST(PrivilegeTest, IsPrivilegeEnabledTestC)
+TEST(PrivilegeTest, IsPrivilegeEnabledC)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     if (EnablePrivilege(TRUE, SE_SHUTDOWN_NAME, &prev, NULL))
     {
-        EXPECT_TRUE(IsPrivilegeEnabledTestC(SE_SHUTDOWN_NAME) == TRUE);
+        EXPECT_TRUE(IsPrivilegeEnabledC(SE_SHUTDOWN_NAME) == TRUE);
         RevertPrivileges(&prev);
     }
 }
 
-TEST(PrivilegeTest, IsPrivilegesEnabledTestC)
+TEST(PrivilegeTest, IsPrivilegesEnabledC)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;
     if (EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME))
     {
-        EXPECT_TRUE(IsPrivilegesEnabledTestC(2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME) == TRUE);
+        EXPECT_TRUE(IsPrivilegesEnabledC(2, SE_SHUTDOWN_NAME, SE_CHANGE_NOTIFY_NAME) == TRUE);
         RevertPrivileges(&prev);
     }
 }

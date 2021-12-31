@@ -827,6 +827,14 @@ template <typename T> class Optional<T, typename std::enable_if<std::is_referenc
         return *Value_;
     }
 
+    T Get(T Default) const
+    {
+        if (IsNone_)
+            return Default;
+
+        return *Value_;
+    }
+
     operator T() const
     {
         return Get();
@@ -903,6 +911,14 @@ template <typename T> class Optional<T, typename std::enable_if<!std::is_referen
     {
         if (IsNone_)
             throw Exception();
+
+        return Value_;
+    }
+
+    T Get(const T &Default) const
+    {
+        if (IsNone_)
+            return Default;
 
         return Value_;
     }
