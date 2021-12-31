@@ -5,19 +5,17 @@
 #include <Win32Ex/System/Service.hpp>
 
 #include "System/TestService.h"
-Win32Ex::System::ServiceConfig TestServiceConfig(TEST_SVC_NAME, TEST_SVC_DISPLAY_NAME, TEST_SVC_DESCRIPTION);
-typedef Win32Ex::System::Service<TestServiceConfig> TestService;
+Win32Ex::System::Service TestService(TEST_SVC_NAME, TEST_SVC_DISPLAY_NAME, TEST_SVC_DESCRIPTION);
+typedef Win32Ex::System::Service::Instance<TestService> TestServiceInstance;
 
-Win32Ex::System::ServiceConfig Test2ServiceConfig(TEST2_SVC_NAME, TEST2_SVC_DISPLAY_NAME, TEST2_SVC_DESCRIPTION);
-typedef Win32Ex::System::Service<Test2ServiceConfig> Test2Service;
+Win32Ex::System::Service Test2Service(TEST2_SVC_NAME, TEST2_SVC_DISPLAY_NAME, TEST2_SVC_DESCRIPTION);
+typedef Win32Ex::System::Service::Instance<Test2Service> Test2ServiceInstance;
 
-Win32Ex::System::ServiceConfigW TestServiceConfigW(_W(TEST_SVC_NAME), _W(TEST_SVC_DISPLAY_NAME),
-                                                   _W(TEST_SVC_DESCRIPTION));
-typedef Win32Ex::System::ServiceW<TestServiceConfigW> TestServiceW;
+Win32Ex::System::ServiceW TestServiceW(_W(TEST_SVC_NAME), _W(TEST_SVC_DISPLAY_NAME), _W(TEST_SVC_DESCRIPTION));
+typedef Win32Ex::System::ServiceW::Instance<TestServiceW> TestServiceInstanceW;
 
-Win32Ex::System::ServiceConfigW Test2ServiceConfigW(_W(TEST2_SVC_NAME), _W(TEST2_SVC_DISPLAY_NAME),
-                                                    _W(TEST2_SVC_DESCRIPTION));
-typedef Win32Ex::System::ServiceW<Test2ServiceConfigW> Test2ServiceW;
+Win32Ex::System::ServiceW Test2ServiceW(_W(TEST2_SVC_NAME), _W(TEST2_SVC_DISPLAY_NAME), _W(TEST2_SVC_DESCRIPTION));
+typedef Win32Ex::System::ServiceW::Instance<Test2ServiceW> Test2ServiceInstanceW;
 
 int main(int argc, char *argv[])
 {
@@ -32,8 +30,8 @@ int main(int argc, char *argv[])
         if (argc == 2)
         {
 #ifdef __cpp_lambdas
-            TestServiceConfig.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = TestServiceConfig.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+            TestService.SetAcceptStop([]() -> bool {
+                SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
                 if (serviceHandle == NULL)
                     return false;
                 SERVICE_STATUS ss = {0};
@@ -42,8 +40,8 @@ int main(int argc, char *argv[])
                 return (result == TRUE);
             });
 
-            Test2ServiceConfig.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = Test2ServiceConfig.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+            Test2Service.SetAcceptStop([]() -> bool {
+                SC_HANDLE serviceHandle = Test2Service.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
                 if (serviceHandle == NULL)
                     return false;
                 SERVICE_STATUS ss = {0};
@@ -54,7 +52,7 @@ int main(int argc, char *argv[])
 #endif
             if (std::string(argv[1]) == TEST_SVC_NAME)
             {
-                TestService &svc = TestService::Instance();
+                TestServiceInstance &svc = TestServiceInstance::GetInstance();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -85,8 +83,8 @@ int main(int argc, char *argv[])
             }
             else if (std::string(argv[1]) == "SharedService")
             {
-                TestService &svc = TestService::Instance();
-                Test2Service &svc2 = Test2Service::Instance();
+                TestServiceInstance &svc = TestServiceInstance::GetInstance();
+                Test2ServiceInstance &svc2 = Test2ServiceInstance::GetInstance();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -137,17 +135,14 @@ int main(int argc, char *argv[])
                 svc2.SetControlsAccepted(SERVICE_ACCEPT_STOP);
                 svc2.SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
 #endif
-                if (Win32Ex::System::Services::Run(svc, svc2))
-                    return EXIT_SUCCESS;
-
-                return GetLastError();
+                return Win32Ex::System::Service::Run(svc, svc2) ? EXIT_SUCCESS : GetLastError();
             }
         }
         else if ((argc == 3) && argv[2][0] == 'W')
         {
 #ifdef __cpp_lambdas
-            TestServiceConfigW.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = TestServiceConfigW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+            TestServiceW.SetAcceptStop([]() -> bool {
+                SC_HANDLE serviceHandle = TestServiceW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
                 if (serviceHandle == NULL)
                     return false;
                 SERVICE_STATUS ss = {0};
@@ -156,8 +151,8 @@ int main(int argc, char *argv[])
                 return (result == TRUE);
             });
 
-            Test2ServiceConfigW.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = Test2ServiceConfigW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+            Test2ServiceW.SetAcceptStop([]() -> bool {
+                SC_HANDLE serviceHandle = Test2ServiceW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
                 if (serviceHandle == NULL)
                     return false;
                 SERVICE_STATUS ss = {0};
@@ -168,7 +163,7 @@ int main(int argc, char *argv[])
 #endif
             if (std::string(argv[1]) == TEST_SVC_NAME)
             {
-                TestServiceW &svc = TestServiceW::Instance();
+                TestServiceInstanceW &svc = TestServiceInstanceW::GetInstance();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -199,8 +194,8 @@ int main(int argc, char *argv[])
             }
             else if (std::string(argv[1]) == "SharedService")
             {
-                TestServiceW &svc = TestServiceW::Instance();
-                Test2ServiceW &svc2 = Test2ServiceW::Instance();
+                TestServiceInstanceW &svc = TestServiceInstanceW::GetInstance();
+                Test2ServiceInstanceW &svc2 = Test2ServiceInstanceW::GetInstance();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -251,10 +246,7 @@ int main(int argc, char *argv[])
                 svc2.SetControlsAccepted(SERVICE_ACCEPT_STOP);
                 svc2.SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
 #endif
-                if (Win32Ex::System::ServicesW::Run(svc, svc2))
-                    return EXIT_SUCCESS;
-
-                return GetLastError();
+                return Win32Ex::System::ServiceW::Run(svc, svc2) ? EXIT_SUCCESS : GetLastError();
             }
         }
     }

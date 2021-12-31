@@ -49,15 +49,26 @@ template <class _StringType> class OptionalConstStringRef
     friend class Optional<const _StringType &>;
     friend class OptionalString<_StringType>;
 
+  public:
+    typedef _StringType Type;
+    typedef const Type &ConstTypeRefType;
+    typedef const Type *ConstTypePtrType;
+
+    typedef typename _StringType::value_type CharType;
+    typedef const CharType *ConstPtrType;
+
     WIN32EX_MOVE_ALWAYS_CLASS(OptionalConstStringRef)
 
   public:
     OptionalConstStringRef Clone() const
     {
         OptionalConstStringRef clone;
-        clone.Value_ = Value_;
-        clone.Ref_ = Ref_;
+        if (IsNone_)
+            return clone;
         clone.IsNone_ = IsNone_;
+        if (Ref_)
+            clone.Ref_ = new Type(*Ref_);
+        clone.Value_ = NULL;
         return clone;
     }
 
@@ -70,7 +81,23 @@ template <class _StringType> class OptionalConstStringRef
         IsNone_ = true;
     }
 
-    void Move(OptionalString<_StringType> &To)
+    void Move(OptionalString<Type> &To)
+    {
+        To.IsNone_ = IsNone_;
+        if (To.IsNone_)
+            return;
+
+        To.IsNull_ = Ref_ == NULL;
+        if (!To.IsNull_)
+            To.Value_ = *Ref_;
+
+        Clear_();
+        Value_ = NULL;
+        Ref_ = NULL;
+        IsNone_ = true;
+    }
+
+    void Move(OptionalString<const Type> &To)
     {
         To.IsNone_ = IsNone_;
         if (To.IsNone_)
@@ -87,13 +114,6 @@ template <class _StringType> class OptionalConstStringRef
     }
 
   public:
-    typedef _StringType Type;
-    typedef const Type &ConstTypeRefType;
-    typedef const Type *ConstTypePtrType;
-
-    typedef typename _StringType::value_type CharType;
-    typedef const CharType *ConstPtrType;
-
     OptionalConstStringRef() : IsNone_(true), Ref_(NULL), Value_(NULL)
     {
     }
@@ -121,6 +141,11 @@ template <class _StringType> class OptionalConstStringRef
     }
 
     OptionalConstStringRef(Optional<Type> &Other) : IsNone_(false), Ref_(NULL), Value_(NULL)
+    {
+        Other.Move(*this);
+    }
+
+    OptionalConstStringRef(Optional<const Type> &Other) : IsNone_(false), Ref_(NULL), Value_(NULL)
     {
         Other.Move(*this);
     }
@@ -192,6 +217,7 @@ template <class _StringType> class OptionalString
 {
     friend class Optional<_StringType>;
     friend class OptionalConstStringRef<_StringType>;
+    friend class OptionalConstStringRef<typename std::remove_const<_StringType>::type>;
 
     WIN32EX_MOVE_ALWAYS_CLASS(OptionalString)
 
@@ -242,12 +268,12 @@ template <class _StringType> class OptionalString
     {
     }
 
-    OptionalString(Optional<const Type &> &Other) : IsNone_(false)
+    OptionalString(Optional<const typename std::remove_const<Type>::type &> &Other) : IsNone_(false)
     {
         Other.Move(*this);
     }
 
-    OptionalString(const Optional<const Type &> &Other) : IsNone_(false)
+    OptionalString(const Optional<const typename std::remove_const<Type>::type &> &Other) : IsNone_(false)
     {
         IsNone_ = Other.IsNone();
         if (IsNone_)
@@ -322,7 +348,7 @@ template <class _StringType> class OptionalString
         return IsNull_;
     }
 
-  private:
+  protected:
     typename std::remove_const<Type>::type Value_;
     bool IsNull_;
     bool IsNone_;
@@ -349,10 +375,16 @@ template <> class Optional<const String &> : public Details::OptionalConstString
         OptionalConstStringRef<Type>::Move(To);
     }
 
-  public:
+  protected:
     friend class Details::OptionalString<Type>;
+    friend class Details::OptionalString<const Type>;
 
     void Move(Details::OptionalString<Type> &To)
+    {
+        OptionalConstStringRef<Type>::Move(To);
+    }
+
+    void Move(Details::OptionalString<const Type> &To)
     {
         OptionalConstStringRef<Type>::Move(To);
     }
@@ -371,10 +403,6 @@ template <> class Optional<const String &> : public Details::OptionalConstString
     }
 
     Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
-    {
-    }
-
-    Optional(const Optional<Type> &Other) : OptionalConstStringRef(Other)
     {
     }
 
@@ -425,8 +453,14 @@ template <> class Optional<const StringW &> : public Details::OptionalConstStrin
 
   protected:
     friend class Details::OptionalString<Type>;
+    friend class Details::OptionalString<const Type>;
 
     void Move(Details::OptionalString<Type> &To)
+    {
+        OptionalConstStringRef<Type>::Move(To);
+    }
+
+    void Move(Details::OptionalString<const Type> &To)
     {
         OptionalConstStringRef<Type>::Move(To);
     }
@@ -445,10 +479,6 @@ template <> class Optional<const StringW &> : public Details::OptionalConstStrin
     }
 
     Optional(OptionalConstStringRef::ConstPtrType Value) : OptionalConstStringRef(Value)
-    {
-    }
-
-    Optional(const Optional<Type> &Other) : OptionalConstStringRef(Other)
     {
     }
 
@@ -541,6 +571,12 @@ template <> class Optional<String> : public Details::OptionalString<String>
         return *this;
     }
 
+    Optional &operator=(const Optional<const Type &> &Rhs)
+    {
+        OptionalString(Rhs).Move(*this);
+        return *this;
+    }
+
     Optional &operator=(OptionalString::ConstPtrType Rhs)
     {
         OptionalString(Rhs).Move(*this);
@@ -613,6 +649,12 @@ template <> class Optional<StringW> : public Details::OptionalString<StringW>
         return *this;
     }
 
+    Optional &operator=(const Optional<const Type &> &Rhs)
+    {
+        OptionalString(Rhs).Move(*this);
+        return *this;
+    }
+
     Optional &operator=(OptionalString::ConstPtrType Rhs)
     {
         OptionalString(Rhs).Move(*this);
@@ -623,6 +665,9 @@ template <> class Optional<StringW> : public Details::OptionalString<StringW>
 
 template <> class Optional<const String> : public Details::OptionalString<const String>
 {
+  public:
+    typedef OptionalString::Type Type;
+
     WIN32EX_MOVE_ALWAYS_CLASS(Optional)
 
   public:
@@ -676,6 +721,9 @@ template <> class Optional<const String> : public Details::OptionalString<const 
 
 template <> class Optional<const StringW> : public Details::OptionalString<const StringW>
 {
+  public:
+    typedef OptionalString::Type Type;
+
     WIN32EX_MOVE_ALWAYS_CLASS(Optional)
 
   public:

@@ -8,9 +8,7 @@ Module Name:
 
 Abstract:
 
-    This Module implements the ServiceConfig, ServiceConfigW, ServiceConfigT, BasicServiceConfig /
-                                Service,  ServiceW, ServiceT, BasicService /
-                                Services, ServicesW, ServicesT, BasicServices class.
+    This Module implements the Service, ServiceW, ServiceT, BasicService class.
 
 Author:
 
@@ -187,57 +185,7 @@ inline bool IsServiceMode()
     return isServiceMode;
 }
 
-template <typename _StringType> class BasicServices
-{
-  public:
-    typedef _StringType StringType;
-    typedef typename StringType::value_type CharType;
-
-#if defined(__cpp_variadic_templates)
-    template <class... ServiceType> static bool Run(ServiceType &...service)
-    {
-        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(CharType *)service.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType::ServiceMain_}...,
-            {NULL, NULL}};
-
-        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
-    }
-#else
-    template <typename ServiceType0, typename ServiceType1>
-    static bool Run(ServiceType0 &service0, ServiceType1 &service1)
-    {
-        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(CharType *)service0.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType0::ServiceMain_},
-            {(CharType *)service1.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType1::ServiceMain_},
-            {NULL, NULL}};
-
-        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
-    }
-    template <typename ServiceType0, typename ServiceType1, typename ServiceType2>
-    static bool Run(ServiceType0 &service0, ServiceType1 &service1, ServiceType2 &service2)
-    {
-        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(CharType *)service0.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType0::ServiceMain_},
-            {(CharType *)service1.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType1::ServiceMain_},
-            {(CharType *)service2.Config_.Name().c_str(),
-             (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceType2::ServiceMain_},
-            {NULL, NULL}};
-
-        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
-    }
-#endif
-};
-
-typedef BasicServices<String> Services;
-typedef BasicServices<StringW> ServicesW;
-typedef BasicServices<StringT> ServicesT;
-
-template <class _StringType> class BasicServiceConfig
+template <class _StringType> class BasicService
 {
   public:
     typedef _StringType StringType;
@@ -265,8 +213,8 @@ template <class _StringType> class BasicServiceConfig
 
     } SC_HANDLES, *PSC_HANDLES;
 
-    BasicServiceConfig(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
-                       const Optional<const StringType &> &Description = None())
+    BasicService(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
+                 const Optional<const StringType &> &Description = None())
         : name_(Name)
     {
         if (DisplayName.IsSome())
@@ -612,13 +560,13 @@ template <class _StringType> class BasicServiceConfig
         return ::CloseServiceHandle(ServiceHandle) == TRUE;
     }
 
-    BasicServiceConfig &SetAcceptStop(AcceptStopCallback Callback)
+    BasicService &SetAcceptStop(AcceptStopCallback Callback)
     {
         acceptStopCallback_ = Callback;
         return *this;
     }
 
-    BasicServiceConfig &SetAcceptPause(AcceptPauseCallback Callback)
+    BasicService &SetAcceptPause(AcceptPauseCallback Callback)
     {
         acceptPauseCallback_ = Callback;
         return *this;
@@ -786,983 +734,987 @@ template <class _StringType> class BasicServiceConfig
 
     AcceptStopCallback acceptStopCallback_;
     AcceptPauseCallback acceptPauseCallback_;
-};
-
-typedef BasicServiceConfig<String> ServiceConfig;
-typedef BasicServiceConfig<StringW> ServiceConfigW;
-typedef BasicServiceConfig<StringT> ServiceConfigT;
-
-template <typename _StringType, const BasicServiceConfig<_StringType> &Config> class BasicService
-{
-    friend class BasicServices<String>;
-    friend class BasicServices<StringW>;
-    friend class BasicServices<StringT>;
 
   public:
-    typedef _StringType StringType;
-    typedef typename StringType::value_type CharType;
+    template <const BasicService<_StringType> &Config> class Instance
+    {
+        friend class BasicService<String>;
+        friend class BasicService<StringW>;
+        friend class BasicService<StringT>;
 
-    typedef std::function<void()> StartCallback;
-    typedef std::function<DWORD(DWORD, CharType *[])> StartCallbackEx;
-    typedef std::function<void()> StopCallback;
-    typedef std::function<void()> PauseCallback;
-    typedef std::function<void()> ContinueCallback;
-    typedef std::function<void()> ShutdownCallback;
-    typedef std::function<void()> ParamChangeCallback;
-    typedef std::function<void()> NetbindAddCallback;
-    typedef std::function<void()> NetbindRemoveCallback;
-    typedef std::function<void()> NetbindEnableCallback;
-    typedef std::function<void()> NetbindDisableCallback;
-    typedef std::function<DWORD(DWORD, PDEV_BROADCAST_HDR)> DeviceEventCallback;
-    typedef std::function<DWORD(DWORD)> HardwareProfileChangeCallback;
-    typedef std::function<DWORD(DWORD, PPOWERBROADCAST_SETTING)> PowerEventCallback;
-    typedef std::function<void(DWORD, PWTSSESSION_NOTIFICATION)> SessionChangeCallback;
+      public:
+        typedef _StringType StringType;
+        typedef typename StringType::value_type CharType;
+
+        typedef std::function<void()> StartCallback;
+        typedef std::function<DWORD(DWORD, CharType *[])> StartCallbackEx;
+        typedef std::function<void()> StopCallback;
+        typedef std::function<void()> PauseCallback;
+        typedef std::function<void()> ContinueCallback;
+        typedef std::function<void()> ShutdownCallback;
+        typedef std::function<void()> ParamChangeCallback;
+        typedef std::function<void()> NetbindAddCallback;
+        typedef std::function<void()> NetbindRemoveCallback;
+        typedef std::function<void()> NetbindEnableCallback;
+        typedef std::function<void()> NetbindDisableCallback;
+        typedef std::function<DWORD(DWORD, PDEV_BROADCAST_HDR)> DeviceEventCallback;
+        typedef std::function<DWORD(DWORD)> HardwareProfileChangeCallback;
+        typedef std::function<DWORD(DWORD, PPOWERBROADCAST_SETTING)> PowerEventCallback;
+        typedef std::function<void(DWORD, PWTSSESSION_NOTIFICATION)> SessionChangeCallback;
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
-    typedef std::function<void()> PreShutdownCallback;
+        typedef std::function<void()> PreShutdownCallback;
 #endif
 #ifdef SERVICE_CONTROL_TIMECHANGE
-    typedef std::function<void(PSERVICE_TIMECHANGE_INFO)> TimeChangeCallback;
+        typedef std::function<void(PSERVICE_TIMECHANGE_INFO)> TimeChangeCallback;
 #endif
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
-    typedef std::function<void()> TriggerEventallback;
+        typedef std::function<void()> TriggerEventallback;
 #endif
-    typedef std::function<void()> OtherCallback;
-    typedef std::function<DWORD(DWORD, PVOID)> OtherCallbackEx;
-    typedef std::function<void(DWORD ErrorCode, PCSTR Message)> ErrorCallback;
+        typedef std::function<void()> OtherCallback;
+        typedef std::function<DWORD(DWORD, PVOID)> OtherCallbackEx;
+        typedef std::function<void(DWORD ErrorCode, PCSTR Message)> ErrorCallback;
 
-  public:
-    BasicService &On(DWORD Control, OtherCallback Callback)
-    {
-        otherCallbackMap_[Control] = Callback;
-        return *this;
-    }
-
-    BasicService &OnEx(DWORD Control, OtherCallbackEx Callback)
-    {
-        otherCallbackExMap_[Control] = Callback;
-        return *this;
-    }
-
-    BasicService &OnStart(StartCallback Callback)
-    {
-        startCallback_ = Callback;
-        return *this;
-    }
-
-    BasicService &OnStartEx(StartCallbackEx Callback)
-    {
-        startCallbackEx_ = Callback;
-        return *this;
-    }
-
-    BasicService &OnStop(StopCallback Callback = NULL)
-    {
-        stopCallback_ = Callback;
-
-        if (stopCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_STOP);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_STOP);
-
-        return *this;
-    }
-
-    BasicService &OnPause(PauseCallback Callback = NULL)
-    {
-        pauseCallback_ = Callback;
-
-        if (pauseCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
-        else if (continueCallback_ == NULL)
-            ClearControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
-
-        return *this;
-    }
-
-    BasicService &OnContinue(ContinueCallback Callback = NULL)
-    {
-        continueCallback_ = Callback;
-
-        if (continueCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
-        else if (pauseCallback_ == NULL)
-            ClearControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
-
-        return *this;
-    }
-
-    BasicService &OnShutdown(ShutdownCallback Callback = NULL)
-    {
-        shutdownCallback_ = Callback;
-
-        if (shutdownCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_SHUTDOWN);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_SHUTDOWN);
-
-        return *this;
-    }
-
-    BasicService &OnParamChange(ParamChangeCallback Callback = NULL)
-    {
-        paramChangeCallback_ = Callback;
-
-        if (paramChangeCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_PARAMCHANGE);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_PARAMCHANGE);
-
-        return *this;
-    }
-
-    BasicService &OnNetbindAdd(NetbindAddCallback Callback = NULL)
-    {
-        netbindAddCallback_ = Callback;
-
-        if (netbindAddCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-        else if ((netbindRemoveCallback_ == NULL) && (netbindEnableCallback_ == NULL) &&
-                 (netbindDisableCallback_ == NULL))
-            ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-
-        return *this;
-    }
-
-    BasicService &OnNetbindRemove(NetbindAddCallback Callback = NULL)
-    {
-        netbindRemoveCallback_ = Callback;
-
-        if (netbindRemoveCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-        else if ((netbindAddCallback_ == NULL) && (netbindEnableCallback_ == NULL) && (netbindDisableCallback_ == NULL))
-            ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-
-        return *this;
-    }
-
-    BasicService &OnNetbindEnable(NetbindAddCallback Callback = NULL)
-    {
-        netbindEnableCallback_ = Callback;
-
-        if (netbindEnableCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-        else if ((netbindAddCallback_ == NULL) && (netbindRemoveCallback_ == NULL) && (netbindDisableCallback_ == NULL))
-            ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-
-        return *this;
-    }
-
-    BasicService &OnNetbindDisable(NetbindAddCallback Callback = NULL)
-    {
-        netbindDisableCallback_ = Callback;
-
-        if (netbindDisableCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-        else if ((netbindAddCallback_ == NULL) && (netbindRemoveCallback_ == NULL) && (netbindEnableCallback_ == NULL))
-            ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
-
-        return *this;
-    }
-
-    BasicService &OnDeviceEvent(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
-    {
-        return OnDeviceEventT<CharType>(NotificationFilter, Callback);
-    }
-
-    template <typename T>
-    BasicService &OnDeviceEventT(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
-    {
-        deviceEventCallback_ = Callback;
-
-        if (deviceEventCallback_)
+      public:
+        Instance &On(DWORD Control, OtherCallback Callback)
         {
-            if (serviceStatusHandle_)
-                deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(serviceStatusHandle_, NotificationFilter,
-                                                                     DEVICE_NOTIFY_SERVICE_HANDLE);
-            else if (hWndConsoleService_)
-                deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(hWndConsoleService_, NotificationFilter,
-                                                                     DEVICE_NOTIFY_WINDOW_HANDLE);
+            otherCallbackMap_[Control] = Callback;
+            return *this;
         }
-        else
+
+        Instance &OnEx(DWORD Control, OtherCallbackEx Callback)
         {
-            if (deviceNotifyHandle_)
+            otherCallbackExMap_[Control] = Callback;
+            return *this;
+        }
+
+        Instance &OnStart(StartCallback Callback)
+        {
+            startCallback_ = Callback;
+            return *this;
+        }
+
+        Instance &OnStartEx(StartCallbackEx Callback)
+        {
+            startCallbackEx_ = Callback;
+            return *this;
+        }
+
+        Instance &OnStop(StopCallback Callback = NULL)
+        {
+            stopCallback_ = Callback;
+
+            if (stopCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_STOP);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_STOP);
+
+            return *this;
+        }
+
+        Instance &OnPause(PauseCallback Callback = NULL)
+        {
+            pauseCallback_ = Callback;
+
+            if (pauseCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
+            else if (continueCallback_ == NULL)
+                ClearControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
+
+            return *this;
+        }
+
+        Instance &OnContinue(ContinueCallback Callback = NULL)
+        {
+            continueCallback_ = Callback;
+
+            if (continueCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
+            else if (pauseCallback_ == NULL)
+                ClearControlsAccepted(SERVICE_ACCEPT_PAUSE_CONTINUE);
+
+            return *this;
+        }
+
+        Instance &OnShutdown(ShutdownCallback Callback = NULL)
+        {
+            shutdownCallback_ = Callback;
+
+            if (shutdownCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_SHUTDOWN);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_SHUTDOWN);
+
+            return *this;
+        }
+
+        Instance &OnParamChange(ParamChangeCallback Callback = NULL)
+        {
+            paramChangeCallback_ = Callback;
+
+            if (paramChangeCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_PARAMCHANGE);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_PARAMCHANGE);
+
+            return *this;
+        }
+
+        Instance &OnNetbindAdd(NetbindAddCallback Callback = NULL)
+        {
+            netbindAddCallback_ = Callback;
+
+            if (netbindAddCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+            else if ((netbindRemoveCallback_ == NULL) && (netbindEnableCallback_ == NULL) &&
+                     (netbindDisableCallback_ == NULL))
+                ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+
+            return *this;
+        }
+
+        Instance &OnNetbindRemove(NetbindAddCallback Callback = NULL)
+        {
+            netbindRemoveCallback_ = Callback;
+
+            if (netbindRemoveCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+            else if ((netbindAddCallback_ == NULL) && (netbindEnableCallback_ == NULL) &&
+                     (netbindDisableCallback_ == NULL))
+                ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+
+            return *this;
+        }
+
+        Instance &OnNetbindEnable(NetbindAddCallback Callback = NULL)
+        {
+            netbindEnableCallback_ = Callback;
+
+            if (netbindEnableCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+            else if ((netbindAddCallback_ == NULL) && (netbindRemoveCallback_ == NULL) &&
+                     (netbindDisableCallback_ == NULL))
+                ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+
+            return *this;
+        }
+
+        Instance &OnNetbindDisable(NetbindAddCallback Callback = NULL)
+        {
+            netbindDisableCallback_ = Callback;
+
+            if (netbindDisableCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+            else if ((netbindAddCallback_ == NULL) && (netbindRemoveCallback_ == NULL) &&
+                     (netbindEnableCallback_ == NULL))
+                ClearControlsAccepted(SERVICE_ACCEPT_NETBINDCHANGE);
+
+            return *this;
+        }
+
+        Instance &OnDeviceEvent(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
+        {
+            return OnDeviceEventT<CharType>(NotificationFilter, Callback);
+        }
+
+        template <typename T>
+        Instance &OnDeviceEventT(PVOID NotificationFilter = NULL, DeviceEventCallback Callback = NULL)
+        {
+            deviceEventCallback_ = Callback;
+
+            if (deviceEventCallback_)
             {
-                UnregisterDeviceNotification(deviceNotifyHandle_);
-                deviceNotifyHandle_ = NULL;
+                if (serviceStatusHandle_)
+                    deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(serviceStatusHandle_, NotificationFilter,
+                                                                         DEVICE_NOTIFY_SERVICE_HANDLE);
+                else if (hWndConsoleService_)
+                    deviceNotifyHandle_ = RegisterDeviceNotificationT<T>(hWndConsoleService_, NotificationFilter,
+                                                                         DEVICE_NOTIFY_WINDOW_HANDLE);
             }
+            else
+            {
+                if (deviceNotifyHandle_)
+                {
+                    UnregisterDeviceNotification(deviceNotifyHandle_);
+                    deviceNotifyHandle_ = NULL;
+                }
+            }
+
+            return *this;
         }
 
-        return *this;
-    }
+        Instance &OnHardwareProfileChange(HardwareProfileChangeCallback Callback = NULL)
+        {
+            hardwareProfileChangeCallback_ = Callback;
 
-    BasicService &OnHardwareProfileChange(HardwareProfileChangeCallback Callback = NULL)
-    {
-        hardwareProfileChangeCallback_ = Callback;
+            if (hardwareProfileChangeCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_HARDWAREPROFILECHANGE);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_HARDWAREPROFILECHANGE);
 
-        if (hardwareProfileChangeCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_HARDWAREPROFILECHANGE);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_HARDWAREPROFILECHANGE);
+            return *this;
+        }
 
-        return *this;
-    }
+        Instance &OnPowerEvent(PowerEventCallback Callback = NULL)
+        {
+            powerEventCallback_ = Callback;
 
-    BasicService &OnPowerEvent(PowerEventCallback Callback = NULL)
-    {
-        powerEventCallback_ = Callback;
+            if (powerEventCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_POWEREVENT);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_POWEREVENT);
 
-        if (powerEventCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_POWEREVENT);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_POWEREVENT);
+            return *this;
+        }
 
-        return *this;
-    }
+        Instance &OnSessionChanage(SessionChangeCallback Callback = NULL)
+        {
+            sessionChangeCallback_ = Callback;
 
-    BasicService &OnSessionChanage(SessionChangeCallback Callback = NULL)
-    {
-        sessionChangeCallback_ = Callback;
+            if (sessionChangeCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_SESSIONCHANGE);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_SESSIONCHANGE);
 
-        if (sessionChangeCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_SESSIONCHANGE);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_SESSIONCHANGE);
-
-        return *this;
-    }
+            return *this;
+        }
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
-    BasicService &OnPreShutdown(Duration PreshutdownTimeout, PreShutdownCallback Callback = NULL)
-    {
-        Config.SetPreshutdownTimeout(PreshutdownTimeout);
-        return OnPreShutdown(Callback);
-    }
+        Instance &OnPreShutdown(Duration PreshutdownTimeout, PreShutdownCallback Callback = NULL)
+        {
+            Config.SetPreshutdownTimeout(PreshutdownTimeout);
+            return OnPreShutdown(Callback);
+        }
 
-    BasicService &OnPreShutdown(PreShutdownCallback Callback = NULL)
-    {
-        preShutdownCallback_ = Callback;
+        Instance &OnPreShutdown(PreShutdownCallback Callback = NULL)
+        {
+            preShutdownCallback_ = Callback;
 
-        if (preShutdownCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_PRESHUTDOWN);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_PRESHUTDOWN);
+            if (preShutdownCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_PRESHUTDOWN);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_PRESHUTDOWN);
 
-        return *this;
-    }
+            return *this;
+        }
 #endif
 #ifdef SERVICE_CONTROL_TIMECHANGE
-    BasicService &OnTimeChange(TimeChangeCallback Callback = NULL)
-    {
-        timeChangeCallback_ = Callback;
+        Instance &OnTimeChange(TimeChangeCallback Callback = NULL)
+        {
+            timeChangeCallback_ = Callback;
 
-        if (timeChangeCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_TIMECHANGE);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_TIMECHANGE);
+            if (timeChangeCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_TIMECHANGE);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_TIMECHANGE);
 
-        return *this;
-    }
+            return *this;
+        }
 #endif
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
-    BasicService &OnTriggerEvent(const SERVICE_TRIGGER_INFO &TriggerInfo, TriggerEventallback Callback = NULL)
-    {
-        Config.SetTrigger(TriggerInfo);
-        return OnTriggerEvent(Callback);
-    }
-
-    BasicService &OnTriggerEvent(TriggerEventallback Callback = NULL)
-    {
-        triggerEventCallback_ = Callback;
-
-        if (triggerEventCallback_)
-            SetControlsAccepted(SERVICE_ACCEPT_TRIGGEREVENT);
-        else
-            ClearControlsAccepted(SERVICE_ACCEPT_TRIGGEREVENT);
-
-        return *this;
-    }
-#endif
-    BasicService &OnError(ErrorCallback Callback)
-    {
-        errorCallback_ = Callback;
-        return *this;
-    }
-
-    bool SetWin32ExitCode(DWORD Win32ExitCode)
-    {
-        serviceStatus_.dwServiceType = Config.ServiceType();
-        serviceStatus_.dwWin32ExitCode = Win32ExitCode;
-        return UpdateServiceStatus_();
-    }
-
-    bool SetServiceSpecificExitCode(DWORD ServiceSpecificExitCode)
-    {
-        serviceStatus_.dwServiceType = Config.ServiceType();
-        serviceStatus_.dwWin32ExitCode = ERROR_SERVICE_SPECIFIC_ERROR;
-        serviceStatus_.dwServiceSpecificExitCode = ServiceSpecificExitCode;
-        return UpdateServiceStatus_();
-    }
-
-    bool IsRunning() const
-    {
-        return serviceStatus_.dwCurrentState == SERVICE_RUNNING;
-    }
-
-    DWORD Status() const
-    {
-        return serviceStatus_.dwCurrentState;
-    }
-
-    HANDLE StatusHandle() const
-    {
-        return (IsServiceMode() ? (HANDLE)serviceStatusHandle_ : (HANDLE)hWndConsoleService_);
-    }
-
-    DWORD ControlsAccepted() const
-    {
-        return serviceStatus_.dwControlsAccepted;
-    }
-
-    bool SetStatus(DWORD Status, DWORD Win32ExitCode = ERROR_SUCCESS)
-    {
-        serviceStatus_.dwServiceType = Config.ServiceType();
-        serviceStatus_.dwCurrentState = Status;
-        serviceStatus_.dwWin32ExitCode = Win32ExitCode;
-        return UpdateServiceStatus_();
-    }
-
-    bool ClearControlsAccepted(DWORD ControlsAccepted)
-    {
-        ClearFlag(serviceStatus_.dwControlsAccepted, ControlsAccepted);
-        return UpdateServiceStatus_();
-    }
-
-    bool SetControlsAccepted(DWORD ControlsAccepted)
-    {
-        SetFlag(serviceStatus_.dwControlsAccepted, ControlsAccepted);
-        return UpdateServiceStatus_();
-    }
-
-    bool Run()
-    {
-        if (IsServiceMode())
+        Instance &OnTriggerEvent(const SERVICE_TRIGGER_INFO &TriggerInfo, TriggerEventallback Callback = NULL)
         {
-            typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-                {(CharType *)Config.Name().c_str(), (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceMain_},
-                {NULL, NULL}};
-
-            return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+            Config.SetTrigger(TriggerInfo);
+            return OnTriggerEvent(Callback);
         }
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
-        else
+
+        Instance &OnTriggerEvent(TriggerEventallback Callback = NULL)
         {
+            triggerEventCallback_ = Callback;
+
+            if (triggerEventCallback_)
+                SetControlsAccepted(SERVICE_ACCEPT_TRIGGEREVENT);
+            else
+                ClearControlsAccepted(SERVICE_ACCEPT_TRIGGEREVENT);
+
+            return *this;
+        }
+#endif
+        Instance &OnError(ErrorCallback Callback)
+        {
+            errorCallback_ = Callback;
+            return *this;
+        }
+
+        bool SetWin32ExitCode(DWORD Win32ExitCode)
+        {
+            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwWin32ExitCode = Win32ExitCode;
+            return UpdateServiceStatus_();
+        }
+
+        bool SetServiceSpecificExitCode(DWORD ServiceSpecificExitCode)
+        {
+            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwWin32ExitCode = ERROR_SERVICE_SPECIFIC_ERROR;
+            serviceStatus_.dwServiceSpecificExitCode = ServiceSpecificExitCode;
+            return UpdateServiceStatus_();
+        }
+
+        bool IsRunning() const
+        {
+            return serviceStatus_.dwCurrentState == SERVICE_RUNNING;
+        }
+
+        DWORD Status() const
+        {
+            return serviceStatus_.dwCurrentState;
+        }
+
+        HANDLE StatusHandle() const
+        {
+            return (IsServiceMode() ? (HANDLE)serviceStatusHandle_ : (HANDLE)hWndConsoleService_);
+        }
+
+        DWORD ControlsAccepted() const
+        {
+            return serviceStatus_.dwControlsAccepted;
+        }
+
+        bool SetStatus(DWORD Status, DWORD Win32ExitCode = ERROR_SUCCESS)
+        {
+            serviceStatus_.dwServiceType = Config.ServiceType();
+            serviceStatus_.dwCurrentState = Status;
+            serviceStatus_.dwWin32ExitCode = Win32ExitCode;
+            return UpdateServiceStatus_();
+        }
+
+        bool ClearControlsAccepted(DWORD ControlsAccepted)
+        {
+            ClearFlag(serviceStatus_.dwControlsAccepted, ControlsAccepted);
+            return UpdateServiceStatus_();
+        }
+
+        bool SetControlsAccepted(DWORD ControlsAccepted)
+        {
+            SetFlag(serviceStatus_.dwControlsAccepted, ControlsAccepted);
+            return UpdateServiceStatus_();
+        }
+
+        bool Run()
+        {
+            if (IsServiceMode())
+            {
+                typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+                    {(CharType *)Config.Name().c_str(),
+                     (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceMain_},
+                    {NULL, NULL}};
+
+                return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+            }
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+            else
+            {
 #if _CRT_DECLARE_GLOBAL_VARIABLES_DIRECTLY
 #if (defined(__argc) && defined(__argv))
-            if (typeid(CharType) == typeid(CHAR))
-            {
-                ServiceMain_(__argc, __argv);
-            }
-            else
-            {
-                ServiceMain_(0, NULL);
-            }
+                if (typeid(CharType) == typeid(CHAR))
+                {
+                    ServiceMain_(__argc, __argv);
+                }
+                else
+                {
+                    ServiceMain_(0, NULL);
+                }
 
 #elif (defined(__argc) && defined(__wargv))
-            if (typeid(CharType) == typeid(WCHAR))
-            {
-                ServiceMain_(__argc, __argv);
-            }
-            else
-            {
-                ServiceMain_(0, NULL);
-            }
+                if (typeid(CharType) == typeid(WCHAR))
+                {
+                    ServiceMain_(__argc, __argv);
+                }
+                else
+                {
+                    ServiceMain_(0, NULL);
+                }
 #endif
 #else
-            ServiceMain_(0, NULL);
+                ServiceMain_(0, NULL);
 #endif
-            return true;
-        }
+                return true;
+            }
 #endif
-        return false;
-    }
-
-  protected:
-    BasicService()
-        : serviceStatusHandle_(NULL), deviceNotifyHandle_(NULL), hCleanupCompleteEvent_(NULL), hStopedEvent_(NULL),
-          hWndConsoleService_(NULL), Config_(Config)
-    {
-        ZeroMemory(&serviceStatus_, sizeof(serviceStatus_));
-    }
-
-    ~BasicService()
-    {
-        if (deviceNotifyHandle_)
-            UnregisterDeviceNotification(deviceNotifyHandle_);
-
-        if (hStopedEvent_)
-            SetEvent(hStopedEvent_);
-
-        Cleanup_();
-    }
-
-  private:
-    void Cleanup_()
-    {
-        if (hStopedEvent_)
-        {
-            CloseHandle(hStopedEvent_);
-            hStopedEvent_ = NULL;
-        }
-
-        if (hCleanupCompleteEvent_)
-        {
-            SetEvent(hCleanupCompleteEvent_);
-            CloseHandle(hCleanupCompleteEvent_);
-            hCleanupCompleteEvent_ = NULL;
-        }
-    }
-
-    bool UpdateServiceStatus_()
-    {
-        if (serviceStatusHandle_ == NULL)
-        {
-            SetLastError(ERROR_SERVICE_NOT_ACTIVE);
             return false;
         }
-        return ::SetServiceStatus(serviceStatusHandle_, &serviceStatus_) == TRUE;
-    }
 
-  public:
-    static BasicService &Instance()
-    {
-        static BasicService service;
-        return service;
-    }
+      protected:
+        Instance()
+            : serviceStatusHandle_(NULL), deviceNotifyHandle_(NULL), hCleanupCompleteEvent_(NULL), hStopedEvent_(NULL),
+              hWndConsoleService_(NULL), Config_(Config)
+        {
+            ZeroMemory(&serviceStatus_, sizeof(serviceStatus_));
+        }
 
-  private:
-    void RaiseError_(DWORD ErrorCode, PCSTR Message)
-    {
-        if (errorCallback_)
-            errorCallback_(ErrorCode, Message);
-        SetWin32ExitCode(ErrorCode);
-    }
+        ~Instance()
+        {
+            if (deviceNotifyHandle_)
+                UnregisterDeviceNotification(deviceNotifyHandle_);
+
+            if (hStopedEvent_)
+                SetEvent(hStopedEvent_);
+
+            Cleanup_();
+        }
+
+      private:
+        void Cleanup_()
+        {
+            if (hStopedEvent_)
+            {
+                ::CloseHandle(hStopedEvent_);
+                hStopedEvent_ = NULL;
+            }
+
+            if (hCleanupCompleteEvent_)
+            {
+                SetEvent(hCleanupCompleteEvent_);
+                ::CloseHandle(hCleanupCompleteEvent_);
+                hCleanupCompleteEvent_ = NULL;
+            }
+        }
+
+        bool UpdateServiceStatus_()
+        {
+            if (serviceStatusHandle_ == NULL)
+            {
+                SetLastError(ERROR_SERVICE_NOT_ACTIVE);
+                return false;
+            }
+            return ::SetServiceStatus(serviceStatusHandle_, &serviceStatus_) == TRUE;
+        }
+
+      public:
+        static Instance &GetInstance()
+        {
+            static Instance service;
+            return service;
+        }
+
+      private:
+        void RaiseError_(DWORD ErrorCode, PCSTR Message)
+        {
+            if (errorCallback_)
+                errorCallback_(ErrorCode, Message);
+            SetWin32ExitCode(ErrorCode);
+        }
 
 #ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
-    static BOOL WINAPI ConsoleHandlerRoutine_(DWORD dwCtrlType)
-    {
-        ServiceHandlerEx_(SERVICE_CONTROL_STOP, dwCtrlType, NULL, NULL);
-        return TRUE;
-    }
-
-    static LRESULT CALLBACK ConsoleWndProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-    {
-        switch (uMsg)
+        static BOOL WINAPI ConsoleHandlerRoutine_(DWORD dwCtrlType)
         {
-        case WM_DEVICECHANGE:
-            ServiceHandlerEx_(SERVICE_CONTROL_DEVICEEVENT, (DWORD)wParam, (LPVOID)lParam, NULL);
-            break;
-
-        case WM_WTSSESSION_CHANGE:
-            WTSSESSION_NOTIFICATION sessionNotification;
-            sessionNotification.cbSize = sizeof(sessionNotification);
-            sessionNotification.dwSessionId = (DWORD)lParam;
-            ServiceHandlerEx_(SERVICE_CONTROL_SESSIONCHANGE, (DWORD)wParam, &sessionNotification, NULL);
-            break;
-#ifdef SERVICE_CONTROL_TIMECHANGE
-        case WM_TIMECHANGE:
-
-            SERVICE_TIMECHANGE_INFO info;
-
-            SYSTEMTIME st;
-            GetSystemTime(&st);
-
-            FILETIME ft;
-            SystemTimeToFileTime(&st, &ft);
-
-            info.liOldTime.QuadPart = 0; // Not yet. :-(
-            info.liNewTime.LowPart = ft.dwLowDateTime;
-            info.liNewTime.HighPart = ft.dwHighDateTime;
-
-            ServiceHandlerEx_(SERVICE_CONTROL_TIMECHANGE, 0, &info, NULL);
-            break;
-#endif
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            return 0;
+            ServiceHandlerEx_(SERVICE_CONTROL_STOP, dwCtrlType, NULL, NULL);
+            return TRUE;
         }
 
-        return DefWindowProc(hWnd, uMsg, wParam, lParam);
-    }
-
-    struct CONSOLE_WND_THREAD_PARAM
-    {
-        CONSOLE_WND_THREAD_PARAM(BasicService &Service, HINSTANCE hInstance, PCSTR ClassName)
-            : Service(Service), hWnd(NULL), hInstance(hInstance), ClassName(ClassName), hEventWndCreatedOrFailed(NULL)
+        static LRESULT CALLBACK ConsoleWndProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
-        }
-        ~CONSOLE_WND_THREAD_PARAM()
-        {
-            if (hEventWndCreatedOrFailed)
-                CloseHandle(hEventWndCreatedOrFailed);
-        }
-
-        HINSTANCE hInstance;
-        PCSTR ClassName;
-        HANDLE hEventWndCreatedOrFailed;
-        HWND hWnd;
-        BasicService &Service;
-    };
-
-    static DWORD WINAPI ConsoleWndThreadProc_(LPVOID lpThreadParameter)
-    {
-        CONSOLE_WND_THREAD_PARAM *param = (CONSOLE_WND_THREAD_PARAM *)lpThreadParameter;
-
-        DWORD errorCode;
-        BasicService &service = param->Service;
-
-        HWND hWndSvc =
-            CreateWindowExA(0, param->ClassName, "ConsoleServiceWindow", 0, 0, 0, 0, 0, 0, 0, param->hInstance, 0);
-
-        if (hWndSvc == NULL)
-        {
-            errorCode = GetLastError();
-            service.RaiseError_(errorCode, "Failed to CreateWindowExA");
-            SetEvent(param->hEventWndCreatedOrFailed);
-            return GetLastError();
-        }
-
-        if (!WTSRegisterSessionNotification(hWndSvc, NOTIFY_FOR_ALL_SESSIONS))
-        {
-            errorCode = GetLastError();
-            DestroyWindow(hWndSvc);
-            service.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
-            SetEvent(param->hEventWndCreatedOrFailed);
-            return GetLastError();
-        }
-
-        param->hWnd = hWndSvc;
-        SetEvent(param->hEventWndCreatedOrFailed);
-
-        BOOL bRet;
-        MSG msg;
-
-        while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0)
-        {
-            if (bRet == -1)
+            switch (uMsg)
             {
+            case WM_DEVICECHANGE:
+                ServiceHandlerEx_(SERVICE_CONTROL_DEVICEEVENT, (DWORD)wParam, (LPVOID)lParam, NULL);
                 break;
-            }
-            else
-            {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
-        }
 
-        WTSUnRegisterSessionNotification(hWndSvc);
-        DestroyWindow(hWndSvc);
-        return 0;
-    }
-#endif
-    static DWORD WINAPI ServiceHandlerEx_(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
-    {
-        DWORD result = NO_ERROR;
-        BasicService &service = BasicService::Instance();
-
-        UNREFERENCED_PARAMETER(lpContext);
-
-        switch (dwControl)
-        {
-        case SERVICE_CONTROL_STOP:
-            service.SetStatus(SERVICE_STOP_PENDING);
-
-            if (service.stopCallback_)
-                service.stopCallback_();
-
-            SetEvent(service.hStopedEvent_);
-            service.SetStatus(SERVICE_STOPPED);
-            WaitForSingleObject(service.hCleanupCompleteEvent_, INFINITE);
-            result = NO_ERROR;
-            break;
-
-        case SERVICE_CONTROL_PAUSE:
-            service.SetStatus(SERVICE_PAUSE_PENDING);
-            if (service.pauseCallback_)
-                service.pauseCallback_();
-            service.SetStatus(SERVICE_PAUSED);
-            break;
-
-        case SERVICE_CONTROL_CONTINUE:
-            service.SetStatus(SERVICE_CONTINUE_PENDING);
-            if (service.continueCallback_)
-                service.continueCallback_();
-            service.SetStatus(SERVICE_RUNNING);
-            break;
-
-        case SERVICE_CONTROL_INTERROGATE:
-            result = NO_ERROR;
-            break;
-
-        case SERVICE_CONTROL_SHUTDOWN:
-            if (service.shutdownCallback_)
-                service.shutdownCallback_();
-            result = NO_ERROR;
-            break;
-
-        case SERVICE_CONTROL_PARAMCHANGE:
-            if (service.paramChangeCallback_)
-                service.paramChangeCallback_();
-            break;
-
-        case SERVICE_CONTROL_NETBINDADD:
-            if (service.netbindAddCallback_)
-                service.netbindAddCallback_();
-            break;
-
-        case SERVICE_CONTROL_NETBINDREMOVE:
-            if (service.netbindRemoveCallback_)
-                service.netbindRemoveCallback_();
-            break;
-
-        case SERVICE_CONTROL_NETBINDENABLE:
-            if (service.netbindEnableCallback_)
-                service.netbindEnableCallback_();
-            break;
-
-        case SERVICE_CONTROL_NETBINDDISABLE:
-            if (service.netbindDisableCallback_)
-                service.netbindDisableCallback_();
-            break;
-
-        case SERVICE_CONTROL_DEVICEEVENT:
-            if (service.deviceEventCallback_)
-                result = service.deviceEventCallback_(dwEventType, (PDEV_BROADCAST_HDR)lpEventData);
-            break;
-
-        case SERVICE_CONTROL_HARDWAREPROFILECHANGE:
-            if (service.hardwareProfileChangeCallback_)
-                result = service.hardwareProfileChangeCallback_(dwEventType);
-            break;
-
-        case SERVICE_CONTROL_POWEREVENT:
-            if (service.powerEventCallback_)
-                result = service.powerEventCallback_(dwEventType, (PPOWERBROADCAST_SETTING)lpEventData);
-            break;
-
-        case SERVICE_CONTROL_SESSIONCHANGE:
-            if (service.sessionChangeCallback_)
-                service.sessionChangeCallback_(dwEventType, (PWTSSESSION_NOTIFICATION)lpEventData);
-            break;
-#ifdef SERVICE_CONTROL_PRESHUTDOWN
-        case SERVICE_CONTROL_PRESHUTDOWN:
-            if (service.preShutdownCallback_)
-                service.preShutdownCallback_();
-            break;
-#endif
+            case WM_WTSSESSION_CHANGE:
+                WTSSESSION_NOTIFICATION sessionNotification;
+                sessionNotification.cbSize = sizeof(sessionNotification);
+                sessionNotification.dwSessionId = (DWORD)lParam;
+                ServiceHandlerEx_(SERVICE_CONTROL_SESSIONCHANGE, (DWORD)wParam, &sessionNotification, NULL);
+                break;
 #ifdef SERVICE_CONTROL_TIMECHANGE
-        case SERVICE_CONTROL_TIMECHANGE:
-            if (service.timeChangeCallback_)
-                service.timeChangeCallback_((PSERVICE_TIMECHANGE_INFO)lpEventData);
-            break;
+            case WM_TIMECHANGE:
+
+                SERVICE_TIMECHANGE_INFO info;
+
+                SYSTEMTIME st;
+                GetSystemTime(&st);
+
+                FILETIME ft;
+                SystemTimeToFileTime(&st, &ft);
+
+                info.liOldTime.QuadPart = 0; // Not yet. :-(
+                info.liNewTime.LowPart = ft.dwLowDateTime;
+                info.liNewTime.HighPart = ft.dwHighDateTime;
+
+                ServiceHandlerEx_(SERVICE_CONTROL_TIMECHANGE, 0, &info, NULL);
+                break;
 #endif
-#ifdef SERVICE_CONTROL_TRIGGEREVENT
-        case SERVICE_CONTROL_TRIGGEREVENT:
-            if (service.triggerEventCallback_)
-                service.triggerEventCallback_();
-            break;
-#endif
-        default:
-            if (service.otherCallbackExMap_[dwControl])
-                return service.otherCallbackExMap_[dwControl](dwEventType, lpEventData);
-
-            if (service.otherCallbackMap_[dwControl])
-                service.otherCallbackMap_[dwControl]();
-            break;
-        }
-
-        return result;
-    }
-
-    static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, CharType **lpServiceArgVectors)
-    {
-        DWORD errorCode;
-        BasicService &service = BasicService::Instance();
-
-        service.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-        if (service.hCleanupCompleteEvent_ == NULL)
-        {
-            service.RaiseError_(GetLastError(), "Failed to CreateEventW");
-            CloseHandle(service.hStopedEvent_);
-            return;
-        }
-
-        if (IsServiceMode())
-        {
-            service.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-            if (service.hStopedEvent_ == NULL)
-            {
-                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
-                return;
+            case WM_DESTROY:
+                PostQuitMessage(0);
+                return 0;
             }
 
-            service.serviceStatusHandle_ =
-                RegisterServiceCtrlHandlerExT<CharType>((CharType *)Config.Name().c_str(), ServiceHandlerEx_, &service);
+            return DefWindowProc(hWnd, uMsg, wParam, lParam);
+        }
 
-            if (!service.serviceStatusHandle_)
+        struct CONSOLE_WND_THREAD_PARAM
+        {
+            CONSOLE_WND_THREAD_PARAM(Instance &Instance, HINSTANCE hInstance, PCSTR ClassName)
+                : Instance(Instance), hWnd(NULL), hInstance(hInstance), ClassName(ClassName),
+                  hEventWndCreatedOrFailed(NULL)
+            {
+            }
+            ~CONSOLE_WND_THREAD_PARAM()
+            {
+                if (hEventWndCreatedOrFailed)
+                    ::CloseHandle(hEventWndCreatedOrFailed);
+            }
+
+            HINSTANCE hInstance;
+            PCSTR ClassName;
+            HANDLE hEventWndCreatedOrFailed;
+            HWND hWnd;
+            Instance &Instance;
+        };
+
+        static DWORD WINAPI ConsoleWndThreadProc_(LPVOID lpThreadParameter)
+        {
+            CONSOLE_WND_THREAD_PARAM *param = (CONSOLE_WND_THREAD_PARAM *)lpThreadParameter;
+
+            DWORD errorCode;
+            Instance &instance = param->Instance;
+
+            HWND hWndSvc =
+                CreateWindowExA(0, param->ClassName, "ConsoleServiceWindow", 0, 0, 0, 0, 0, 0, 0, param->hInstance, 0);
+
+            if (hWndSvc == NULL)
             {
                 errorCode = GetLastError();
-                CloseHandle(service.hStopedEvent_);
-                service.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
-                service.Cleanup_();
+                instance.RaiseError_(errorCode, "Failed to CreateWindowExA");
+                SetEvent(param->hEventWndCreatedOrFailed);
+                return GetLastError();
+            }
+
+            if (!WTSRegisterSessionNotification(hWndSvc, NOTIFY_FOR_ALL_SESSIONS))
+            {
+                errorCode = GetLastError();
+                DestroyWindow(hWndSvc);
+                instance.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
+                SetEvent(param->hEventWndCreatedOrFailed);
+                return GetLastError();
+            }
+
+            param->hWnd = hWndSvc;
+            SetEvent(param->hEventWndCreatedOrFailed);
+
+            BOOL bRet;
+            MSG msg;
+
+            while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0)
+            {
+                if (bRet == -1)
+                {
+                    break;
+                }
+                else
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+            }
+
+            WTSUnRegisterSessionNotification(hWndSvc);
+            DestroyWindow(hWndSvc);
+            return 0;
+        }
+#endif
+        static DWORD WINAPI ServiceHandlerEx_(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
+        {
+            DWORD result = NO_ERROR;
+            Instance &service = GetInstance();
+
+            UNREFERENCED_PARAMETER(lpContext);
+
+            switch (dwControl)
+            {
+            case SERVICE_CONTROL_STOP:
+                service.SetStatus(SERVICE_STOP_PENDING);
+
+                if (service.stopCallback_)
+                    service.stopCallback_();
+
+                SetEvent(service.hStopedEvent_);
+                service.SetStatus(SERVICE_STOPPED);
+                WaitForSingleObject(service.hCleanupCompleteEvent_, INFINITE);
+                result = NO_ERROR;
+                break;
+
+            case SERVICE_CONTROL_PAUSE:
+                service.SetStatus(SERVICE_PAUSE_PENDING);
+                if (service.pauseCallback_)
+                    service.pauseCallback_();
+                service.SetStatus(SERVICE_PAUSED);
+                break;
+
+            case SERVICE_CONTROL_CONTINUE:
+                service.SetStatus(SERVICE_CONTINUE_PENDING);
+                if (service.continueCallback_)
+                    service.continueCallback_();
+                service.SetStatus(SERVICE_RUNNING);
+                break;
+
+            case SERVICE_CONTROL_INTERROGATE:
+                result = NO_ERROR;
+                break;
+
+            case SERVICE_CONTROL_SHUTDOWN:
+                if (service.shutdownCallback_)
+                    service.shutdownCallback_();
+                result = NO_ERROR;
+                break;
+
+            case SERVICE_CONTROL_PARAMCHANGE:
+                if (service.paramChangeCallback_)
+                    service.paramChangeCallback_();
+                break;
+
+            case SERVICE_CONTROL_NETBINDADD:
+                if (service.netbindAddCallback_)
+                    service.netbindAddCallback_();
+                break;
+
+            case SERVICE_CONTROL_NETBINDREMOVE:
+                if (service.netbindRemoveCallback_)
+                    service.netbindRemoveCallback_();
+                break;
+
+            case SERVICE_CONTROL_NETBINDENABLE:
+                if (service.netbindEnableCallback_)
+                    service.netbindEnableCallback_();
+                break;
+
+            case SERVICE_CONTROL_NETBINDDISABLE:
+                if (service.netbindDisableCallback_)
+                    service.netbindDisableCallback_();
+                break;
+
+            case SERVICE_CONTROL_DEVICEEVENT:
+                if (service.deviceEventCallback_)
+                    result = service.deviceEventCallback_(dwEventType, (PDEV_BROADCAST_HDR)lpEventData);
+                break;
+
+            case SERVICE_CONTROL_HARDWAREPROFILECHANGE:
+                if (service.hardwareProfileChangeCallback_)
+                    result = service.hardwareProfileChangeCallback_(dwEventType);
+                break;
+
+            case SERVICE_CONTROL_POWEREVENT:
+                if (service.powerEventCallback_)
+                    result = service.powerEventCallback_(dwEventType, (PPOWERBROADCAST_SETTING)lpEventData);
+                break;
+
+            case SERVICE_CONTROL_SESSIONCHANGE:
+                if (service.sessionChangeCallback_)
+                    service.sessionChangeCallback_(dwEventType, (PWTSSESSION_NOTIFICATION)lpEventData);
+                break;
+#ifdef SERVICE_CONTROL_PRESHUTDOWN
+            case SERVICE_CONTROL_PRESHUTDOWN:
+                if (service.preShutdownCallback_)
+                    service.preShutdownCallback_();
+                break;
+#endif
+#ifdef SERVICE_CONTROL_TIMECHANGE
+            case SERVICE_CONTROL_TIMECHANGE:
+                if (service.timeChangeCallback_)
+                    service.timeChangeCallback_((PSERVICE_TIMECHANGE_INFO)lpEventData);
+                break;
+#endif
+#ifdef SERVICE_CONTROL_TRIGGEREVENT
+            case SERVICE_CONTROL_TRIGGEREVENT:
+                if (service.triggerEventCallback_)
+                    service.triggerEventCallback_();
+                break;
+#endif
+            default:
+                if (service.otherCallbackExMap_[dwControl])
+                    return service.otherCallbackExMap_[dwControl](dwEventType, lpEventData);
+
+                if (service.otherCallbackMap_[dwControl])
+                    service.otherCallbackMap_[dwControl]();
+                break;
+            }
+
+            return result;
+        }
+
+        static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, CharType **lpServiceArgVectors)
+        {
+            DWORD errorCode;
+            Instance &service = GetInstance();
+
+            service.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+            if (service.hCleanupCompleteEvent_ == NULL)
+            {
+                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                ::CloseHandle(service.hStopedEvent_);
                 return;
             }
 
-            service.SetStatus(SERVICE_START_PENDING);
-
-            if (service.startCallbackEx_)
+            if (IsServiceMode())
             {
-                errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
-                if (errorCode != ERROR_SUCCESS)
+                service.hStopedEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+                if (service.hStopedEvent_ == NULL)
                 {
-                    service.RaiseError_(errorCode, "Failed to start service.");
-                    service.SetStatus(SERVICE_STOPPED, errorCode);
+                    service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                    return;
+                }
+
+                service.serviceStatusHandle_ = RegisterServiceCtrlHandlerExT<CharType>(
+                    (CharType *)Config.Name().c_str(), ServiceHandlerEx_, &service);
+
+                if (!service.serviceStatusHandle_)
+                {
+                    errorCode = GetLastError();
+                    ::CloseHandle(service.hStopedEvent_);
+                    service.RaiseError_(GetLastError(), "Failed to RegisterServiceCtrlHandlerExW");
                     service.Cleanup_();
                     return;
                 }
-            }
-            else if (service.startCallback_)
-            {
-                service.startCallback_();
-            }
 
-            service.SetStatus(SERVICE_RUNNING);
-            WaitForSingleObject(service.hStopedEvent_, INFINITE);
+                service.SetStatus(SERVICE_START_PENDING);
 
-            service.Cleanup_();
-            return;
-        }
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
-        else
-        {
-            service.hStopedEvent_ = Details::CreateStopEvent(service.Config_.Name());
-            if (service.hStopedEvent_ == NULL)
-            {
-                service.RaiseError_(GetLastError(), "Failed to CreateEventW");
-                return;
-            }
-
-            if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine_, TRUE))
-            {
-                errorCode = GetLastError();
-                service.RaiseError_(GetLastError(), "Failed to SetConsoleCtrlHandler");
-                service.Cleanup_();
-                if (!IsServiceMode())
-                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-                return;
-            }
-
-            using namespace Convert::String;
-
-            std::string className =
-                typeid(StringType) == typeid(String) ? (PCSTR)Config.Name().c_str() : (PCSTR)(!Config.Name()).c_str();
-            className.append("Class");
-
-            HINSTANCE hInstance = GetModuleHandle(NULL);
-
-            WNDCLASSEXA wndClass = {sizeof(WNDCLASSEXA),
-                                    CS_DBLCLKS,
-                                    ConsoleWndProc_,
-                                    0,
-                                    0,
-                                    hInstance,
-                                    LoadIcon(0, IDI_APPLICATION),
-                                    LoadCursor(0, IDC_ARROW),
-                                    HBRUSH(COLOR_WINDOW + 1),
-                                    0,
-                                    className.c_str(),
-                                    LoadIcon(0, IDI_APPLICATION)};
-
-            if (!RegisterClassExA(&wndClass))
-            {
-                errorCode = GetLastError();
-                service.RaiseError_(errorCode, "Failed to RegisterClassExA");
-                service.Cleanup_();
-                if (!IsServiceMode())
-                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-                return;
-            }
-
-            CONSOLE_WND_THREAD_PARAM param(service, hInstance, className.c_str());
-
-            param.hEventWndCreatedOrFailed = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-            if (!param.hEventWndCreatedOrFailed)
-            {
-                errorCode = GetLastError();
-                UnregisterClassA(className.c_str(), hInstance);
-                service.RaiseError_(errorCode, "Failed to CreateEvent");
-                service.Cleanup_();
-                if (!IsServiceMode())
-                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-                return;
-            }
-
-            HANDLE hThraed = CreateThread(NULL, 0, ConsoleWndThreadProc_, &param, 0, NULL);
-            if (!hThraed)
-            {
-                errorCode = GetLastError();
-                UnregisterClassA(className.c_str(), hInstance);
-                service.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
-                service.Cleanup_();
-                if (!IsServiceMode())
-                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-                return;
-            }
-
-            service.SetStatus(SERVICE_START_PENDING);
-            WaitForSingleObject(param.hEventWndCreatedOrFailed, INFINITE);
-
-            if (param.hWnd == NULL)
-            {
-                service.Cleanup_();
-                if (!IsServiceMode())
-                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-                return;
-            }
-
-            service.hWndConsoleService_ = param.hWnd;
-            if (service.startCallbackEx_)
-            {
-                errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
-                if (errorCode != ERROR_SUCCESS)
+                if (service.startCallbackEx_)
                 {
-                    service.RaiseError_(errorCode, "Failed to start service.");
+                    errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
+                    if (errorCode != ERROR_SUCCESS)
+                    {
+                        service.RaiseError_(errorCode, "Failed to start service.");
+                        service.SetStatus(SERVICE_STOPPED, errorCode);
+                        service.Cleanup_();
+                        return;
+                    }
+                }
+                else if (service.startCallback_)
+                {
+                    service.startCallback_();
+                }
 
-                    service.SetStatus(SERVICE_STOPPED, errorCode);
-                    SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
-                    WaitForSingleObject(hThraed, INFINITE);
-                    CloseHandle(hThraed);
+                service.SetStatus(SERVICE_RUNNING);
+                WaitForSingleObject(service.hStopedEvent_, INFINITE);
 
+                service.Cleanup_();
+                return;
+            }
+#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+            else
+            {
+                service.hStopedEvent_ = Details::CreateStopEvent(service.Config_.Name());
+                if (service.hStopedEvent_ == NULL)
+                {
+                    service.RaiseError_(GetLastError(), "Failed to CreateEventW");
+                    return;
+                }
+
+                if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine_, TRUE))
+                {
+                    errorCode = GetLastError();
+                    service.RaiseError_(GetLastError(), "Failed to SetConsoleCtrlHandler");
                     service.Cleanup_();
                     if (!IsServiceMode())
                         SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                     return;
                 }
+
+                using namespace Convert::String;
+
+                std::string className = typeid(StringType) == typeid(String) ? (PCSTR)Config.Name().c_str()
+                                                                             : (PCSTR)(!Config.Name()).c_str();
+                className.append("Class");
+
+                HINSTANCE hInstance = GetModuleHandle(NULL);
+
+                WNDCLASSEXA wndClass = {sizeof(WNDCLASSEXA),
+                                        CS_DBLCLKS,
+                                        ConsoleWndProc_,
+                                        0,
+                                        0,
+                                        hInstance,
+                                        LoadIcon(0, IDI_APPLICATION),
+                                        LoadCursor(0, IDC_ARROW),
+                                        HBRUSH(COLOR_WINDOW + 1),
+                                        0,
+                                        className.c_str(),
+                                        LoadIcon(0, IDI_APPLICATION)};
+
+                if (!RegisterClassExA(&wndClass))
+                {
+                    errorCode = GetLastError();
+                    service.RaiseError_(errorCode, "Failed to RegisterClassExA");
+                    service.Cleanup_();
+                    if (!IsServiceMode())
+                        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                    return;
+                }
+
+                CONSOLE_WND_THREAD_PARAM param(service, hInstance, className.c_str());
+
+                param.hEventWndCreatedOrFailed = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+                if (!param.hEventWndCreatedOrFailed)
+                {
+                    errorCode = GetLastError();
+                    UnregisterClassA(className.c_str(), hInstance);
+                    service.RaiseError_(errorCode, "Failed to CreateEvent");
+                    service.Cleanup_();
+                    if (!IsServiceMode())
+                        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                    return;
+                }
+
+                HANDLE hThraed = CreateThread(NULL, 0, ConsoleWndThreadProc_, &param, 0, NULL);
+                if (!hThraed)
+                {
+                    errorCode = GetLastError();
+                    UnregisterClassA(className.c_str(), hInstance);
+                    service.RaiseError_(errorCode, "Failed to WTSRegisterSessionNotification");
+                    service.Cleanup_();
+                    if (!IsServiceMode())
+                        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                    return;
+                }
+
+                service.SetStatus(SERVICE_START_PENDING);
+                WaitForSingleObject(param.hEventWndCreatedOrFailed, INFINITE);
+
+                if (param.hWnd == NULL)
+                {
+                    service.Cleanup_();
+                    if (!IsServiceMode())
+                        SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                    return;
+                }
+
+                service.hWndConsoleService_ = param.hWnd;
+                if (service.startCallbackEx_)
+                {
+                    errorCode = service.startCallbackEx_(dwNumServicesArgs, lpServiceArgVectors);
+                    if (errorCode != ERROR_SUCCESS)
+                    {
+                        service.RaiseError_(errorCode, "Failed to start service.");
+
+                        service.SetStatus(SERVICE_STOPPED, errorCode);
+                        SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
+                        WaitForSingleObject(hThraed, INFINITE);
+                        ::CloseHandle(hThraed);
+
+                        service.Cleanup_();
+                        if (!IsServiceMode())
+                            SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                        return;
+                    }
+                }
+                else if (service.startCallback_)
+                {
+                    service.startCallback_();
+                }
+
+                service.SetStatus(SERVICE_RUNNING);
+                ResumeThread(hThraed);
+                WaitForSingleObject(service.hStopedEvent_, INFINITE);
+
+                SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
+                WaitForSingleObject(hThraed, INFINITE);
+                ::CloseHandle(hThraed);
+                UnregisterClassA(className.c_str(), hInstance);
+
+                service.Cleanup_();
+                if (!IsServiceMode())
+                    SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
+                return;
             }
-            else if (service.startCallback_)
-            {
-                service.startCallback_();
-            }
-
-            service.SetStatus(SERVICE_RUNNING);
-            ResumeThread(hThraed);
-            WaitForSingleObject(service.hStopedEvent_, INFINITE);
-
-            SendMessage(service.hWndConsoleService_, WM_DESTROY, 0, 0);
-            WaitForSingleObject(hThraed, INFINITE);
-            CloseHandle(hThraed);
-            UnregisterClassA(className.c_str(), hInstance);
-
-            service.Cleanup_();
-            if (!IsServiceMode())
-                SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
-            return;
-        }
 #endif // TWIN32EX_USE_SERVICE_SIMULATE_MODE
-    }
+        }
 
-  protected:
-    StartCallback startCallback_;
-    StartCallbackEx startCallbackEx_;
-    StopCallback stopCallback_;
-    PauseCallback pauseCallback_;
-    ContinueCallback continueCallback_;
-    ShutdownCallback shutdownCallback_;
-    ParamChangeCallback paramChangeCallback_;
-    NetbindAddCallback netbindAddCallback_;
-    NetbindRemoveCallback netbindRemoveCallback_;
-    NetbindEnableCallback netbindEnableCallback_;
-    NetbindDisableCallback netbindDisableCallback_;
-    DeviceEventCallback deviceEventCallback_;
-    HardwareProfileChangeCallback hardwareProfileChangeCallback_;
-    PowerEventCallback powerEventCallback_;
-    SessionChangeCallback sessionChangeCallback_;
+      protected:
+        StartCallback startCallback_;
+        StartCallbackEx startCallbackEx_;
+        StopCallback stopCallback_;
+        PauseCallback pauseCallback_;
+        ContinueCallback continueCallback_;
+        ShutdownCallback shutdownCallback_;
+        ParamChangeCallback paramChangeCallback_;
+        NetbindAddCallback netbindAddCallback_;
+        NetbindRemoveCallback netbindRemoveCallback_;
+        NetbindEnableCallback netbindEnableCallback_;
+        NetbindDisableCallback netbindDisableCallback_;
+        DeviceEventCallback deviceEventCallback_;
+        HardwareProfileChangeCallback hardwareProfileChangeCallback_;
+        PowerEventCallback powerEventCallback_;
+        SessionChangeCallback sessionChangeCallback_;
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
-    PreShutdownCallback preShutdownCallback_;
+        PreShutdownCallback preShutdownCallback_;
 #endif
 #ifdef SERVICE_CONTROL_TIMECHANGE
-    TimeChangeCallback timeChangeCallback_;
+        TimeChangeCallback timeChangeCallback_;
 #endif
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
-    TriggerEventallback triggerEventCallback_;
+        TriggerEventallback triggerEventCallback_;
 #endif
-    ErrorCallback errorCallback_;
+        ErrorCallback errorCallback_;
 
-    std::map<DWORD, OtherCallback> otherCallbackMap_;
-    std::map<DWORD, OtherCallbackEx> otherCallbackExMap_;
+        std::map<DWORD, OtherCallback> otherCallbackMap_;
+        std::map<DWORD, OtherCallbackEx> otherCallbackExMap_;
 
-    volatile SERVICE_STATUS_HANDLE serviceStatusHandle_;
-    volatile HWND hWndConsoleService_;
+        volatile SERVICE_STATUS_HANDLE serviceStatusHandle_;
+        volatile HWND hWndConsoleService_;
 
-    HANDLE hStopedEvent_;
-    HANDLE hCleanupCompleteEvent_;
+        HANDLE hStopedEvent_;
+        HANDLE hCleanupCompleteEvent_;
 
-    SERVICE_STATUS serviceStatus_;
+        SERVICE_STATUS serviceStatus_;
 
-    HDEVNOTIFY deviceNotifyHandle_;
+        HDEVNOTIFY deviceNotifyHandle_;
 
-    const BasicServiceConfig<StringType> &Config_;
-};
+        const BasicService<StringType> &Config_;
+    };
 
-template <const ServiceConfig &Config> class Service : public BasicService<String, Config>
-{
   public:
-    typedef String StringType;
-    typedef typename StringType::value_type CharType;
-
-    static Service &Instance()
+#if defined(__cpp_variadic_templates)
+    template <class... InstanceType> static bool Run()
     {
-        return (Service &)BasicService<StringType, Config>::Instance();
-    }
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
+            {NULL, NULL}};
 
-  private:
-    Service() : BasicService<StringType, Config>()
-    {
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
+    template <class... InstanceType> static bool Run(InstanceType &...service)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType::CharType *)service.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+#else
+    template <typename InstanceType0, typename InstanceType1>
+    static bool Run(InstanceType0 &service0, InstanceType1 &service1)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType0::CharType *)service0.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
+            {(typename InstanceType1::CharType *)service1.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+    template <typename InstanceType0, typename InstanceType1, typename InstanceType2>
+    static bool Run(InstanceType0 &service0, InstanceType1 &service1, InstanceType2 &service2)
+    {
+        typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
+            {(typename InstanceType0::CharType *)service0.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
+            {(typename InstanceType1::CharType *)service1.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
+            {(typename InstanceType2::CharType *)service2.Config_.Name().c_str(),
+             (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
+            {NULL, NULL}};
+
+        return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
+    }
+#endif
 };
 
-template <const ServiceConfigW &Config> class ServiceW : public BasicService<StringW, Config>
-{
-  public:
-    typedef StringW StringType;
-    typedef typename StringType::value_type CharType;
-
-    static ServiceW &Instance()
-    {
-        return (ServiceW &)BasicService<StringType, Config>::Instance();
-    }
-
-  private:
-    ServiceW() : BasicService<StringType, Config>()
-    {
-    }
-};
-
-template <const ServiceConfigT &Config> class ServiceT : public BasicService<StringT, Config>
-{
-  public:
-    typedef StringT StringType;
-    typedef typename StringType::value_type CharType;
-
-    static ServiceT &Instance()
-    {
-        return (ServiceT &)BasicService<StringType, Config>::Instance();
-    }
-
-  private:
-    ServiceT() : BasicService<StringType, Config>()
-    {
-    }
-};
+typedef BasicService<String> Service;
+typedef BasicService<StringW> ServiceW;
+typedef BasicService<StringT> ServiceT;
 } // namespace System
 } // namespace Win32Ex
 

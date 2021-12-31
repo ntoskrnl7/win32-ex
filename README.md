@@ -162,18 +162,10 @@ while (parent.IsValid())
 
 ###### Classes
 
-- ServiceConfig
-- ServiceConfigW
-- ServiceConfigT
-- BasicServiceConfig\<class StringType\>
-- Service\<ServiceConfig Config\>
-- ServiceW\<ServiceConfigW Config\>
-- ServiceT\<ServiceConfigW Config\>
-- BasicService\<class StringType, ServiceConfigW Config\>
-- Services
-- ServicesW
-- ServicesT
-- BasicServicesT\<class StringType\>
+- Serviceg
+- ServiceW
+- ServiceT
+- BasicService\<class StringType\>
 
 ###### Example
 
@@ -184,16 +176,16 @@ Simple service (Control Process)
 ```C++
 #include <Win32Ex\System\Service.hpp>
 
-Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
+Win32Ex::System::Service SimpleService("SimpleSvc");
 
 int main()
 {
-  SimpleServiceConfig.Install();
-  SimpleServiceConfig.Start();
-  SimpleServiceConfig.Pause();
-  SimpleServiceConfig.Continue();
-  SimpleServiceConfig.Stop();
-  SimpleServiceConfig.Uninstall();
+  SimpleService.Install();
+  SimpleService.Start();
+  SimpleService.Pause();
+  SimpleService.Continue();
+  SimpleService.Stop();
+  SimpleService.Uninstall();
 }
 ```
 
@@ -202,43 +194,44 @@ Simple service (Service Process)
 ```C++
 #include <Win32Ex\System\Service.hpp>
 
-Win32Ex::System::ServiceConfig SimpleServiceConfig("SimpleSvc");
-typedef Win32Ex::System::Service<SimpleServiceConfig> SimpleService;
+using namespace Win32Ex::System;
+
+Service SimpleService("SimpleSvc");
 
 int main()
 {
-  SimpleService &svc = SimpleService::Instance();
-  svc.OnStart([]() {
-          // TODO
-      })
-      .OnStop([]() {
-          // TODO
-      })
-      .OnPause([]() {
-          // TODO
-      })
-      .OnContinue([]() {
-          // TODO
-      })
-      .OnError([](DWORD ErrorCode, PCSTR Message) {
-          // TODO
-      })
-      .Run();
+    Service::Instance<SimpleService>::GetInstance()
+        .OnStart([]() {
+            // TODO
+        })
+        .OnStop([]() {
+            // TODO
+        })
+        .OnPause([]() {
+            // TODO
+        })
+        .OnContinue([]() {
+            // TODO
+        })
+        .OnError([](DWORD ErrorCode, PCSTR Message) {
+            // TODO
+        })
+        .Run();
 }
 ```
 
 Not stoppable service (Control Process)
 
 ```C++
-Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
+Win32Ex::System::Service TestService("TestSvc");
 
 #define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
 
 int main(int argc, char* argv[])
 {
-  TestServiceConfig.SetAcceptStop([]() -> bool
+  TestService.SetAcceptStop([]() -> bool
   {
-    SC_HANDLE serviceHandle = config.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+    SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
     if (serviceHandle == NULL)
       return false;
     SERVICE_STATUS ss = { 0 };
@@ -247,60 +240,61 @@ int main(int argc, char* argv[])
     return (result == TRUE);
   });
 
-  TestServiceConfig.Stop();
-  TestServiceConfig.Uninstall();
+  TestService.Stop();
+  TestService.Uninstall();
 }
 ```
 
 Not stoppable service (Service Process)
 
 ```C++
-Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
-typedef Win32Ex::System::Service<TestServiceConfig> TestService;
+Win32Ex::System::Service TestService("TestSvc");
+typedef Win32Ex::System::Service::Instance<TestService> TestServiceInstance;
 
 #define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-  TestService &svc = TestService::Instance();
-  svc.OnStart([&svc]() {
-          svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
-          // TODO
-      })
-      .OnStop([]() {
-          // TODO
-      })
-      .OnPause([]() {
-          // TODO
-      })
-      .OnContinue([]() {
-          // TODO
-      })
-      .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP, [&svc]() {
-          if (!svc.SetControlsAccepted(SERVICE_ACCEPT_STOP))
-          {
+    TestServiceInstance &svc = Win32Ex::System::Service::Instance<TestService>::GetInstance();
+    svc.OnStart([&svc]() {
+           svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
+           // TODO
+       })
+        .OnStop([]() {
             // TODO
-          }
-          // TODO
-      })
-      .Run();
+        })
+        .OnPause([]() {
+            // TODO
+        })
+        .OnContinue([]() {
+            // TODO
+        })
+        .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP,
+            [&svc]() {
+                if (!svc.SetControlsAccepted(SERVICE_ACCEPT_STOP))
+                {
+                    // TODO
+                }
+                // TODO
+            })
+        .Run();
 }
 ```
 
 Share process service (Control Process)
 
 ```C++
-Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
-Win32Ex::System::ServiceConfig Test2ServiceConfig("Test2Svc");
+Win32Ex::System::Service TestService("TestSvc");
+Win32Ex::System::Service Test2Servic("Test2Svc");
 
 int main()
 {
   // ...
-  TestServiceConfig.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
-  TestServiceConfig.Start();
+  TestService.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
+  TestService.Start();
 
-  Test2ServiceConfig.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
-  TestServiceConfig.Start();
+  Test2Service.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
+  TestService.Start();
   //...
 }
 ```
@@ -308,20 +302,23 @@ int main()
 Share process service (Service Process)
 
 ```C++
-Win32Ex::System::ServiceConfig TestServiceConfig("TestSvc");
-typedef Win32Ex::System::Service<TestServiceConfig> TestService;
+using namespace Win32Ex::System;
 
-Win32Ex::System::ServiceConfig Test2ServiceConfig("Test2Svc");
-typedef Win32Ex::System::Service<Test2ServiceConfig> Test2Service;
+Service TestService("TestSvc");
+typedef Service::Instance<TestService> TestServiceInstance;
+
+Service Test2Service("Test2Svc");
+typedef Service::Instance<Test2Service> Test2ServiceInstance;
 
 int main()
 {
-  TestService &svc = TestService::Instance();
-  TestService &svc2 = Test2Service::Instance();
+  TestServiceInstance &svc = TestService::GetInstance();
+  Test2ServiceInstance &svc2 = Test2Service::GetInstance();
 
   // ...
 
-  return Win32Ex::System::Services::Run(svc, svc2) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return Service::Run(svc, svc2) ? EXIT_SUCCESS : EXIT_FAILURE;
+  // You may use 'Service::Run<TestServiceInstance, Test2ServiceInstance>()' instead.
 }
 ```
 
@@ -723,7 +720,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.5")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.6")
 
 # link dependencies
 target_link_libraries(tests win32ex)

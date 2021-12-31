@@ -86,45 +86,41 @@ int __tmp___ = atexit([]() {
 #endif
 
 #include "TestService.h"
-extern Win32Ex::System::ServiceConfig TestServiceConfig;
-typedef Win32Ex::System::Service<TestServiceConfig> TestService;
+extern Win32Ex::System::Service TestService;
+typedef Win32Ex::System::Service::Instance<TestService> TestServiceInstance;
 
-extern Win32Ex::System::ServiceConfig Test2ServiceConfig;
-typedef Win32Ex::System::Service<Test2ServiceConfig> Test2Service;
+extern Win32Ex::System::Service Test2Service;
+typedef Win32Ex::System::Service::Instance<Test2Service> Test2ServiceInstance;
 
-extern Win32Ex::System::ServiceConfigW TestServiceConfigW;
-typedef Win32Ex::System::ServiceW<TestServiceConfigW> TestServiceW;
+extern Win32Ex::System::ServiceW TestServiceW;
+typedef Win32Ex::System::ServiceW::Instance<TestServiceW> TestServiceInstanceW;
 
-extern Win32Ex::System::ServiceConfigW Test2ServiceConfigW;
-typedef Win32Ex::System::ServiceW<Test2ServiceConfigW> Test2ServiceW;
+extern Win32Ex::System::ServiceW Test2ServiceW;
+typedef Win32Ex::System::ServiceW::Instance<Test2ServiceW> Test2ServiceInstanceW;
 
 #ifndef TWIN32EX_USE_SERVICE_SIMULATE_MODE
 TEST(ServiceTest, InvalidServiceRun)
 {
-    TestService &svc = TestService::Instance();
-    EXPECT_FALSE(svc.Run());
+    EXPECT_FALSE(TestServiceInstance::GetInstance().Run());
 }
 #else
-
 void OnTestSvcStart()
 {
-    TestServiceConfig.Stop();
+    TestService.Stop();
 }
 void OnTest2SvcStart()
 {
-    TestServiceConfigW.Stop();
+    TestServiceW.Stop();
 }
 
 TEST(ServiceTest, SimulateMode)
 {
-    TestService &svc = TestService::Instance();
-    EXPECT_TRUE(svc.OnStart(OnTestSvcStart).Run());
+    EXPECT_TRUE(TestServiceInstance::GetInstance().OnStart(OnTestSvcStart).Run());
 }
 
 TEST(ServiceTest, SimulateModeW)
 {
-    TestServiceW &svc = TestServiceW::Instance();
-    EXPECT_TRUE(svc.OnStart(OnTest2SvcStart).Run());
+    EXPECT_TRUE(TestServiceInstanceW::GetInstance().OnStart(OnTest2SvcStart).Run());
 }
 #endif
 
@@ -134,13 +130,13 @@ TEST(ServiceTest, ServiceInstall)
         return;
     Win32Ex::String path =
 #ifdef _INC__MINGW_H
-        testSvcPath.empty() ? TestServiceConfig.BinaryPathName() : testSvcPath;
+        testSvcPath.empty() ? TestService.BinaryPathName() : testSvcPath;
 #else
-        TestServiceConfig.BinaryPathName();
+        TestService.BinaryPathName();
 #endif
     path.append(" " TEST_SVC_NAME);
-    EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
-    EXPECT_TRUE(TestServiceConfig.Installed());
+    EXPECT_TRUE(TestService.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
+    EXPECT_TRUE(TestService.Installed());
 }
 
 TEST(ServiceTest, ServiceStart)
@@ -148,13 +144,13 @@ TEST(ServiceTest, ServiceStart)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Start());
+    EXPECT_TRUE(TestService.Start());
 
     SERVICE_STATUS ss;
-    if (TestServiceConfig.QueryServiceStatus(ss))
+    if (TestService.QueryServiceStatus(ss))
     {
         EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
         EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -169,10 +165,10 @@ TEST(ServiceTest, ServiceControl)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
+    EXPECT_TRUE(TestService.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
 }
 
 TEST(ServiceTest, ServicePause)
@@ -180,10 +176,10 @@ TEST(ServiceTest, ServicePause)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Pause());
+    EXPECT_TRUE(TestService.Pause());
 }
 
 TEST(ServiceTest, ServiceContinue)
@@ -191,10 +187,10 @@ TEST(ServiceTest, ServiceContinue)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Continue());
+    EXPECT_TRUE(TestService.Continue());
 }
 
 TEST(ServiceTest, ServiceStop)
@@ -202,13 +198,13 @@ TEST(ServiceTest, ServiceStop)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Stop());
+    EXPECT_TRUE(TestService.Stop());
 
     SERVICE_STATUS ss;
-    if (TestServiceConfig.QueryServiceStatus(ss))
+    if (TestService.QueryServiceStatus(ss))
     {
         EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
         EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -223,11 +219,11 @@ TEST(ServiceTest, ServiceUninstall)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Uninstall());
-    EXPECT_FALSE(TestServiceConfig.Installed());
+    EXPECT_TRUE(TestService.Uninstall());
+    EXPECT_FALSE(TestService.Installed());
 }
 
 TEST(ServiceTest, ServiceWInstall)
@@ -239,13 +235,13 @@ TEST(ServiceTest, ServiceWInstall)
 
     std::wstring path =
 #ifdef _INC__MINGW_H
-        testSvcPath.empty() ? TestServiceConfigW.BinaryPathName() : !testSvcPath;
+        testSvcPath.empty() ? TestServiceW.BinaryPathName() : !testSvcPath;
 #else
-        TestServiceConfigW.BinaryPathName();
+        TestServiceW.BinaryPathName();
 #endif
     path.append(L" " _W(TEST_SVC_NAME) L" W");
-    EXPECT_TRUE(TestServiceConfigW.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
-    EXPECT_TRUE(TestServiceConfigW.Installed());
+    EXPECT_TRUE(TestServiceW.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
+    EXPECT_TRUE(TestServiceW.Installed());
 }
 
 TEST(ServiceTest, ServiceWStart)
@@ -253,13 +249,13 @@ TEST(ServiceTest, ServiceWStart)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfigW.Installed())
+    if (!TestServiceW.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfigW.Start());
+    EXPECT_TRUE(TestServiceW.Start());
 
     SERVICE_STATUS ss;
-    if (TestServiceConfigW.QueryServiceStatus(ss))
+    if (TestServiceW.QueryServiceStatus(ss))
     {
         EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
         EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -274,10 +270,10 @@ TEST(ServiceTest, ServiceWControl)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfigW.Installed())
+    if (!TestServiceW.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfigW.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
+    EXPECT_TRUE(TestServiceW.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
 }
 
 TEST(ServiceTest, ServiceWPause)
@@ -285,10 +281,10 @@ TEST(ServiceTest, ServiceWPause)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfigW.Installed())
+    if (!TestServiceW.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfigW.Pause());
+    EXPECT_TRUE(TestServiceW.Pause());
 }
 
 TEST(ServiceTest, ServiceWContinue)
@@ -296,10 +292,10 @@ TEST(ServiceTest, ServiceWContinue)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfig.Installed())
+    if (!TestService.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfig.Continue());
+    EXPECT_TRUE(TestService.Continue());
 }
 
 TEST(ServiceTest, ServiceWStop)
@@ -307,13 +303,13 @@ TEST(ServiceTest, ServiceWStop)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfigW.Installed())
+    if (!TestServiceW.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfigW.Stop());
+    EXPECT_TRUE(TestServiceW.Stop());
 
     SERVICE_STATUS ss;
-    if (TestServiceConfigW.QueryServiceStatus(ss))
+    if (TestServiceW.QueryServiceStatus(ss))
     {
         EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
         EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -328,11 +324,11 @@ TEST(ServiceTest, ServiceWUninstall)
     if (!IsUserAdmin())
         return;
 
-    if (!TestServiceConfigW.Installed())
+    if (!TestServiceW.Installed())
         return;
 
-    EXPECT_TRUE(TestServiceConfigW.Uninstall());
-    EXPECT_FALSE(TestServiceConfigW.Installed());
+    EXPECT_TRUE(TestServiceW.Uninstall());
+    EXPECT_FALSE(TestServiceW.Installed());
 }
 
 TEST(ServiceTest, IsServiceMode)
@@ -352,11 +348,11 @@ TEST(ServiceTest, SharedServiceInstall)
         Win32Ex::ThisProcess::ExecutablePath();
 #endif
     path.append(" SharedService");
-    EXPECT_TRUE(TestServiceConfig.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
-    EXPECT_TRUE(TestServiceConfig.Installed());
+    EXPECT_TRUE(TestService.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
+    EXPECT_TRUE(TestService.Installed());
 
-    EXPECT_TRUE(Test2ServiceConfig.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
-    EXPECT_TRUE(Test2ServiceConfig.Installed());
+    EXPECT_TRUE(Test2Service.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
+    EXPECT_TRUE(Test2Service.Installed());
 }
 
 TEST(ServiceTest, SharedServiceStart)
@@ -364,11 +360,11 @@ TEST(ServiceTest, SharedServiceStart)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfig.Installed())
+    if (TestService.Installed())
     {
-        EXPECT_TRUE(TestServiceConfig.Start());
+        EXPECT_TRUE(TestService.Start());
         SERVICE_STATUS ss;
-        if (TestServiceConfig.QueryServiceStatus(ss))
+        if (TestService.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -378,11 +374,11 @@ TEST(ServiceTest, SharedServiceStart)
         }
     }
 
-    if (Test2ServiceConfig.Installed())
+    if (Test2Service.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfig.Start());
+        EXPECT_TRUE(Test2Service.Start());
         SERVICE_STATUS ss;
-        if (Test2ServiceConfig.QueryServiceStatus(ss))
+        if (Test2Service.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -398,13 +394,13 @@ TEST(ServiceTest, SharedServiceControl)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfig.Installed())
+    if (TestService.Installed())
     {
-        EXPECT_TRUE(TestServiceConfig.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
+        EXPECT_TRUE(TestService.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
     }
-    if (Test2ServiceConfig.Installed())
+    if (Test2Service.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfig.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP));
+        EXPECT_TRUE(Test2Service.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP));
     }
 }
 
@@ -413,22 +409,22 @@ TEST(ServiceTest, SharedServicePause)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfig.Installed())
-        EXPECT_TRUE(TestServiceConfig.Pause());
+    if (TestService.Installed())
+        EXPECT_TRUE(TestService.Pause());
 
-    if (Test2ServiceConfig.Installed())
-        EXPECT_TRUE(Test2ServiceConfig.Pause());
+    if (Test2Service.Installed())
+        EXPECT_TRUE(Test2Service.Pause());
 }
 
 TEST(ServiceTest, SharedServiceContinue)
 {
     if (!IsUserAdmin())
         return;
-    if (TestServiceConfig.Installed())
-        EXPECT_TRUE(TestServiceConfig.Continue());
+    if (TestService.Installed())
+        EXPECT_TRUE(TestService.Continue());
 
-    if (Test2ServiceConfig.Installed())
-        EXPECT_TRUE(Test2ServiceConfig.Continue());
+    if (Test2Service.Installed())
+        EXPECT_TRUE(Test2Service.Continue());
 }
 
 TEST(ServiceTest, SharedServiceStop)
@@ -436,11 +432,11 @@ TEST(ServiceTest, SharedServiceStop)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfig.Installed())
+    if (TestService.Installed())
     {
-        EXPECT_TRUE(TestServiceConfig.Stop());
+        EXPECT_TRUE(TestService.Stop());
         SERVICE_STATUS ss;
-        if (TestServiceConfig.QueryServiceStatus(ss))
+        if (TestService.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
             EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -449,11 +445,11 @@ TEST(ServiceTest, SharedServiceStop)
             EXPECT_NE(ss.dwCurrentState, SERVICE_PAUSED);
         }
     }
-    if (Test2ServiceConfig.Installed())
+    if (Test2Service.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfig.Stop());
+        EXPECT_TRUE(Test2Service.Stop());
         SERVICE_STATUS ss;
-        if (Test2ServiceConfig.QueryServiceStatus(ss))
+        if (Test2Service.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
             EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -469,16 +465,16 @@ TEST(ServiceTest, SharedServiceUninstall)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfig.Installed())
+    if (TestService.Installed())
     {
-        EXPECT_TRUE(TestServiceConfig.Uninstall());
-        EXPECT_FALSE(TestServiceConfig.Installed());
+        EXPECT_TRUE(TestService.Uninstall());
+        EXPECT_FALSE(TestService.Installed());
     }
 
-    if (Test2ServiceConfig.Installed())
+    if (Test2Service.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfig.Uninstall());
-        EXPECT_FALSE(Test2ServiceConfig.Installed());
+        EXPECT_TRUE(Test2Service.Uninstall());
+        EXPECT_FALSE(Test2Service.Installed());
     }
 }
 
@@ -497,11 +493,11 @@ TEST(ServiceTest, SharedServiceWInstall)
 #endif
     path.append(L" SharedService W");
 
-    EXPECT_TRUE(TestServiceConfigW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    EXPECT_TRUE(TestServiceConfigW.Installed());
+    EXPECT_TRUE(TestServiceW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
+    EXPECT_TRUE(TestServiceW.Installed());
 
-    EXPECT_TRUE(Test2ServiceConfigW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    EXPECT_TRUE(Test2ServiceConfigW.Installed());
+    EXPECT_TRUE(Test2ServiceW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
+    EXPECT_TRUE(Test2ServiceW.Installed());
 }
 
 TEST(ServiceTest, SharedServiceWStart)
@@ -509,11 +505,11 @@ TEST(ServiceTest, SharedServiceWStart)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfigW.Installed())
+    if (TestServiceW.Installed())
     {
-        EXPECT_TRUE(TestServiceConfigW.Start());
+        EXPECT_TRUE(TestServiceW.Start());
         SERVICE_STATUS ss;
-        if (TestServiceConfigW.QueryServiceStatus(ss))
+        if (TestServiceW.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -523,11 +519,11 @@ TEST(ServiceTest, SharedServiceWStart)
         }
     }
 
-    if (Test2ServiceConfigW.Installed())
+    if (Test2ServiceW.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfigW.Start());
+        EXPECT_TRUE(Test2ServiceW.Start());
         SERVICE_STATUS ss;
-        if (Test2ServiceConfigW.QueryServiceStatus(ss))
+        if (Test2ServiceW.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOPPED);
             EXPECT_NE(ss.dwCurrentState, SERVICE_STOP_PENDING);
@@ -543,14 +539,11 @@ TEST(ServiceTest, SharedServiceWControl)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfigW.Installed())
-    {
-        EXPECT_TRUE(TestServiceConfigW.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
-    }
-    if (Test2ServiceConfigW.Installed())
-    {
-        EXPECT_TRUE(Test2ServiceConfigW.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP));
-    }
+    if (TestServiceW.Installed())
+        EXPECT_TRUE(TestServiceW.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP));
+
+    if (Test2ServiceW.Installed())
+        EXPECT_TRUE(Test2ServiceW.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP));
 }
 
 TEST(ServiceTest, SharedServiceWPause)
@@ -558,22 +551,23 @@ TEST(ServiceTest, SharedServiceWPause)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfigW.Installed())
-        EXPECT_TRUE(TestServiceConfigW.Pause());
+    if (TestServiceW.Installed())
+        EXPECT_TRUE(TestServiceW.Pause());
 
-    if (Test2ServiceConfigW.Installed())
-        EXPECT_TRUE(Test2ServiceConfigW.Pause());
+    if (Test2ServiceW.Installed())
+        EXPECT_TRUE(Test2ServiceW.Pause());
 }
 
 TEST(ServiceTest, SharedServiceWContinue)
 {
     if (!IsUserAdmin())
         return;
-    if (TestServiceConfigW.Installed())
-        EXPECT_TRUE(TestServiceConfigW.Continue());
 
-    if (Test2ServiceConfigW.Installed())
-        EXPECT_TRUE(Test2ServiceConfigW.Continue());
+    if (TestServiceW.Installed())
+        EXPECT_TRUE(TestServiceW.Continue());
+
+    if (Test2ServiceW.Installed())
+        EXPECT_TRUE(Test2ServiceW.Continue());
 }
 
 TEST(ServiceTest, SharedServiceWStop)
@@ -581,11 +575,11 @@ TEST(ServiceTest, SharedServiceWStop)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfigW.Installed())
+    if (TestServiceW.Installed())
     {
-        EXPECT_TRUE(TestServiceConfigW.Stop());
+        EXPECT_TRUE(TestServiceW.Stop());
         SERVICE_STATUS ss;
-        if (TestServiceConfigW.QueryServiceStatus(ss))
+        if (TestServiceW.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
             EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -594,11 +588,11 @@ TEST(ServiceTest, SharedServiceWStop)
             EXPECT_NE(ss.dwCurrentState, SERVICE_PAUSED);
         }
     }
-    if (Test2ServiceConfigW.Installed())
+    if (Test2ServiceW.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfigW.Stop());
+        EXPECT_TRUE(Test2ServiceW.Stop());
         SERVICE_STATUS ss;
-        if (Test2ServiceConfigW.QueryServiceStatus(ss))
+        if (Test2ServiceW.QueryServiceStatus(ss))
         {
             EXPECT_NE(ss.dwCurrentState, SERVICE_RUNNING);
             EXPECT_NE(ss.dwCurrentState, SERVICE_START_PENDING);
@@ -614,15 +608,15 @@ TEST(ServiceTest, SharedServiceWUninstall)
     if (!IsUserAdmin())
         return;
 
-    if (TestServiceConfigW.Installed())
+    if (TestServiceW.Installed())
     {
-        EXPECT_TRUE(TestServiceConfigW.Uninstall());
-        EXPECT_FALSE(TestServiceConfigW.Installed());
+        EXPECT_TRUE(TestServiceW.Uninstall());
+        EXPECT_FALSE(TestServiceW.Installed());
     }
 
-    if (Test2ServiceConfigW.Installed())
+    if (Test2ServiceW.Installed())
     {
-        EXPECT_TRUE(Test2ServiceConfigW.Uninstall());
-        EXPECT_FALSE(Test2ServiceConfigW.Installed());
+        EXPECT_TRUE(Test2ServiceW.Uninstall());
+        EXPECT_FALSE(Test2ServiceW.Installed());
     }
 }

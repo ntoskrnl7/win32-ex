@@ -727,11 +727,11 @@ TEST(OptionalTest, OptionalConstStringRefClone)
 
     Optional<const String &> optStr3 = optStr2.Clone();
     EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
-    EXPECT_EQ(((const String &)optStr3).c_str(), val.c_str());
+    EXPECT_STREQ(((const String &)optStr3).c_str(), val.c_str());
 
     optStr = optStr2.Clone();
     EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
-    EXPECT_EQ(((const String &)optStr).c_str(), val.c_str());
+    EXPECT_STREQ(((const String &)optStr).c_str(), val.c_str());
 
     optStr3 = optStr2;
     EXPECT_TRUE(optStr2.IsNone());
