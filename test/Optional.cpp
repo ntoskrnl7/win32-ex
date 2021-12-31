@@ -237,6 +237,10 @@ TEST(OptionalTest, OptionalConstString)
 
     // EXPECT_EQ(str.c_str(), optConstStr->c_str()); // complie error
 
+    Optional<const String> optConstStr2 = optConstStr; // move
+    EXPECT_STREQ(optConstStr2.Get(), str.c_str());
+    EXPECT_TRUE(optConstStr.IsNone());
+
     optConstStr = NULL;
     EXPECT_THROW(const String &constStrRef = optConstStr, NullException);
     EXPECT_THROW(strDup = optConstStr, NullException);
@@ -271,11 +275,35 @@ TEST(OptionalTest, OptionalString)
 
     // EXPECT_EQ(str.c_str(), optStr->c_str()); // complie error
 
+    Optional<String> optStr2 = optStr; // move
+    EXPECT_STREQ(optStr2.Get(), str.c_str());
+    EXPECT_TRUE(optStr.IsNone());
+
     optStr = NULL;
     EXPECT_THROW(const String &constStrRef = optStr, NullException);
     EXPECT_THROW(strDup = optStr, NullException);
     EXPECT_NO_THROW(pcstr = optStr.Get());
     EXPECT_EQ(pcstr, (PCSTR)NULL);
+}
+
+TEST(OptionalTest, OptionalMove)
+{
+    Optional<const String &> optConstStrRef = "test";
+    Optional<String> optStr = optConstStrRef; // move
+    EXPECT_STREQ(optStr.Get(), "test");
+    EXPECT_TRUE(optConstStrRef.IsNone());
+
+    optConstStrRef = optStr; // move
+    EXPECT_STREQ(optConstStrRef.Get(), "test");
+    EXPECT_TRUE(optStr.IsNone());
+
+    const Optional<const String &> constOptConstStrRef = "test";
+    const Optional<String> constOptStr = constOptConstStrRef; // copy
+    optStr = constOptConstStrRef;                             // copy
+
+    EXPECT_STREQ(constOptConstStrRef.Get(), "test");
+    EXPECT_STREQ(constOptStr.Get(), "test");
+    EXPECT_STREQ(optStr.Get(), "test");
 }
 
 TEST(OptionalTest, OptionalConstStringRef)
@@ -297,6 +325,10 @@ TEST(OptionalTest, OptionalConstStringRef)
     EXPECT_EQ(str.c_str(), pcstr);
 
     // EXPECT_EQ(str.c_str(), optConstStrRef->c_str()); // complie error
+
+    Optional<const String &> optConstStrRef2 = optConstStrRef; // move
+    EXPECT_STREQ(optConstStrRef2.Get(), str.c_str());
+    EXPECT_TRUE(optConstStrRef.IsNone());
 
     optConstStrRef = NULL;
     EXPECT_THROW(const String &constStrRef = optConstStrRef, NullException);
@@ -323,6 +355,10 @@ TEST(OptionalTest, OptionalStringRef)
 
     // EXPECT_EQ(str.c_str(), optStrRef->c_str()); // complie error
 
+    Optional<String &> optStrRef2 = optStrRef; // move
+    EXPECT_STREQ(optStrRef2.Get().c_str(), str.c_str());
+    EXPECT_TRUE(optStrRef.IsNone());
+
     // optStrRef = NULL; // complie error
 }
 
@@ -347,6 +383,10 @@ TEST(OptionalTest, OptionalConstStringPtr)
     EXPECT_EQ(str.c_str(), optConstStrPtr->c_str());
 
     // optConstStrPtr->clear(); // complie error
+
+    Optional<const String *> optConstStrPtr2 = optConstStrPtr; // move
+    EXPECT_STREQ(optConstStrPtr2.Get()->c_str(), str.c_str());
+    EXPECT_TRUE(optConstStrPtr.IsNone());
 
     optConstStrPtr = NULL;
     // EXPECT_THROW(const String &constStrRef = optConstStrPtr, NullException); // complie error
@@ -378,6 +418,10 @@ TEST(OptionalTest, OptionalStringPtr)
 
     optStrPtr->clear();
 
+    Optional<String *> optStrPtr2 = optStrPtr; // move
+    EXPECT_STREQ(optStrPtr2.Get()->c_str(), str.c_str());
+    EXPECT_TRUE(optStrPtr.IsNone());
+
     optStrPtr = NULL;
     // EXPECT_THROW(const String &constStrRef = optStrPtr, NullException); // complie error
     // EXPECT_THROW(strDup = optStrPtr, NullException);                    // complie error
@@ -403,6 +447,10 @@ TEST(OptionalTest, OptionalPCSTR)
     EXPECT_EQ(str.c_str(), strPtr);
 
     // EXPECT_EQ(str.c_str(), optPCSTR->c_str()); // complie error
+
+    Optional<PCSTR> optPCSTR2 = optPCSTR; // move
+    EXPECT_STREQ(optPCSTR2.Get(), str.c_str());
+    EXPECT_TRUE(optPCSTR.IsNone());
 
     optPCSTR = NULL;
 #if defined(_MSVC)
@@ -444,6 +492,10 @@ TEST(OptionalTest, OptionalPSTR)
 
     // EXPECT_EQ(str.c_str(), optPSTR->c_str()); // complie error
 
+    Optional<PSTR> optPSTR2 = optPSTR; // move
+    EXPECT_STREQ(optPSTR2.Get(), str.c_str());
+    EXPECT_TRUE(optPSTR.IsNone());
+
     optPSTR = NULL;
 #if defined(_MSVC)
     EXPECT_NO_THROW({
@@ -479,6 +531,10 @@ TEST(OptionalTest, OptionalConstPrimitiveType)
     EXPECT_EQ(num, numDup);
 
     // int numGet = optConstInt.Get(); // complie error
+
+    Optional<const int> optConstInt2 = optConstInt; // move
+    EXPECT_EQ(optConstInt2.Get(), num);
+    EXPECT_TRUE(optConstInt.IsNone());
 }
 
 TEST(OptionalTest, OptionalPrimitiveType)
@@ -502,6 +558,10 @@ TEST(OptionalTest, OptionalPrimitiveType)
     EXPECT_EQ(num, numDup);
 
     // int numGet = optInt.Get(); // complie error
+
+    Optional<int> optInt2 = optInt; // move
+    EXPECT_EQ(optInt2.Get(), num);
+    EXPECT_TRUE(optInt.IsNone());
 }
 
 TEST(OptionalTest, OptionalConstPrimitiveTypeRef)
@@ -519,6 +579,10 @@ TEST(OptionalTest, OptionalConstPrimitiveTypeRef)
     EXPECT_EQ(num, numDup);
 
     // int numGet = optConstIntRef.Get(); // complie error
+
+    Optional<const int &> optConstIntRef2 = optConstIntRef; // move
+    EXPECT_EQ(&optConstIntRef2.Get(), &num);
+    EXPECT_TRUE(optConstIntRef.IsNone());
 }
 
 TEST(OptionalTest, OptionalPrimitiveTypeRef)
@@ -541,6 +605,10 @@ TEST(OptionalTest, OptionalPrimitiveTypeRef)
     EXPECT_EQ(num, numDup);
 
     // int numGet = optIntRef.Get(); // complie error
+
+    Optional<int &> optIntRef2 = optIntRef; // move
+    EXPECT_EQ(&optIntRef2.Get(), &num);
+    EXPECT_TRUE(optIntRef.IsNone());
 }
 
 TEST(OptionalTest, OptionalConstPrimitiveTypePtr)
@@ -561,6 +629,10 @@ TEST(OptionalTest, OptionalConstPrimitiveTypePtr)
     // int numDup = optConstIntPtr; // complie error
 
     // int numGet = optConstIntPtr.Get(); // complie error
+
+    Optional<const int *> optConstIntPtr2 = optConstIntPtr; // move
+    EXPECT_EQ(optConstIntPtr2.Get(), &num);
+    EXPECT_TRUE(optConstIntPtr.IsNone());
 }
 
 TEST(OptionalTest, OptionalPrimitiveTypePtr)
@@ -582,6 +654,10 @@ TEST(OptionalTest, OptionalPrimitiveTypePtr)
     // int numDup = optIntPtr; // complie error
 
     // int numGet = optIntPtr.Get(); // complie error
+
+    Optional<int *> optIntPtr2 = optIntPtr; // move
+    EXPECT_EQ(optIntPtr2.Get(), &num);
+    EXPECT_TRUE(optIntPtr.IsNone());
 }
 
 TEST(OptionalTest, OptionalStringClone)

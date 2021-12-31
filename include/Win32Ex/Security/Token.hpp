@@ -88,7 +88,7 @@ class Token
         return tokenHandle_ != NULL;
     }
 
-    operator HANDLE() const
+    HANDLE Handle() const
     {
         return tokenHandle_;
     }
@@ -146,7 +146,7 @@ class Token
         return result == TRUE;
     }
 
-    std::vector<SID_AND_ATTRIBUTES> GetGroups() const
+    std::vector<SID_AND_ATTRIBUTES> Groups() const
     {
         std::vector<SID_AND_ATTRIBUTES> ret;
         if (groups_)

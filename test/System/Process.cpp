@@ -83,14 +83,13 @@ TEST(ProcessTest, RunnableProcessTest)
     PVOID OldValue = NULL;
     Wow64DisableWow64FsRedirection(&OldValue);
 
-    // EXPECT_NO_THROW({
-    Win32Ex::System::UserAccountProcess process("CMD /C QUERY SESSION");
+    Win32Ex::System::UserAccountProcess process("CMD", "/C QUERY SESSION");
     Win32Ex::System::RunnableProcess &runnable = process;
     EXPECT_TRUE(runnable.Run());
 
     if (Win32Ex::ThisProcess::IsAdmin())
     {
-        Win32Ex::System::SystemAccountProcess process("CMD /C QUERY SESSION");
+        Win32Ex::System::SystemAccountProcess process("CMD", "/C QUERY SESSION");
         Win32Ex::System::RunnableProcess &runnable = process;
         EXPECT_TRUE(runnable.Run());
     }
@@ -100,7 +99,6 @@ TEST(ProcessTest, RunnableProcessTest)
         Win32Ex::System::RunnableProcess &runnable = process;
         runnable.Run(); // EXPECT_TRUE(runnable.Run());
     }
-    //});
 
     Wow64RevertWow64FsRedirection(OldValue);
 }
@@ -161,8 +159,8 @@ TEST(ProcessTest, UserAccountProcessTest)
         PVOID OldValue = NULL;
         Wow64DisableWow64FsRedirection(&OldValue);
 
-        Win32Ex::System::UserAccountProcess process("CMD /C QUERY SESSION");
-        EXPECT_TRUE(process.Run());
+        Win32Ex::System::UserAccountProcess process("CMD");
+        EXPECT_TRUE(process.Run(Win32Ex::None(), "/C QUERY SESSION"));
 
         Wow64RevertWow64FsRedirection(OldValue);
     }
@@ -195,7 +193,7 @@ TEST(ProcessTest, UserAccountProcessWTest)
         PVOID OldValue = NULL;
         Wow64DisableWow64FsRedirection(&OldValue);
 
-        Win32Ex::System::UserAccountProcessW process(L"CMD /C QUERY SESSION");
+        Win32Ex::System::UserAccountProcessW process(L"CMD", L"/C QUERY SESSION");
         EXPECT_TRUE(process.Run());
 
         Wow64RevertWow64FsRedirection(OldValue);
@@ -228,7 +226,7 @@ TEST(ProcessTest, UserAccountProcessTTest)
         PVOID OldValue = NULL;
         Wow64DisableWow64FsRedirection(&OldValue);
 
-        Win32Ex::System::UserAccountProcessT process(TEXT("CMD /C QUERY SESSION"));
+        Win32Ex::System::UserAccountProcessT process(TEXT("CMD"), TEXT("/C QUERY SESSION"));
         EXPECT_TRUE(process.Run());
 
         Wow64RevertWow64FsRedirection(OldValue);
@@ -332,7 +330,7 @@ TEST(ProcessTest, SystemAccountProcessTest)
             PVOID OldValue = NULL;
             Wow64DisableWow64FsRedirection(&OldValue);
 
-            Win32Ex::System::SystemAccountProcess process("CMD /C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcess process("CMD", "/C QUERY SESSION");
             EXPECT_TRUE(process.Run());
 
             Wow64RevertWow64FsRedirection(OldValue);
@@ -372,7 +370,7 @@ TEST(ProcessTest, SystemAccountProcessWTest)
             PVOID OldValue = NULL;
             Wow64DisableWow64FsRedirection(&OldValue);
 
-            Win32Ex::System::SystemAccountProcessW process(L"CMD /C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcessW process(L"CMD", L"/C QUERY SESSION");
             EXPECT_TRUE(process.Run());
 
             Wow64RevertWow64FsRedirection(OldValue);
@@ -412,7 +410,7 @@ TEST(ProcessTest, SystemAccountProcessTTest)
             PVOID OldValue = NULL;
             Wow64DisableWow64FsRedirection(&OldValue);
 
-            Win32Ex::System::SystemAccountProcessT process(TEXT("CMD /C QUERY SESSION"));
+            Win32Ex::System::SystemAccountProcessT process(TEXT("CMD"), TEXT("/C QUERY SESSION"));
             EXPECT_TRUE(process.Run());
 
             Wow64RevertWow64FsRedirection(OldValue);
@@ -561,7 +559,7 @@ TEST(ProcessTest, UserAccountProcessAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
+            Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
             ret = process.Run();
             if (!ret)
                 printf("Failed to UserAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
@@ -605,7 +603,7 @@ TEST(ProcessTest, UserAccountProcessWAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::UserAccountProcessW process(sessionInfo[i].SessionId, L"CMD /C QUERY SESSION");
+            Win32Ex::System::UserAccountProcessW process(sessionInfo[i].SessionId, L"CMD", L"/C QUERY SESSION");
             ret = process.Run();
             if (!ret)
                 printf("Failed to UserAccountProcessW::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
@@ -649,7 +647,8 @@ TEST(ProcessTest, UserAccountProcessTAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::UserAccountProcessT process(sessionInfo[i].SessionId, TEXT("CMD /C QUERY SESSION"));
+            Win32Ex::System::UserAccountProcessT process(sessionInfo[i].SessionId, TEXT("CMD"),
+                                                         TEXT("/C QUERY SESSION"));
             ret = process.Run();
             if (!ret)
                 printf("Failed to UserAccountProcessT::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
@@ -696,7 +695,7 @@ TEST(ProcessTest, SystemAccountProcessAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::SystemAccountProcess process(sessionInfo[i].SessionId, "CMD /C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcess process(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
             ret = process.Run();
             if (!ret)
                 printf("Failed to SystemAccountProcess::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
@@ -743,7 +742,7 @@ TEST(ProcessTest, SystemAccountProcessWAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::SystemAccountProcessW process(sessionInfo[i].SessionId, L"CMD /C QUERY SESSION");
+            Win32Ex::System::SystemAccountProcessW process(sessionInfo[i].SessionId, L"CMD", L"/C QUERY SESSION");
             ret = process.Run();
             if (!ret)
                 printf("Failed to SystemAccountProcessW::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());
@@ -790,7 +789,8 @@ TEST(ProcessTest, SystemAccountProcessTAllSessionsTest)
 #endif
                     sessionInfo[i].SessionId, sessionInfo[i].pWinStationName, sessionInfo[i].State);
 
-            Win32Ex::System::SystemAccountProcessT process(sessionInfo[i].SessionId, TEXT("CMD /C QUERY SESSION"));
+            Win32Ex::System::SystemAccountProcessT process(sessionInfo[i].SessionId, TEXT("CMD"),
+                                                           TEXT("/C QUERY SESSION"));
             ret = process.Run();
             if (!ret)
                 printf("Failed to SystemAccountProcessT::Run(%lu) : %lu\n", sessionInfo[i].SessionId, GetLastError());

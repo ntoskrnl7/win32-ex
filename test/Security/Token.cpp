@@ -35,7 +35,7 @@ TEST(TokenTest, GetTokenPrivilegesTest)
 BOOL HasGroupLogonID(HANDLE TokenHandle)
 {
     Security::Token token(TokenHandle, false);
-    std::vector<SID_AND_ATTRIBUTES> groups = token.GetGroups();
+    std::vector<SID_AND_ATTRIBUTES> groups = token.Groups();
     for (std::vector<SID_AND_ATTRIBUTES>::const_iterator it = groups.begin(); it != groups.end(); ++it)
     {
         const SID_AND_ATTRIBUTES &group = *it;
@@ -51,7 +51,7 @@ TEST(TokenTest, LookupTokenTest)
 #ifdef __cpp_lambdas
     HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) -> BOOL {
         Security::Token token(TokenHandle, false);
-        std::vector<SID_AND_ATTRIBUTES> groups = token.GetGroups();
+        std::vector<SID_AND_ATTRIBUTES> groups = token.Groups();
         for (std::vector<SID_AND_ATTRIBUTES>::const_iterator it = groups.begin(); it != groups.end(); ++it)
         {
             const SID_AND_ATTRIBUTES &group = *it;
@@ -226,11 +226,11 @@ TEST(TokenTest, TokenClassTest)
 #else
         Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasCreatePermanentPrivilege);
 #endif
-        EXPECT_TRUE(token.IsValid() == TRUE);
+        EXPECT_TRUE(token.IsValid());
 
         Security::Token token2 = token;
-        EXPECT_FALSE(token.IsValid() == TRUE);
-        EXPECT_TRUE(token2.IsValid() == TRUE);
+        EXPECT_FALSE(token.IsValid());
+        EXPECT_TRUE(token2.IsValid());
     }
     else
     {
@@ -243,10 +243,10 @@ TEST(TokenTest, TokenClassTest)
 #else
         Security::Token token((std::function<BOOL(DWORD, HANDLE)>)HasChangeNotifyPrivilege);
 #endif
-        EXPECT_TRUE(token.IsValid() == TRUE);
+        EXPECT_TRUE(token.IsValid());
 
         Security::Token token2 = token;
-        EXPECT_FALSE(token.IsValid() == TRUE);
-        EXPECT_TRUE(token2.IsValid() == TRUE);
+        EXPECT_FALSE(token.IsValid());
+        EXPECT_TRUE(token2.IsValid());
     }
 }

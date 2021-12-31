@@ -859,7 +859,7 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
         return RunAsync(_BasicRunnableProcess::arguments_, CurrentDirectory, CmdShow).Wait();
     }
 
-    Waitable RunAsync(const Optional<StringType> &Arguments,
+    Waitable RunAsync(const Optional<const StringType &> &Arguments,
                       const Optional<const StringType &> &CurrentDirectory = None(),
                       const Optional<DWORD> &CmdShow = None())
     {
@@ -873,13 +873,13 @@ template <typename _StringType> class BasicElevatedProcess : public BasicRunnabl
 
         if (Arguments.IsSome())
         {
-            _BasicRunnableProcess::arguments_ = Arguments.Clone();
+            _BasicRunnableProcess::arguments_ = Arguments;
             executeInfo_.lpParameters = _BasicRunnableProcess::arguments_.Get();
         }
 
         if (CurrentDirectory.IsSome())
         {
-            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory.Clone();
+            _BasicRunnableProcess::currentDirectory_ = CurrentDirectory;
             executeInfo_.lpDirectory = _BasicRunnableProcess::currentDirectory_.Get();
         }
 
