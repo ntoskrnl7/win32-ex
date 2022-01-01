@@ -134,6 +134,28 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
     }
 
   public:
+    ProcessT Clone() const
+    {
+        ProcessT clone;
+        clone.processInfo_.dwProcessId = processInfo_.dwProcessId;
+        if (processInfo_.hProcess)
+        {
+            DuplicateHandle(GetCurrentProcess(), processInfo_.hProcess, GetCurrentProcess(),
+                            &clone.processInfo_.hProcess, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        }
+
+        clone.processInfo_.dwThreadId = processInfo_.dwThreadId;
+        if (processInfo_.hThread)
+        {
+            DuplicateHandle(GetCurrentProcess(), processInfo_.hThread, GetCurrentProcess(), &clone.processInfo_.hThread,
+                            0, FALSE, DUPLICATE_SAME_ACCESS);
+        }
+        clone.executablePath_ = executablePath_;
+        clone.sessionId_ = sessionId_;
+        return clone;
+    }
+
+  public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
@@ -222,12 +244,12 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
 
     ProcessT(const typename PROCESSENTRY32T<CharType>::Type &pe32) : executablePath_(pe32.szExeFile)
     {
-        if (!ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_))
-            sessionId_ = MAXDWORD;
         processInfo_.dwProcessId = pe32.th32ProcessID;
         processInfo_.dwThreadId = 0;
         processInfo_.hProcess = NULL;
         processInfo_.hThread = NULL;
+        if (!ProcessIdToSessionId(processInfo_.dwProcessId, &sessionId_))
+            sessionId_ = MAXDWORD;
     }
 
     bool GetProcessEntry_(DWORD ProcessId, typename PROCESSENTRY32T<CharType>::Type &pe32)

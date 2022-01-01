@@ -61,6 +61,35 @@ TEST(ProcessTest, ParentT)
     }
 }
 
+TEST(ProcessTest, Clone)
+{
+    Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
+    Win32Ex::System::Process dup = parent.Clone();
+    EXPECT_EQ(dup.Id(), parent.Id());
+    EXPECT_STREQ(dup.ExecutablePath().c_str(), parent.ExecutablePath().c_str());
+
+    {
+        Win32Ex::System::SystemAccountProcess process("notepad");
+        dup = process.Clone();
+        EXPECT_STREQ(dup.ExecutablePath().c_str(), process.ExecutablePath().c_str());
+    }
+    EXPECT_STREQ(dup.ExecutablePath().c_str(), "notepad");
+
+    {
+        Win32Ex::System::UserAccountProcess process("notepad");
+        dup = process.Clone();
+        EXPECT_STREQ(dup.ExecutablePath().c_str(), process.ExecutablePath().c_str());
+    }
+    EXPECT_STREQ(dup.ExecutablePath().c_str(), "notepad");
+
+    {
+        Win32Ex::System::ElevatedProcess process("notepad");
+        dup = process.Clone();
+        EXPECT_STREQ(dup.ExecutablePath().c_str(), process.ExecutablePath().c_str());
+    }
+    EXPECT_STREQ(dup.ExecutablePath().c_str(), "notepad");
+}
+
 TEST(ProcessTest, RunInvalidProcess)
 {
     Win32Ex::System::UserAccountProcess process("!@#$test");
