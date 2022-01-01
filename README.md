@@ -59,19 +59,22 @@ Win32 API Experimental(or Extension) features
       - [Optional](#optional)
         - [Classes](#classes-4)
         - [Example](#example-5)
+      - [Result](#result)
+        - [Classes](#classes-5)
+        - [Example](#example-6)
       - [Win32 Api Template](#win32-api-template)
         - [ShellApi](#shellapi)
           - [Functions](#functions-6)
           - [Structures](#structures)
-          - [Example](#example-6)
+          - [Example](#example-7)
         - [Processes and Threads](#processes-and-threads-1)
           - [Functions](#functions-7)
           - [Structures](#structures-1)
-          - [Example](#example-7)
+          - [Example](#example-8)
         - [TlHelp32](#tlhelp32)
           - [Functions](#functions-8)
           - [Structures](#structures-2)
-          - [Example](#example-8)
+          - [Example](#example-9)
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
@@ -228,18 +231,17 @@ Win32Ex::System::Service service("ProfSvc");
 std::cout << "\n\n-----------------Dependencies-------------------\n";
 for (auto &dep : service.Dependencies())
 {
-    std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+    std::cout << dep.Name() << '\n';
     for (auto &dep2 : dep.Dependencies())
-      std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t" << dep2.BinaryPathName() << '\n';
+      std::cout << "\t" << dep2.Name() << '\n';
 }
 
 std::cout << "\n\n-----------------DependentServices-------------------\n";
 for (auto &dep : service.DependentServices().Get({}))
 {
-    std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+    std::cout << dep.Name() << '\n';
     for (auto &dep2 : dep.DependentServices().Get({}))
-      std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
-                << dep2.BinaryPathName() << '\n';
+      std::cout << "\t" << dep2.Name() << '\n';
 }
 ```
 
@@ -631,6 +633,8 @@ if (token.IsValid())
 
 ```C++
 
+#include <Win32Ex/Optional.hpp>
+
 using namespace Win32Ex;
 
 void TestFn(Optional<int> arg0, Optional<double> arg1 = None(), Optional<String> arg2 = None())
@@ -672,6 +676,51 @@ TestFn(None(), 2, "3");
 TestFn(1, None(), "3");
 TestFn(1, 2);
 TestFn(1, 2, "3");
+```
+
+#### Result
+
+- **Headers :** Win32Ex/Result.hpp
+
+##### Classes
+
+- Result\<T\>
+- Result\<T &\>
+
+##### Example
+
+```C++
+
+#include <Win32Ex/Result.hpp>
+
+using namespace Win32Ex;
+
+Result<int> GetValue(bool error)
+{
+    if (error)
+        return Error(ERROR_INVALID_PARAMETER, "Invalid parameter");
+    return 1;
+}
+
+...
+
+int value = 0;
+try
+{
+    value = GetValue(true).Get();
+}
+catch (const Error &e)
+{
+    e.ErrorCode; // == ERROR_INVALID_PARAMETER
+    e.what();      // == "Invalid parameter"
+}
+catch (const std::exception &e)
+{
+    e.what(); // == "Invalid parameter"
+}
+value = GetValue(true).Get(-1); // == -1
+value = GetValue(false).Get(); // == 1
+
 ```
 
 #### Win32 Api Template
@@ -792,7 +841,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.7")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.8")
 
 # link dependencies
 target_link_libraries(tests win32ex)

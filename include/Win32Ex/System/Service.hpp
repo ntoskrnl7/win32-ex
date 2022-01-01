@@ -49,6 +49,7 @@ Environment:
 #endif
 
 #include "../Optional.hpp"
+#include "../Result.hpp"
 #include "../T/winsvc.hpp"
 #include "../T/winuser.hpp"
 #include "Process.hpp"
@@ -521,11 +522,11 @@ template <class _StringType = StringT> class ServiceT
         return dependencies_;
     }
 
-    Optional<std::list<ServiceT>> DependentServices(DWORD ServiceState = SERVICE_STATE_ALL) const
+    Result<std::list<ServiceT>> DependentServices(DWORD ServiceState = SERVICE_STATE_ALL) const
     {
         SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
         if (handles.hSCManager == NULL)
-            return None();
+            return Error();
 
         handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_ENUMERATE_DEPENDENTS);
 
@@ -539,11 +540,11 @@ template <class _StringType = StringT> class ServiceT
         dependencies = (ENUM_SERVICE_STATUST<CharType> *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
 
         if (dependencies == NULL)
-            return None();
+            return Error();
 
         if (!EnumDependentServicesT<CharType>(handles.hService, ServiceState, dependencies, bytesNeeded, &bytesNeeded,
                                               &count))
-            return None();
+            return Error();
 
         std::list<ServiceT> deps;
         for (DWORD i = 0; i < count; ++i)

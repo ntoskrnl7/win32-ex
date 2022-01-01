@@ -239,7 +239,9 @@ TEST(OptionalTest, OptionalConstString)
 
     Optional<const String> optConstStr2 = optConstStr; // move
     EXPECT_STREQ(optConstStr2.Get(), str.c_str());
-    EXPECT_TRUE(optConstStr.IsNone());
+    EXPECT_FALSE(optConstStr.IsSome());
+    EXPECT_FALSE(optConstStr.IsNone());
+    EXPECT_TRUE(optConstStr.IsMoved());
 
     optConstStr = NULL;
     EXPECT_THROW(const String &constStrRef = optConstStr, NullException);
@@ -277,7 +279,9 @@ TEST(OptionalTest, OptionalString)
 
     Optional<String> optStr2 = optStr; // move
     EXPECT_STREQ(optStr2.Get(), str.c_str());
-    EXPECT_TRUE(optStr.IsNone());
+    EXPECT_FALSE(optStr.IsSome());
+    EXPECT_FALSE(optStr.IsNone());
+    EXPECT_TRUE(optStr.IsMoved());
 
     optStr = NULL;
     EXPECT_THROW(const String &constStrRef = optStr, NullException);
@@ -291,11 +295,15 @@ TEST(OptionalTest, OptionalMove)
     Optional<const String &> optConstStrRef = "test";
     Optional<String> optStr = optConstStrRef; // move
     EXPECT_STREQ(optStr.Get(), "test");
-    EXPECT_TRUE(optConstStrRef.IsNone());
+    EXPECT_FALSE(optConstStrRef.IsSome());
+    EXPECT_FALSE(optConstStrRef.IsNone());
+    EXPECT_TRUE(optConstStrRef.IsMoved());
 
     optConstStrRef = optStr; // move
     EXPECT_STREQ(optConstStrRef.Get(), "test");
-    EXPECT_TRUE(optStr.IsNone());
+    EXPECT_FALSE(optStr.IsSome());
+    EXPECT_FALSE(optStr.IsNone());
+    EXPECT_TRUE(optStr.IsMoved());
 
     const Optional<const String &> constOptConstStrRef = "test";
     const Optional<String> constOptStr = constOptConstStrRef; // copy
@@ -328,7 +336,9 @@ TEST(OptionalTest, OptionalConstStringRef)
 
     Optional<const String &> optConstStrRef2 = optConstStrRef; // move
     EXPECT_STREQ(optConstStrRef2.Get(), str.c_str());
-    EXPECT_TRUE(optConstStrRef.IsNone());
+    EXPECT_FALSE(optConstStrRef.IsSome());
+    EXPECT_FALSE(optConstStrRef.IsNone());
+    EXPECT_TRUE(optConstStrRef.IsMoved());
 
     optConstStrRef = NULL;
     EXPECT_THROW(const String &constStrRef = optConstStrRef, NullException);
@@ -357,8 +367,9 @@ TEST(OptionalTest, OptionalStringRef)
 
     Optional<String &> optStrRef2 = optStrRef; // move
     EXPECT_STREQ(optStrRef2.Get().c_str(), str.c_str());
-    EXPECT_TRUE(optStrRef.IsNone());
-
+    EXPECT_FALSE(optStrRef.IsSome());
+    EXPECT_FALSE(optStrRef.IsNone());
+    EXPECT_TRUE(optStrRef.IsMoved());
     // optStrRef = NULL; // complie error
 }
 
@@ -386,7 +397,9 @@ TEST(OptionalTest, OptionalConstStringPtr)
 
     Optional<const String *> optConstStrPtr2 = optConstStrPtr; // move
     EXPECT_STREQ(optConstStrPtr2.Get()->c_str(), str.c_str());
-    EXPECT_TRUE(optConstStrPtr.IsNone());
+    EXPECT_FALSE(optConstStrPtr.IsSome());
+    EXPECT_FALSE(optConstStrPtr.IsNone());
+    EXPECT_TRUE(optConstStrPtr.IsMoved());
 
     optConstStrPtr = NULL;
     // EXPECT_THROW(const String &constStrRef = optConstStrPtr, NullException); // complie error
@@ -420,7 +433,9 @@ TEST(OptionalTest, OptionalStringPtr)
 
     Optional<String *> optStrPtr2 = optStrPtr; // move
     EXPECT_STREQ(optStrPtr2.Get()->c_str(), str.c_str());
-    EXPECT_TRUE(optStrPtr.IsNone());
+    EXPECT_FALSE(optStrPtr.IsSome());
+    EXPECT_FALSE(optStrPtr.IsNone());
+    EXPECT_TRUE(optStrPtr.IsMoved());
 
     optStrPtr = NULL;
     // EXPECT_THROW(const String &constStrRef = optStrPtr, NullException); // complie error
@@ -450,7 +465,9 @@ TEST(OptionalTest, OptionalPCSTR)
 
     Optional<PCSTR> optPCSTR2 = optPCSTR; // move
     EXPECT_STREQ(optPCSTR2.Get(), str.c_str());
-    EXPECT_TRUE(optPCSTR.IsNone());
+    EXPECT_FALSE(optPCSTR.IsSome());
+    EXPECT_FALSE(optPCSTR.IsNone());
+    EXPECT_TRUE(optPCSTR.IsMoved());
 
     optPCSTR = NULL;
 #if defined(_MSVC)
@@ -494,7 +511,9 @@ TEST(OptionalTest, OptionalPSTR)
 
     Optional<PSTR> optPSTR2 = optPSTR; // move
     EXPECT_STREQ(optPSTR2.Get(), str.c_str());
-    EXPECT_TRUE(optPSTR.IsNone());
+    EXPECT_FALSE(optPSTR.IsSome());
+    EXPECT_FALSE(optPSTR.IsNone());
+    EXPECT_TRUE(optPSTR.IsMoved());
 
     optPSTR = NULL;
 #if defined(_MSVC)
@@ -534,7 +553,9 @@ TEST(OptionalTest, OptionalConstPrimitiveType)
 
     Optional<const int> optConstInt2 = optConstInt; // move
     EXPECT_EQ(optConstInt2.Get(), num);
-    EXPECT_TRUE(optConstInt.IsNone());
+    EXPECT_FALSE(optConstInt.IsSome());
+    EXPECT_FALSE(optConstInt.IsNone());
+    EXPECT_TRUE(optConstInt.IsMoved());
 }
 
 TEST(OptionalTest, OptionalPrimitiveType)
@@ -561,7 +582,9 @@ TEST(OptionalTest, OptionalPrimitiveType)
 
     Optional<int> optInt2 = optInt; // move
     EXPECT_EQ(optInt2.Get(), num);
-    EXPECT_TRUE(optInt.IsNone());
+    EXPECT_FALSE(optInt.IsSome());
+    EXPECT_FALSE(optInt.IsNone());
+    EXPECT_TRUE(optInt.IsMoved());
 }
 
 TEST(OptionalTest, OptionalConstPrimitiveTypeRef)
@@ -582,7 +605,9 @@ TEST(OptionalTest, OptionalConstPrimitiveTypeRef)
 
     Optional<const int &> optConstIntRef2 = optConstIntRef; // move
     EXPECT_EQ(&optConstIntRef2.Get(), &num);
-    EXPECT_TRUE(optConstIntRef.IsNone());
+    EXPECT_FALSE(optConstIntRef.IsSome());
+    EXPECT_FALSE(optConstIntRef.IsNone());
+    EXPECT_TRUE(optConstIntRef.IsMoved());
 }
 
 TEST(OptionalTest, OptionalPrimitiveTypeRef)
@@ -608,7 +633,9 @@ TEST(OptionalTest, OptionalPrimitiveTypeRef)
 
     Optional<int &> optIntRef2 = optIntRef; // move
     EXPECT_EQ(&optIntRef2.Get(), &num);
-    EXPECT_TRUE(optIntRef.IsNone());
+    EXPECT_FALSE(optIntRef.IsSome());
+    EXPECT_FALSE(optIntRef.IsNone());
+    EXPECT_TRUE(optIntRef.IsMoved());
 }
 
 TEST(OptionalTest, OptionalConstPrimitiveTypePtr)
@@ -632,7 +659,9 @@ TEST(OptionalTest, OptionalConstPrimitiveTypePtr)
 
     Optional<const int *> optConstIntPtr2 = optConstIntPtr; // move
     EXPECT_EQ(optConstIntPtr2.Get(), &num);
-    EXPECT_TRUE(optConstIntPtr.IsNone());
+    EXPECT_FALSE(optConstIntPtr.IsSome());
+    EXPECT_FALSE(optConstIntPtr.IsNone());
+    EXPECT_TRUE(optConstIntPtr.IsMoved());
 }
 
 TEST(OptionalTest, OptionalPrimitiveTypePtr)
@@ -657,7 +686,9 @@ TEST(OptionalTest, OptionalPrimitiveTypePtr)
 
     Optional<int *> optIntPtr2 = optIntPtr; // move
     EXPECT_EQ(optIntPtr2.Get(), &num);
-    EXPECT_TRUE(optIntPtr.IsNone());
+    EXPECT_FALSE(optIntPtr.IsSome());
+    EXPECT_FALSE(optIntPtr.IsNone());
+    EXPECT_TRUE(optIntPtr.IsMoved());
 }
 
 TEST(OptionalTest, OptionalStringClone)
@@ -667,8 +698,10 @@ TEST(OptionalTest, OptionalStringClone)
     EXPECT_STREQ(optStr.Get(), "Test");
     EXPECT_TRUE(optStr2.IsNone());
 
-    optStr2 = optStr;
-    EXPECT_TRUE(optStr.IsNone());
+    optStr2 = optStr; // move
+    EXPECT_FALSE(optStr.IsSome());
+    EXPECT_FALSE(optStr.IsNone());
+    EXPECT_TRUE(optStr.IsMoved());
     EXPECT_STREQ(optStr2.Get(), "Test");
 
     Optional<String> optStr3 = optStr2.Clone();
@@ -679,8 +712,10 @@ TEST(OptionalTest, OptionalStringClone)
     EXPECT_STREQ(optStr2.Get(), "Test");
     EXPECT_STREQ(optStr.Get(), "Test");
 
-    optStr3 = optStr2;
-    EXPECT_TRUE(optStr2.IsNone());
+    optStr3 = optStr2; // move
+    EXPECT_FALSE(optStr2.IsSome());
+    EXPECT_FALSE(optStr2.IsNone());
+    EXPECT_TRUE(optStr2.IsMoved());
     EXPECT_STREQ(optStr3.Get(), "Test");
 }
 
@@ -692,8 +727,10 @@ TEST(OptionalTest, OptionalStringRefClone)
     EXPECT_EQ(((String &)optStr).c_str(), val.c_str());
     EXPECT_TRUE(optStr2.IsNone());
 
-    optStr2 = optStr;
-    EXPECT_TRUE(optStr.IsNone());
+    optStr2 = optStr; // move
+    EXPECT_FALSE(optStr.IsSome());
+    EXPECT_FALSE(optStr.IsNone());
+    EXPECT_TRUE(optStr.IsMoved());
     EXPECT_EQ(((String &)optStr2).c_str(), val.c_str());
 
     Optional<String &> optStr3 = optStr2.Clone();
@@ -708,8 +745,10 @@ TEST(OptionalTest, OptionalStringRefClone)
     EXPECT_EQ(((String &)optStr2).c_str(), val.c_str());
     EXPECT_EQ(((String &)optStr).c_str(), val.c_str());
 
-    optStr3 = optStr2;
-    EXPECT_TRUE(optStr2.IsNone());
+    optStr3 = optStr2; // move
+    EXPECT_FALSE(optStr2.IsSome());
+    EXPECT_FALSE(optStr2.IsNone());
+    EXPECT_TRUE(optStr2.IsMoved());
     EXPECT_EQ(((String &)optStr3).c_str(), val.c_str());
 }
 
@@ -721,8 +760,10 @@ TEST(OptionalTest, OptionalConstStringRefClone)
     EXPECT_EQ(((const String &)optStr).c_str(), val.c_str());
     EXPECT_TRUE(optStr2.IsNone());
 
-    optStr2 = optStr;
-    EXPECT_TRUE(optStr.IsNone());
+    optStr2 = optStr; // move
+    EXPECT_FALSE(optStr.IsSome());
+    EXPECT_FALSE(optStr.IsNone());
+    EXPECT_TRUE(optStr.IsMoved());
     EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
 
     Optional<const String &> optStr3 = optStr2.Clone();
@@ -733,8 +774,10 @@ TEST(OptionalTest, OptionalConstStringRefClone)
     EXPECT_EQ(((const String &)optStr2).c_str(), val.c_str());
     EXPECT_STREQ(((const String &)optStr).c_str(), val.c_str());
 
-    optStr3 = optStr2;
-    EXPECT_TRUE(optStr2.IsNone());
+    optStr3 = optStr2; // move
+    EXPECT_FALSE(optStr2.IsSome());
+    EXPECT_FALSE(optStr2.IsNone());
+    EXPECT_TRUE(optStr2.IsMoved());
     EXPECT_EQ(((const String &)optStr3).c_str(), val.c_str());
 }
 
@@ -745,20 +788,29 @@ TEST(OptionalTest, OptionalPrimitiveTypeClone)
     EXPECT_EQ(optNum.Get(), 1);
     EXPECT_TRUE(optNum2.IsNone());
 
-    optNum2 = optNum;
-    EXPECT_TRUE(optNum.IsNone());
+    optNum2 = optNum; // move
+    EXPECT_FALSE(optNum.IsSome());
+    EXPECT_FALSE(optNum.IsNone());
+    EXPECT_TRUE(optNum.IsMoved());
+    EXPECT_TRUE(optNum2.IsSome());
+    EXPECT_FALSE(optNum2.IsNone());
+    EXPECT_FALSE(optNum2.IsMoved());
     EXPECT_EQ(optNum2.Get(), 1);
 
     Optional<int> optNum3 = optNum2.Clone();
+    EXPECT_FALSE(optNum2.IsMoved());
     EXPECT_EQ(optNum2.Get(), 1);
     EXPECT_EQ(optNum3.Get(), 1);
 
     optNum = optNum2.Clone();
+    EXPECT_FALSE(optNum2.IsMoved());
     EXPECT_EQ(optNum2.Get(), 1);
     EXPECT_EQ(optNum.Get(), 1);
 
-    optNum3 = optNum2;
-    EXPECT_TRUE(optNum2.IsNone());
+    optNum3 = optNum2; // move
+    EXPECT_FALSE(optNum2.IsSome());
+    EXPECT_FALSE(optNum2.IsNone());
+    EXPECT_TRUE(optNum2.IsMoved());
     EXPECT_EQ(optNum3.Get(), 1);
 }
 
@@ -770,8 +822,10 @@ TEST(OptionalTest, OptionalPrimitiveRefTypeClone)
     EXPECT_EQ(&((int &)opt), &val);
     EXPECT_TRUE(opt2.IsNone());
 
-    opt2 = opt;
-    EXPECT_TRUE(opt.IsNone());
+    opt2 = opt; // move
+    EXPECT_FALSE(opt.IsSome());
+    EXPECT_FALSE(opt.IsNone());
+    EXPECT_TRUE(opt.IsMoved());
     EXPECT_EQ(&((int &)opt2), &val);
 
     Optional<int &> opt3 = opt2.Clone();
@@ -786,7 +840,117 @@ TEST(OptionalTest, OptionalPrimitiveRefTypeClone)
     EXPECT_EQ(&((int &)opt2), &val);
     EXPECT_EQ(&((int &)opt), &val);
 
-    opt3 = opt2;
-    EXPECT_TRUE(opt2.IsNone());
+    opt3 = opt2; // move
+    EXPECT_FALSE(opt2.IsSome());
+    EXPECT_FALSE(opt2.IsNone());
+    EXPECT_TRUE(opt2.IsMoved());
     EXPECT_EQ(&((int &)opt3), &val);
 }
+
+#if defined(__cpp_rvalue_references)
+Optional<String> SomeFn()
+{
+#ifdef _INC__MINGW_H
+    return Win32Ex::String("Succeed :-)");
+#else
+    return "Succeed :-)";
+#endif
+}
+
+Optional<String> NoneFn()
+{
+    return None();
+}
+
+Optional<const String &> SomeFnRef(const String &Ref)
+{
+    return Ref;
+}
+
+Optional<const String &> NoneFnRef()
+{
+    return None();
+}
+
+TEST(OptionalTest, ValueType)
+{
+    Optional<String> result = NoneFn();
+    EXPECT_TRUE(result.IsNone());
+    EXPECT_THROW(result.Get(), Exception);
+
+    result = SomeFn();
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_STREQ(result.Get(), "Succeed :-)");
+}
+
+TEST(OptionalTest, RefType)
+{
+    Optional<const String &> result = NoneFnRef();
+    EXPECT_TRUE(result.IsNone());
+    EXPECT_THROW(result.Get(), Exception);
+
+    String val = "test";
+    result = SomeFnRef(val);
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_EQ(result.Get(), val.c_str());
+}
+
+TEST(OptionalTest, CloneValueType)
+{
+    Optional<String> result = SomeFn();
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_FALSE(result.IsNone());
+    EXPECT_FALSE(result.IsMoved());
+    EXPECT_STREQ(result.Get(), "Succeed :-)");
+
+    Optional<String> result2 = result;
+    EXPECT_FALSE(result.IsSome());
+    EXPECT_FALSE(result.IsNone());
+    EXPECT_TRUE(result.IsMoved());
+    EXPECT_THROW(result.Get(), MovedException);
+    EXPECT_TRUE(result2.IsSome());
+    EXPECT_FALSE(result2.IsNone());
+    EXPECT_FALSE(result2.IsMoved());
+    EXPECT_STREQ(result2.Get(), "Succeed :-)");
+
+    result = result2.Clone();
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_FALSE(result.IsNone());
+    EXPECT_FALSE(result.IsMoved());
+    EXPECT_STREQ(result.Get(), "Succeed :-)");
+    EXPECT_TRUE(result2.IsSome());
+    EXPECT_FALSE(result2.IsNone());
+    EXPECT_FALSE(result2.IsMoved());
+    EXPECT_STREQ(result2.Get(), "Succeed :-)");
+}
+
+TEST(OptionalTest, CloneRefType)
+{
+    String val = "test";
+    Optional<const String &> result = SomeFnRef(val);
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_FALSE(result.IsNone());
+    EXPECT_FALSE(result.IsMoved());
+    EXPECT_EQ(result.Get(), val.c_str());
+
+    Optional<const String &> result2 = result;
+    EXPECT_FALSE(result.IsSome());
+    EXPECT_FALSE(result.IsNone());
+    EXPECT_TRUE(result.IsMoved());
+    EXPECT_THROW(result.Get(), MovedException);
+    EXPECT_TRUE(result2.IsSome());
+    EXPECT_FALSE(result2.IsNone());
+    EXPECT_FALSE(result2.IsMoved());
+    EXPECT_EQ(result2.Get(), val.c_str());
+
+    result = result2.Clone();
+    EXPECT_TRUE(result.IsSome());
+    EXPECT_FALSE(result2.IsNone());
+    EXPECT_FALSE(result2.IsMoved());
+    EXPECT_STREQ(result.Get(), val.c_str());
+    EXPECT_TRUE(result2.IsSome());
+    EXPECT_FALSE(result2.IsNone());
+    EXPECT_FALSE(result2.IsMoved());
+    EXPECT_EQ(result2.Get(), val.c_str());
+}
+#endif // defined(__cpp_rvalue_references)
