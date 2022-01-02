@@ -53,13 +53,10 @@ FORCEINLINE PSID GetAdministratorsSid()
     PSID sid;
     SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
 
-    if (!AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0,
-                                  0, &sid))
-    {
-        return NULL;
-    }
-
-    return sid;
+    return AllocateAndInitializeSid(&ntAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0,
+                                    0, 0, &sid)
+               ? sid
+               : NULL;
 }
 
 FORCEINLINE VOID FreeLogonSid(PSID *ppsid)

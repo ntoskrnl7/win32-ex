@@ -1190,7 +1190,7 @@ template <class _StringType = StringT> class ServiceT
       protected:
         Instance()
             : serviceStatusHandle_(NULL), deviceNotifyHandle_(NULL), hCleanupCompleteEvent_(NULL), hStopedEvent_(NULL),
-              hWndConsoleService_(NULL), Service_(Service)
+              hWndConsoleService_(NULL), service_(Service)
         {
             ZeroMemory(&serviceStatus_, sizeof(serviceStatus_));
         }
@@ -1546,7 +1546,7 @@ template <class _StringType = StringT> class ServiceT
 #ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
             else
             {
-                instance.hStopedEvent_ = Details::CreateStopEvent(instance.Service_.Name());
+                instance.hStopedEvent_ = Details::CreateStopEvent(instance.service_.Name());
                 if (instance.hStopedEvent_ == NULL)
                 {
                     instance.RaiseError_(GetLastError(), "Failed to CreateEventW");
@@ -1713,7 +1713,7 @@ template <class _StringType = StringT> class ServiceT
 
         HDEVNOTIFY deviceNotifyHandle_;
 
-        const ServiceT<StringType> &Service_;
+        const ServiceT<StringType> &service_;
     };
 
   public:
@@ -1721,7 +1721,7 @@ template <class _StringType = StringT> class ServiceT
     template <class... InstanceType> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
             {NULL, NULL}};
 
@@ -1730,7 +1730,7 @@ template <class _StringType = StringT> class ServiceT
     template <class... InstanceType> static bool Run(InstanceType &...instance)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType::CharType *)instance.Service_.Name().c_str(),
+            {(typename InstanceType::CharType *)instance.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
             {NULL, NULL}};
 
@@ -1740,9 +1740,9 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
             {NULL, NULL}};
 
@@ -1751,11 +1751,11 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1, typename InstanceType2> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
-            {(typename InstanceType2::CharType *)(InstanceType2::GetInstance()).Service_.Name().c_str(),
+            {(typename InstanceType2::CharType *)(InstanceType2::GetInstance()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
             {NULL, NULL}};
 
@@ -1766,9 +1766,9 @@ template <class _StringType = StringT> class ServiceT
     static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)Instance0.Service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)Instance0.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)Instance1.Service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)Instance1.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
             {NULL, NULL}};
 
@@ -1778,11 +1778,11 @@ template <class _StringType = StringT> class ServiceT
     static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1, InstanceType2 &Instance2)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)Instance0.Service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)Instance0.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)Instance1.Service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)Instance1.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
-            {(typename InstanceType2::CharType *)Instance2.Service_.Name().c_str(),
+            {(typename InstanceType2::CharType *)Instance2.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
             {NULL, NULL}};
 

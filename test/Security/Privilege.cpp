@@ -9,6 +9,29 @@ TEST(PrivilegeTest, EnableAvailablePrivileges)
     EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
 }
 
+TEST(PrivilegeTest, IsPrivilegeEnabled)
+{
+	EXPECT_TRUE(IsPrivilegeEnabled(SE_CHANGE_NOTIFY_NAME, NULL) == TRUE);
+}
+
+TEST(PrivilegeTest, IsPrivilegeEnabledEx)
+{
+	EXPECT_TRUE(IsPrivilegeEnabledEx(Win32Ex::Security::SeChangeNotifyPrivilege, NULL) == TRUE);
+}
+
+
+TEST(PrivilegeTest, EnablePrivileges)
+{
+	PREVIOUS_TOKEN_PRIVILEGES prev;
+	LPCTSTR privileges[] = {
+		SE_CHANGE_NOTIFY_NAME,
+		SE_SHUTDOWN_NAME
+	};
+
+	EXPECT_TRUE(EnablePrivileges(TRUE, 2, privileges, &prev, NULL) == TRUE);
+    EXPECT_TRUE(RevertPrivileges(&prev) == TRUE);
+}
+
 TEST(PrivilegeTest, EnablePrivilegesV)
 {
     PREVIOUS_TOKEN_PRIVILEGES prev;

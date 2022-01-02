@@ -113,16 +113,16 @@ class WaitableObject
 #if defined(__cpp_rvalue_references)
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
-    bool IsMoved_;                                                                                                     \
+    bool isMoved_;                                                                                                     \
                                                                                                                        \
   public:                                                                                                              \
     bool IsMoved() const                                                                                               \
     {                                                                                                                  \
-        return IsMoved_;                                                                                               \
+        return isMoved_;                                                                                               \
     }                                                                                                                  \
                                                                                                                        \
   public:                                                                                                              \
-    _CLASS(_CLASS &&Other) : IsMoved_(false)                                                                           \
+    _CLASS(_CLASS &&Other) : isMoved_(false)                                                                           \
     {                                                                                                                  \
         Other.Move(*this);                                                                                             \
     }                                                                                                                  \
@@ -131,7 +131,7 @@ class WaitableObject
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }                                                                                                                  \
-    _CLASS(_CLASS &Other) : IsMoved_(false)                                                                            \
+    _CLASS(_CLASS &Other) : isMoved_(false)                                                                            \
     {                                                                                                                  \
         Other.Move(*this);                                                                                             \
     }                                                                                                                  \
@@ -144,16 +144,16 @@ class WaitableObject
     _CLASS &operator=(const _CLASS &rhs) = delete;
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
-    bool IsMoved_;                                                                                                     \
+    bool isMoved_;                                                                                                     \
                                                                                                                        \
   public:                                                                                                              \
     bool IsMoved() const                                                                                               \
     {                                                                                                                  \
-        return IsMoved_;                                                                                               \
+        return isMoved_;                                                                                               \
     }                                                                                                                  \
                                                                                                                        \
   public:                                                                                                              \
-    _CLASS(_CLASS &&Other) : IsMoved_(false), _INIT_STMT                                                               \
+    _CLASS(_CLASS &&Other) : isMoved_(false), _INIT_STMT                                                               \
     {                                                                                                                  \
         Other.Move(*this);                                                                                             \
     }                                                                                                                  \
@@ -162,7 +162,7 @@ class WaitableObject
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }                                                                                                                  \
-    _CLASS(_CLASS &Other) : IsMoved_(false), _INIT_STMT                                                                \
+    _CLASS(_CLASS &Other) : isMoved_(false), _INIT_STMT                                                                \
     {                                                                                                                  \
         Other.Move(*this);                                                                                             \
     }                                                                                                                  \
@@ -244,12 +244,12 @@ class WaitableObject
 
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
-    bool IsMoved_;                                                                                                     \
+    bool isMoved_;                                                                                                     \
                                                                                                                        \
   public:                                                                                                              \
     bool IsMoved() const                                                                                               \
     {                                                                                                                  \
-        return IsMoved_;                                                                                               \
+        return isMoved_;                                                                                               \
     }                                                                                                                  \
                                                                                                                        \
   public:                                                                                                              \
@@ -264,12 +264,12 @@ class WaitableObject
     }
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
-    bool IsMoved_;                                                                                                     \
+    bool isMoved_;                                                                                                     \
                                                                                                                        \
   public:                                                                                                              \
     bool IsMoved() const                                                                                               \
     {                                                                                                                  \
-        return IsMoved_;                                                                                               \
+        return isMoved_;                                                                                               \
     }                                                                                                                  \
                                                                                                                        \
   public:                                                                                                              \

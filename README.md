@@ -27,27 +27,25 @@ Win32 API Experimental(or Extension) features
         - [Reference](#reference)
           - [Functions](#functions)
           - [Classes](#classes)
-          - [Example](#example)
+          - [Namespaces](#namespaces)
       - [Services](#services)
         - [Reference](#reference-1)
           - [Classes](#classes-1)
-          - [Example](#example-1)
+          - [Example](#example)
       - [Windows System Information [Handles and Objects]](#windows-system-information-handles-and-objects)
         - [Reference](#reference-2)
           - [Functions](#functions-1)
-          - [Example](#example-2)
+          - [Example](#example-1)
     - [Security and Identity](#security-and-identity)
       - [Authorization [Privileges]](#authorization-privileges)
         - [Reference](#reference-3)
           - [Functions](#functions-2)
           - [Classes](#classes-2)
           - [Macros](#macros)
-          - [Example](#example-3)
       - [Authorization [Access Tokens]](#authorization-access-tokens)
         - [Reference](#reference-4)
           - [Functions](#functions-3)
           - [Classes](#classes-3)
-          - [Example](#example-4)
       - [Authorization [Security Descriptors]](#authorization-security-descriptors)
         - [Reference](#reference-5)
           - [Functions](#functions-4)
@@ -58,23 +56,23 @@ Win32 API Experimental(or Extension) features
     - [Etc](#etc)
       - [Optional](#optional)
         - [Classes](#classes-4)
-        - [Example](#example-5)
+        - [Example](#example-2)
       - [Result](#result)
         - [Classes](#classes-5)
-        - [Example](#example-6)
+        - [Example](#example-3)
       - [Win32 Api Template](#win32-api-template)
         - [ShellApi](#shellapi)
           - [Functions](#functions-6)
           - [Structures](#structures)
-          - [Example](#example-7)
+          - [Example](#example-4)
         - [Processes and Threads](#processes-and-threads-1)
           - [Functions](#functions-7)
           - [Structures](#structures-1)
-          - [Example](#example-8)
+          - [Example](#example-5)
         - [TlHelp32](#tlhelp32)
           - [Functions](#functions-8)
           - [Structures](#structures-2)
-          - [Example](#example-9)
+          - [Example](#example-6)
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
@@ -86,31 +84,125 @@ Win32 API Experimental(or Extension) features
 #### Processes and Threads
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/procthread/processes-and-threads>
-- **Headers :** System\Process.h, System\Process.hpp
+- **Headers :** Win32Ex\System\Process.h, Win32Ex\System\Process.hpp
 
 ##### Reference
 
 ###### Functions
 
 - CreateUserAccountProcess
+  - Example
+    - Runs user account process at the current session.
+
+      ```C
+      #include <Win32Ex\System\Process.h>
+
+      CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);    
+      ```
+
 - CreateSystemAccountProcess
+  - Example
+    - Runs system account process at the current session.
+
+      ```C
+      #include <Win32Ex\System\Process.h>
+
+      CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);    
+      ```
+
 - CreateUserAccountProcessT\<typename CharType\>
-  - C++ only
+  - **C++ only**
+  - Example
+    - Runs user account process at the current session.
+
+      ```C++
+      #include <Win32Ex\System\Process.h>
+
+      CreateUserAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
+      ```
+
 - CreateSystemAccountProcessT\<typename CharType\>
-  - C++ only
+  - **C++ only**
+  - Example
+    - Runs system account process at the current session.
+
+      ```C++
+      #include <Win32Ex\System\Process.h>
+
+      CreateSystemAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
+      ```
 
 ###### Classes
 
 - Process
+  - Example
+    - Enumerate all processes.
+
+      ```C++
+      #include <Win32Ex\System\Process.hpp>
+
+      for (auto process : Win32Ex::System::Process::All())
+      {
+          if (process)
+          {
+              if (process->IsAttached())
+                  std::cout << "[Attached] PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+              else
+                  std::cout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+          }
+      }
+      ```
+
 - ProcessW
 - ProcessT\<class StringType = StringT\>
 - RunnableProcess
-  - Abstract
+  - **Abstract**
+  - Example
+    - Use the RunnableProcess class to run 'user account process'.
+
+      ```C++
+      #include <Win32Ex\System\Process.hpp>
+
+      Win32Ex::System::UserAccountProcess process("CMD", "/C WHOAMI");
+      Win32Ex::System::RunnableProcess &runnable = process;
+      runnable.Run();
+      ```
+
 - RunnableProcessW
-  - Abstract
+  - **Abstract**
 - RunnableProcessT\<class StringType = StringT\>
-  - Abstract
+  - **Abstract**
 - UserAccountProcess
+  - Example
+    - Runs user account process at the current session.
+
+      ```C++
+      #include <Win32Ex\System\Process.hpp>
+
+      Win32Ex::System::UserAccountProcess process("CMD.exe /C QUERY SESSION");
+      process.Run();
+      ```
+
+    - Runs user account process at each sessions.
+
+      ```C++
+      #include <Win32Ex\System\Process.hpp>
+
+      PWTS_SESSION_INFO sessionInfo = NULL;
+      DWORD count = 0;
+      if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
+      {
+        for (DWORD i = 0; i < count; ++i)
+        {
+          if (sessionInfo[i].State == WTSListen)
+            continue;
+
+          Win32Ex::System::UserAccountProcess userProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
+          userProcess.Run();
+        }
+      }
+      ```
+
 - UserAccountProcessW
 - UserAccountProcessT
 - SystemAccountProcess
@@ -118,94 +210,38 @@ Win32 API Experimental(or Extension) features
 - SystemAccountProcessT
 - RunnableSessionProcessT\<ProcessAccountType Type, class StringType = StringT\>
 - ElevatedProcess
+  - Example
+    - Run with elevated permissions UAC.
+
+      ```C++
+      #include <Win32Ex\System\Process.hpp>
+
+      Win32Ex::System::ElevatedProcess process("notepad.exe");
+      process.Run();
+      ```
+
 - ElevatedProcessW
 - ElevatedProcessT\<class StringType = StringT\>
 
-###### Example
+###### Namespaces
 
-C/C++
+- Win32Ex::ThisProcess
+  - Example
+    - Enumerate parent processes.
 
-Runs system account process and user account process at the current session.
-
-```C
-#include <Win32Ex\System\Process.h>
-
-CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);
-
-CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);
-```
-
-C++
-
-Runs system account process and user account process at the current session.
-
-```C++
-#include <Win32Ex\System\Process.h>
-
-CreateUserAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
-
-CreateSystemAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
-```
-
-Runs system account process and user account process at the current session.
-
-```C++
-#include <Win32Ex\System\Process.hpp>
-
-Win32Ex::System::UserAccountProcess process("CMD.exe /C QUERY SESSION");
-process.Run();
-
-Win32Ex::System::SystemAccountProcess process("CMD.exe /C QUERY SESSION");
-process.Run();
-```
-
-Runs system account process and user account process at each sessions.
-
-```C++
-#include <Win32Ex\System\Process.hpp>
-
-PWTS_SESSION_INFO sessionInfo = NULL;
-DWORD count = 0;
-if (WTSEnumerateSessions(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
-{
-  for (DWORD i = 0; i < count; ++i)
-  {
-    if (sessionInfo[i].State == WTSListen)
-      continue;
-
-    Win32Ex::System::SystemAccountProcess systemProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
-    systemProcess.Run();
-
-    Win32Ex::System::UserAccountProcess userProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
-    userProcess.Run();
-  }
-}
-```
-
-Run with elevated permissions UAC.
-
-```C++
-#include <Win32Ex\System\Process.hpp>
-
-Win32Ex::System::ElevatedProcess process("notepad.exe");
-process.Run();
-```
-
-Enumerate parent processes.
-
-```C++
-Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
-while (parent.IsValid())
-{
-    std::cout << parent.ExecutablePath() << '\n';
-    parent = parent.Parent();
-}
-```
+      ```C++
+      Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
+      while (parent.IsValid())
+      {
+          std::cout << parent.ExecutablePath() << '\n';
+          parent = parent.Parent();
+      }
+      ```
 
 #### Services
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/services/services>
-- **Headers :** System\Service.hpp
+- **Headers :** Win32Ex\System\Service.hpp
 
 ##### Reference
 
@@ -215,11 +251,11 @@ while (parent.IsValid())
 - ServiceW
 - ServiceT\<class StringType = Win32Ex::StringT\>
 - Service::Instance\<Service\>
-  - Singleton
+  - **Singleton**
 - ServiceW::Instance\<ServiceW\>
-  - Singleton
+  - **Singleton**
 - ServiceT::Instance\<ServiceT\>
-  - Singleton
+  - **Singleton**
 
 ###### Example
 
@@ -399,7 +435,7 @@ int main()
 #### Windows System Information [Handles and Objects]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects>
-- **Headers :** System\Object.h
+- **Headers :** Win32Ex\System\Object.h
 
 ##### Reference
 
@@ -431,7 +467,7 @@ IsTemporaryObject(handle); // == TRUE
 #### Authorization [Privileges]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges>
-- **Headers :** Security\Privilege.h, Security\Privilege.hpp
+- **Headers :** Win32Ex\Security\Privilege.h, Win32Ex\Security\Privilege.hpp
 
 ##### Reference
 
@@ -441,89 +477,200 @@ IsTemporaryObject(handle); // == TRUE
 - FreeTokenPrivileges
 - LookupPrivilegesValue
 - EnableAvailablePrivileges
+  - Example
+    - Enable the avaliable privileges.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      PREVIOUS_TOKEN_PRIVILEGES prev;
+      if (EnableAvailablePrivileges(TRUE, &prev, NULL))
+      {
+        // TODO
+        RevertPrivileges(&prev)
+      }
+      ```
+
 - EnablePrivilege
+  - Example
+    - Enable the shutdown privilege.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      PREVIOUS_TOKEN_PRIVILEGES prev;
+      if (EnablePrivilege(TRUE, SE_SHUTDOWN_NAME, &prev, NULL))
+      {
+        // TODO
+        RevertPrivileges(&prev)
+      }
+      ```
+
 - EnablePrivilegeEx
+  - Similar to EnablePrivilege, but uses LUID instead of privilege name.
 - EnablePrivileges
+  - Example
+    - Enable change notify and shutdown privileges.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      PREVIOUS_TOKEN_PRIVILEGES prev;
+      PCTSTR privileges = {
+        SE_CHANGE_NOTIFY_NAME,
+        SE_SHUTDOWN_NAME
+      };
+      if (EnablePrivileges(TRUE, 2, privileges, &prev, NULL))
+      {
+        // TODO
+        RevertPrivileges(&prev)
+      }
+      ```
+
 - EnablePrivilegesV
+  - Example
+    - Enable change notify and shutdown privileges.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      PREVIOUS_TOKEN_PRIVILEGES prev;
+      if (!EnablePrivilegesV(TRUE, &prev, NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME))
+      {
+        // TODO
+        RevertPrivileges(&prev)
+      }
+      ```
+
 - EnablePrivilegesEx
+  - Similar to EnablePrivileges, but uses LUIDs instead of privilege names.
 - EnablePrivilegesExV
+  - Similar to EnablePrivilegeV, but uses LUIDs instead of privilege names.
 - IsPrivilegeEnabled
+  - Example
+    - Determines whether the specified privilege is enabled.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      if (IsPrivilegeEnabled(SE_CHANGE_NOTIFY_NAME, NULL))
+      {
+      }
+      ```
+
 - IsPrivilegeEnabledEx
+  - Similar to IsPrivilegeEnabled, but uses LUID instead of privilege name.
+  - Example
+    - Determines whether the specified privilege is enabled.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      if (IsPrivilegeEnabledEx(Win32Ex::Security::SeChangeNotifyPrivilege, NULL))
+      {
+      }
+      ```
+
 - IsPrivilegesEnabled
+  - Example
+    - Determines whether the change notify and shutdown privileges is enabled.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      PCTSTR privileges = {
+        SE_CHANGE_NOTIFY_NAME,
+        SE_SHUTDOWN_NAME
+      };
+
+      if (IsPrivilegesEnabled(2, privileges, NULL))
+      {
+      }
+      ```
+
 - IsPrivilegesEnabledV
+  - Example
+    - Determines whether the change notify and shutdown privileges is enabled.
+
+      ```C
+      #include <Win32Ex/Security/Privilege.h>
+
+      if (IsPrivilegesEnabledV(NULL, 2, SE_CHANGE_NOTIFY_NAME, SE_SHUTDOWN_NAME))
+      {
+      }
+      ```
+
 - IsPrivilegesEnabledEx
+  - Similar to IsPrivilegesEnabled, but uses LUIDs instead of privilege names.
 - IsPrivilegesEnabledExV
+  - Similar to IsPrivilegesEnabledV, but uses LUIDs instead of privilege names.
 
 ###### Classes
+
 - TokenPrivileges
+  - Example
+    - Adjust a debug and shutdown privileges.
+
+      ```C++
+      #include <Win32Ex\System\Privilege.h>
+      using namespace Win32Ex;
+
+      Security::TokenPrivileges priv({Security::SeDebugPrivilege, Security::SeShutdownPrivilege});
+      if (priv.AcquiredPrivileges().size() == 2)
+      {
+          // TODO
+      }
+
+      if (priv.IsAcquired())
+      {
+          // TODO
+      }
+      ```
+
+    - Adjust debug privilege.
+
+      ```C++
+      #include <Win32Ex\System\Privilege.hpp>
+      using namespace Win32Ex;
+
+      {
+        Security::TokenPrivileges priv(Security::SeDebugPrivilege);
+        if (priv.IsAcquired())
+        {
+          // TODO
+        }
+      }
+
+      // Debug privilege released.
+      ```
+
+      ```C++
+      #include <Win32Ex\System\Privilege.hpp>
+      using namespace Win32Ex;
+
+      {
+        Security::TokenPrivileges priv(Security::SeDebugPrivilege);
+        if (priv.IsAcquired())
+        {
+          priv.SetPermanent(TRUE);
+          // TODO
+        }
+
+        priv.Release();
+
+        // Debug privilege released.
+      }
+      ```
 
 ###### Macros
 
 - SE_MIN_WELL_KNOWN_PRIVILEGE
 - SE_MAX_WELL_KNOWN_PRIVILEGE
 
-###### Example
-
-```C++
-#include <Win32Ex\System\Privilege.h>
-using namespace Win32Ex;
-
-Security::TokenPrivileges priv({Security::SeDebugPrivilege, Security::SeShutdownPrivilege});
-if (priv.AcquiredPrivileges().size() == 2)
-{
-    // TODO
-}
-
-if (priv.IsAcquired())
-{
-    // TODO
-}
-```
-
-OR
-
-```C++
-#include <Win32Ex\System\Privilege.hpp>
-using namespace Win32Ex;
-
-{
-  Security::TokenPrivileges priv(Security::SeDebugPrivilege);
-  if (priv.IsAcquired())
-  {
-      // TODO
-  }
-}
-
-// Debug privilege released.
-
-```
-
-```C++
-#include <Win32Ex\System\Privilege.hpp>
-using namespace Win32Ex;
-
-{
-  Security::TokenPrivileges priv(Security::SeDebugPrivilege);
-  if (priv.IsAcquired())
-  {
-      priv.SetPermanent(TRUE);
-
-      // TODO
-  }
-}
-
-// Debug privilege still acquired.
-
-priv.Release();
-
-// Debug privilege released.
-
-```
-
 #### Authorization [Access Tokens]
 
-- **Link :** https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens
-- **Headers :** Security\Token.h, Security\Token.hpp
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens>
+- **Headers :** Win32Ex\Security\Token.h, Win32Ex\Security\Token.hpp
 
 ##### Reference
 
@@ -538,45 +685,138 @@ priv.Release();
 - GetProcessTokenUserSid
 - DuplicateTokenUserSid
 - FreeTokenUserSid
-- IsUserAdmin (https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership)
+- IsUserAdmin (<https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership>)
 - EqualTokenUserSid
 - IsNetworkServiceToken
 - IsLocalServiceToken
 - IsLocalSystemToken
 - LookupToken
+  - Example
+    - Find the token containing the group logon id.
+
+      ```C
+      #include <Win32Ex\System\Token.h>
+
+      HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) -> BOOL {
+          Security::Token token(TokenHandle, false);
+          for (auto &group : token.Groups())
+          {
+              if ((group.Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
+                  return TRUE;
+          }
+          return FALSE;
+      });
+
+      // TODO
+      
+      CloseHandle(token);
+      ```
+
 - LookupToken2
+  - Similar to LookupToken, but includes the process id in the condition function.
 - LookupTokenEx
+  - Similar to LookupToken, but includes the context in the condition function.
 - LookupTokenEx2
+  - Similar to LookupToken, but includes the process id and context in the condition function.
 - GetLocalSystemToken
+  - Example
+    - Get a local system token.
+
+      ```C
+      #include <Win32Ex\System\Token.h>
+
+      HANDLE token = GetLocalSystemToken(TOKEN_QUERY | TOKEN_READ | TOKEN_IMPERSONATE | TOKEN_QUERY_SOURCE |
+                                          TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_EXECUTE);
+
+      // TODO
+      
+      CloseHandle(token);
+      ```
 
 ###### Classes
+
 - Token
+  - Example
+    - New token object by token handle.
 
-###### Example
+      ```C++
+      HANDLE tokenHandle;
+      if (!OpenProcessToken(GetCurrentProcess(), MAXIMUM_ALLOWED, &tokenHandle))
+        return;
 
-C++
+      Security::Token token(tokenHandle);
 
-```C++
-#include <Win32Ex\System\Token.hpp>
-using namespace Win32Ex;
+      // TODO
+      ```
 
-Security::Token token = Security::Token::Current();
-if (token.IsValid())
-{
-  Security::TokenPrivileges privs = token.AdjustPrivileges({Security::SeShutdownPrivilege});
-  if (token.IsAcquired(Security::SeShutdownPrivilege))
-  {
-    // TODO
-  }
-  // TODO
-}
+      ```C++
+      HANDLE tokenHandle;
+      if (!OpenProcessToken(GetCurrentProcess(), MAXIMUM_ALLOWED, &tokenHandle))
+        return;
 
-```
+      Security::Token token(tokenHandle, false);
+
+      // TODO
+
+      CloseHandle(tokenHandle);
+      ```
+
+    - New token object (Lookup a token with create permanent privilege).
+
+      ```C++
+      Security::Token token([&privilegeSet](DWORD /*ProcessId*/, HANDLE TokenHandle) -> BOOL {
+          PRIVILEGE_SET privilegeSet;
+          privilegeSet.PrivilegeCount = 1;
+          privilegeSet.Control = PRIVILEGE_SET_ALL_NECESSARY;
+          privilegeSet.Privilege[0].Attributes = SE_PRIVILEGE_ENABLED;
+          privilegeSet.Privilege[0].Luid = Security::SeCreatePermanentPrivilege;
+          BOOL result = FALSE;
+          return PrivilegeCheck(TokenHandle, &privilegeSet, &result) && result;
+      });
+
+      // TODO
+      ```
+
+    - Adjust shutdown privilege.
+
+      ```C++
+      #include <Win32Ex\System\Token.hpp>
+      using namespace Win32Ex;
+
+      Security::Token token = Security::Token::Current();
+      if (token.IsValid())
+      {
+        Security::TokenPrivileges privs = token.AdjustPrivilege(Security::SeShutdownPrivilege);
+        if (token.IsAcquired(Security::SeShutdownPrivilege))
+        {
+          // TODO
+        }
+        // TODO
+      }
+      ```
+
+    - Adjust a shutdown and time zone privileges.
+
+      ```C++
+      #include <Win32Ex\System\Token.hpp>
+      using namespace Win32Ex;
+
+      Security::Token token = Security::Token::Current();
+      if (token.IsValid())
+      {
+        Security::TokenPrivileges privs = token.AdjustPrivileges({Security::SeShutdownPrivilege, Security::SeTimeZonePrivilege});
+        if (token.IsAcquired({Security::SeShutdownPrivilege, Security::SeTimeZonePrivilege}))
+        {
+          // TODO
+        }
+        // TODO
+      }
+      ```
 
 #### Authorization [Security Descriptors]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors>
-- **Headers :** Security\Descriptor.h
+- **Headers :** Win32Ex\Security\Descriptor.h
 
 ##### Reference
 
@@ -595,7 +835,7 @@ if (token.IsValid())
 ###### Functions
 
 - GetAdministratorsSid
-- GetLogonSid
+- GetLogonSid (<https://docs.microsoft.com/en-us/windows/win32/api/securityappcontainer/nf-securityappcontainer-getappcontainernamedobjectpath>)
 - FreeLogonSid
 
 ###### Variables
@@ -823,7 +1063,7 @@ CD test
 MKDIR build && CD build
 cmake ..
 cmake --build .
-Debug\unittest.exe
+ctest . --verbose
 ```
 
 ## Usage

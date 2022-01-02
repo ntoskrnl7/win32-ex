@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <tchar.h>
 
+#if _MSC_VER < 1600
+#define _STD_NS_ std::tr1
+#else
+#define _STD_NS_ std
+#endif
+
 // for MSYS2 (MSYS)
 #ifndef _tcsdup
 #ifdef UNICODE
@@ -18,6 +24,73 @@ TEST(ProcessTest, ThisProcess)
     EXPECT_EQ(path, Win32Ex::ThisProcess::ExecutablePath());
     path = Win32Ex::ThisProcess::CurrentDirectory();
     EXPECT_EQ(path, Win32Ex::ThisProcess::CurrentDirectory());
+}
+
+TEST(ProcessTest, ProcessTAll)
+{
+#if defined(__cpp_range_based_for)
+    for (auto process : Win32Ex::System::ProcessT<>::All())
+#else
+    for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessT<>> &process in Win32Ex::System::ProcessT<>::All())
+#endif
+    {
+        if (process)
+        {
+            if (process->IsAttached())
+            {
+#if defined(UNICODE)
+                std::wcout << L"[Attached] PID :" << process->Id() << L"\t\tPATH : " << process->ExecutablePath()
+                           << L'\n';
+#else
+                std::cout << "[Attached] PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+#endif
+            }
+            else
+            {
+#if defined(UNICODE)
+                std::wcout << L"PID :" << process->Id() << L"\t\tPATH : " << process->ExecutablePath() << L'\n';
+#else
+                std::cout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+#endif
+            }
+        }
+    }
+}
+
+TEST(ProcessTest, ProcessAll)
+{
+#if defined(__cpp_range_based_for)
+    for (auto process : Win32Ex::System::Process::All())
+#else
+    for each (const _STD_NS_::shared_ptr<Win32Ex::System::Process> &process in Win32Ex::System::Process::All())
+#endif
+    {
+        if (process)
+        {
+            if (process->IsAttached())
+                std::cout << "[Attached] PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+            else
+                std::cout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+        }
+    }
+}
+
+TEST(ProcessTest, ProcessWAll)
+{
+#if defined(__cpp_range_based_for)
+    for (auto process : Win32Ex::System::ProcessW::All())
+#else
+    for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessW> &process in Win32Ex::System::ProcessW::All())
+#endif
+    {
+        if (process)
+        {
+            if (process->IsAttached())
+                std::wcout << "[Attached] PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+            else
+                std::wcout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
+        }
+    }
 }
 
 TEST(ProcessTest, Parent)
@@ -181,12 +254,6 @@ void onError(bool *terminated, DWORD, const std::exception &)
 {
     *terminated = true;
 }
-#endif
-
-#if _MSC_VER < 1600
-#define _STD_NS_ std::tr1
-#else
-#define _STD_NS_ std
 #endif
 
 TEST(ProcessTest, UserAccountProcess)

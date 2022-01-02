@@ -100,7 +100,7 @@ TEST(ServiceTest, DependentServices)
     for each (const System::Service &dep in service.Dependencies())
     {
         std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
-        for each (const System::Service &dep2 in dep.DependentServices().Get(std::list<System::Service>()))
+        for each (const System::Service &dep2 in dep.Dependencies())
 #endif
             std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
                       << dep2.BinaryPathName() << '\n';

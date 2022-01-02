@@ -63,104 +63,104 @@ template <class _StringType> class OptionalConstStringRef
     OptionalConstStringRef Clone() const
     {
         OptionalConstStringRef clone;
-        if (IsNone_)
+        if (isNone_)
             return clone;
-        clone.IsNone_ = IsNone_;
-        if (Ref_)
-            clone.Ref_ = new Type(*Ref_);
-        clone.Value_ = NULL;
+        clone.isNone_ = isNone_;
+        if (ref_)
+            clone.ref_ = new Type(*ref_);
+        clone.value_ = NULL;
         return clone;
     }
 
   protected:
     void Move(OptionalConstStringRef &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.Value_ = Value_;
-        To.Ref_ = Ref_;
-        To.IsNone_ = IsNone_;
-        IsNone_ = true;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.ref_ = ref_;
+        To.isNone_ = isNone_;
+        isNone_ = true;
+        isMoved_ = true;
     }
 
     void Move(OptionalString<Type> &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.IsNone_ = IsNone_;
-        if (To.IsNone_)
+        To.isNone_ = isNone_;
+        if (To.isNone_)
             return;
 
-        To.IsNull_ = Ref_ == NULL;
-        if (!To.IsNull_)
-            To.Value_ = *Ref_;
+        To.isNull_ = ref_ == NULL;
+        if (!To.isNull_)
+            To.value_ = *ref_;
 
         Clear_();
-        Value_ = NULL;
-        Ref_ = NULL;
-        IsNone_ = true;
-        IsMoved_ = true;
+        value_ = NULL;
+        ref_ = NULL;
+        isNone_ = true;
+        isMoved_ = true;
     }
 
     void Move(OptionalString<const Type> &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.IsNone_ = IsNone_;
-        if (To.IsNone_)
+        To.isNone_ = isNone_;
+        if (To.isNone_)
             return;
 
-        To.IsNull_ = Ref_ == NULL;
-        if (!To.IsNull_)
-            To.Value_ = *Ref_;
+        To.isNull_ = ref_ == NULL;
+        if (!To.isNull_)
+            To.value_ = *ref_;
 
         Clear_();
-        Value_ = NULL;
-        Ref_ = NULL;
-        IsNone_ = true;
-        IsMoved_ = true;
+        value_ = NULL;
+        ref_ = NULL;
+        isNone_ = true;
+        isMoved_ = true;
     }
 
   public:
-    OptionalConstStringRef() : IsNone_(true), Ref_(NULL), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef() : isNone_(true), ref_(NULL), value_(NULL), isMoved_(false)
     {
     }
 
-    OptionalConstStringRef(None) : IsNone_(true), Ref_(NULL), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef(None) : isNone_(true), ref_(NULL), value_(NULL), isMoved_(false)
     {
     }
 
-    OptionalConstStringRef(ConstTypeRefType Value) : IsNone_(false), Ref_(&Value), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef(ConstTypeRefType Value) : isNone_(false), ref_(&Value), value_(NULL), isMoved_(false)
     {
     }
 
-    OptionalConstStringRef(ConstPtrType Value) : IsNone_(false), Ref_(NULL), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef(ConstPtrType Value) : isNone_(false), ref_(NULL), value_(NULL), isMoved_(false)
     {
         if (Value)
         {
-            Value_ = Value;
-            Ref_ = new Type(Value_);
+            value_ = Value;
+            ref_ = new Type(value_);
         }
     }
 
     OptionalConstStringRef(const Optional<Type> &Other)
-        : IsNone_(Other.IsNone_), Ref_(Other.IsNull_ ? NULL : &Other.Value_), Value_(NULL), IsMoved_(Other.IsMoved_)
+        : isNone_(Other.isNone_), ref_(Other.isNull_ ? NULL : &Other.value_), value_(NULL), isMoved_(Other.isMoved_)
     {
     }
 
-    OptionalConstStringRef(Optional<Type> &Other) : IsNone_(false), Ref_(NULL), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef(Optional<Type> &Other) : isNone_(false), ref_(NULL), value_(NULL), isMoved_(false)
     {
         Other.Move(*this);
     }
 
-    OptionalConstStringRef(Optional<const Type> &Other) : IsNone_(false), Ref_(NULL), Value_(NULL), IsMoved_(false)
+    OptionalConstStringRef(Optional<const Type> &Other) : isNone_(false), ref_(NULL), value_(NULL), isMoved_(false)
     {
         Other.Move(*this);
     }
@@ -172,10 +172,10 @@ template <class _StringType> class OptionalConstStringRef
 
     ConstPtrType Get(const Type &Default) const
     {
-        if (IsMoved_)
+        if (isMoved_)
             return Default.c_str();
 
-        if (IsNone_)
+        if (isNone_)
             return Default.c_str();
 
         return Get();
@@ -183,58 +183,58 @@ template <class _StringType> class OptionalConstStringRef
 
     ConstPtrType Get() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        if (Ref_)
-            return Ref_->c_str();
+        if (ref_)
+            return ref_->c_str();
 
-        return Value_;
+        return value_;
     }
 
     operator ConstTypeRefType() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        if (!Ref_)
+        if (!ref_)
             throw NullException();
 
-        return *Ref_;
+        return *ref_;
     }
 
     bool IsSome() const
     {
-        return !IsMoved_ && !IsNone_;
+        return !isMoved_ && !isNone_;
     }
 
     bool IsNone() const
     {
-        return !IsMoved_ && IsNone_;
+        return !isMoved_ && isNone_;
     }
 
     bool IsNull() const
     {
-        return !IsMoved_ && Ref_ == NULL;
+        return !isMoved_ && ref_ == NULL;
     }
 
   private:
     void Clear_()
     {
-        if (Value_ && Ref_)
-            delete Ref_;
+        if (value_ && ref_)
+            delete ref_;
     }
 
   private:
-    ConstPtrType Value_;
-    const Type *Ref_;
-    bool IsNone_;
+    ConstPtrType value_;
+    const Type *ref_;
+    bool isNone_;
 };
 
 template <class _StringType> class OptionalString
@@ -248,47 +248,47 @@ template <class _StringType> class OptionalString
   public:
     OptionalString Clone() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
         OptionalString clone;
-        clone.Value_ = Value_;
-        clone.IsNull_ = IsNull_;
-        clone.IsNone_ = IsNone_;
+        clone.value_ = value_;
+        clone.isNull_ = isNull_;
+        clone.isNone_ = isNone_;
         return clone;
     }
 
   protected:
     void Move(OptionalString &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.Value_ = Value_;
-        To.IsNull_ = IsNull_;
-        To.IsNone_ = IsNone_;
-        To.Value_.swap(Value_);
-        Value_.clear();
-        IsNone_ = true;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.isNull_ = isNull_;
+        To.isNone_ = isNone_;
+        To.value_.swap(value_);
+        value_.clear();
+        isNone_ = true;
+        isMoved_ = true;
     }
 
     void Move(OptionalConstStringRef<_StringType> &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.IsNone_ = IsNone_;
-        if (To.IsNone_)
+        To.isNone_ = isNone_;
+        if (To.isNone_)
             return;
 
-        To.Ref_ = (IsNull_) ? NULL : new _StringType(Value_);
-        To.Value_ = NULL;
-        Value_.clear();
-        IsNone_ = true;
-        IsMoved_ = true;
+        To.ref_ = (isNull_) ? NULL : new _StringType(value_);
+        To.value_ = NULL;
+        value_.clear();
+        isNone_ = true;
+        isMoved_ = true;
     }
 
   public:
@@ -298,75 +298,75 @@ template <class _StringType> class OptionalString
     typedef typename _StringType::value_type CharType;
     typedef const CharType *ConstPtrType;
 
-    OptionalString() : IsNone_(true), IsMoved_(false)
+    OptionalString() : isNone_(true), isMoved_(false)
     {
     }
 
-    OptionalString(None) : IsNone_(true), IsMoved_(false)
+    OptionalString(None) : isNone_(true), isMoved_(false)
     {
     }
 
-    OptionalString(Optional<const typename std::remove_const<Type>::type &> &Other) : IsNone_(false), IsMoved_(false)
+    OptionalString(Optional<const typename std::remove_const<Type>::type &> &Other) : isNone_(false), isMoved_(false)
     {
         Other.Move(*this);
     }
 
     OptionalString(const Optional<const typename std::remove_const<Type>::type &> &Other)
-        : IsNone_(Other.IsNone()), IsMoved_(Other.IsMoved())
+        : isNone_(Other.IsNone()), isMoved_(Other.IsMoved())
     {
-        if (IsNone_)
+        if (isNone_)
             return;
 
-        IsNull_ = Other.IsNull();
-        if (!IsNull_)
-            Value_ = Other;
+        isNull_ = Other.IsNull();
+        if (!isNull_)
+            value_ = Other;
     }
 
-    OptionalString(ConstPtrType Value) : IsNone_(false), IsMoved_(false)
+    OptionalString(ConstPtrType Value) : isNone_(false), isMoved_(false)
     {
-        IsNull_ = Value == NULL;
-        if (!IsNull_)
-            Value_ = Value;
+        isNull_ = Value == NULL;
+        if (!isNull_)
+            value_ = Value;
     }
 
-    OptionalString(ConstRefType Value) : IsNone_(false), Value_(Value), IsNull_(false), IsMoved_(false)
+    OptionalString(ConstRefType Value) : isNone_(false), value_(Value), isNull_(false), isMoved_(false)
     {
     }
 
     operator ConstRefType() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        if (IsNull_)
+        if (isNull_)
             throw NullException();
 
-        return Value_;
+        return value_;
     }
 
     operator Type &()
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        if (IsNull_)
+        if (isNull_)
             throw NullException();
 
-        return Value_;
+        return value_;
     }
 
     ConstPtrType Get(ConstRefType Default) const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw Default.c_str();
 
-        if (IsNone_)
+        if (isNone_)
             return Default.c_str();
 
         return Get();
@@ -374,34 +374,34 @@ template <class _StringType> class OptionalString
 
     ConstPtrType Get() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return IsNull_ ? NULL : Value_.c_str();
+        return isNull_ ? NULL : value_.c_str();
     }
 
     bool IsSome() const
     {
-        return !IsMoved_ && !IsNone_;
+        return !isMoved_ && !isNone_;
     }
 
     bool IsNone() const
     {
-        return !IsMoved_ && IsNone_;
+        return !isMoved_ && isNone_;
     }
 
     bool IsNull() const
     {
-        return !IsMoved_ && IsNull_;
+        return !isMoved_ && isNull_;
     }
 
   protected:
-    typename std::remove_const<Type>::type Value_;
-    bool IsNull_;
-    bool IsNone_;
+    typename std::remove_const<Type>::type value_;
+    bool isNull_;
+    bool isNone_;
 };
 } // namespace Details
 
@@ -415,7 +415,7 @@ template <> class Optional<const String &> : public Details::OptionalConstString
   public:
     bool IsMoved() const
     {
-        return OptionalConstStringRef::IsMoved();
+        return OptionalConstStringRef::isMoved_;
     }
 
     Optional Clone() const
@@ -496,12 +496,12 @@ template <> class Optional<const StringW &> : public Details::OptionalConstStrin
   public:
     bool IsMoved() const
     {
-        return OptionalConstStringRef::IsMoved();
+        return OptionalConstStringRef::isMoved_;
     }
 
     Optional Clone() const
     {
-        if (OptionalConstStringRef<Type>::IsMoved())
+        if (OptionalConstStringRef<Type>::isMoved_)
             throw MovedException();
 
         Optional clone(OptionalConstStringRef<Type>::Clone());
@@ -580,12 +580,12 @@ template <> class Optional<String> : public Details::OptionalString<String>
   public:
     bool IsMoved() const
     {
-        return OptionalString::IsMoved();
+        return OptionalString::isMoved_;
     }
 
     Optional Clone() const
     {
-        if (OptionalString<Type>::IsMoved())
+        if (OptionalString<Type>::isMoved_)
             throw MovedException();
 
         Optional clone(OptionalString<Type>::Clone());
@@ -666,12 +666,12 @@ template <> class Optional<StringW> : public Details::OptionalString<StringW>
   public:
     bool IsMoved() const
     {
-        return OptionalString::IsMoved();
+        return OptionalString::isMoved_;
     }
 
     Optional Clone() const
     {
-        if (OptionalString<Type>::IsMoved())
+        if (OptionalString<Type>::isMoved_)
             throw MovedException();
 
         Optional clone(OptionalString<Type>::Clone());
@@ -752,12 +752,12 @@ template <> class Optional<const String> : public Details::OptionalString<const 
   public:
     bool IsMoved() const
     {
-        return OptionalString::IsMoved();
+        return OptionalString::isMoved_;
     }
 
     Optional Clone() const
     {
-        if (OptionalString<Type>::IsMoved())
+        if (OptionalString<Type>::isMoved_)
             throw MovedException();
 
         Optional clone(OptionalString<Type>::Clone());
@@ -816,12 +816,12 @@ template <> class Optional<const StringW> : public Details::OptionalString<const
   public:
     bool IsMoved() const
     {
-        return OptionalString::IsMoved();
+        return OptionalString::isMoved_;
     }
 
     Optional Clone() const
     {
-        if (OptionalString<Type>::IsMoved())
+        if (OptionalString<Type>::isMoved_)
             throw MovedException();
 
         Optional clone(OptionalString<Type>::Clone());
@@ -872,46 +872,46 @@ template <> class Optional<const StringW> : public Details::OptionalString<const
 
 template <typename T> class Optional<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
-    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Optional, Value_(Other.Value_))
+    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
 
   public:
     Optional Clone() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
         Optional clone;
-        clone.Value_ = Value_;
-        clone.IsNone_ = IsNone_;
+        clone.value_ = value_;
+        clone.isNone_ = isNone_;
         return clone;
     }
 
   private:
     void Move(Optional &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
 
-        To.Value_ = Value_;
-        To.IsNone_ = IsNone_;
-        Value_ = NULL;
-        IsNone_ = true;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.isNone_ = isNone_;
+        value_ = NULL;
+        isNone_ = true;
+        isMoved_ = true;
     }
 
   public:
     typedef T Type;
 
-    Optional() : Value_(NULL), IsNone_(true), IsMoved_(false)
+    Optional() : value_(NULL), isNone_(true), isMoved_(false)
     {
     }
 
-    Optional(None) : Value_(NULL), IsNone_(true), IsMoved_(false)
+    Optional(None) : value_(NULL), isNone_(true), isMoved_(false)
     {
     }
 
-    Optional(T Value) : Value_(&Value), IsNone_(false), IsMoved_(false)
+    Optional(T Value) : value_(&Value), isNone_(false), isMoved_(false)
     {
     }
 
@@ -925,24 +925,24 @@ template <typename T> class Optional<T, typename std::enable_if<std::is_referenc
 
     T Get() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return *Value_;
+        return *value_;
     }
 
     T Get(T Default) const
     {
-        if (IsMoved_)
+        if (isMoved_)
             return Default;
 
-        if (IsNone_)
+        if (isNone_)
             return Default;
 
-        return *Value_;
+        return *value_;
     }
 
     operator T() const
@@ -952,71 +952,71 @@ template <typename T> class Optional<T, typename std::enable_if<std::is_referenc
 
     T operator->() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return Value_;
+        return value_;
     }
 
     bool IsSome() const
     {
-        return !IsMoved_ && !IsNone_;
+        return !isMoved_ && !isNone_;
     }
 
     bool IsNone() const
     {
-        return !IsMoved_ && IsNone_;
+        return !isMoved_ && isNone_;
     }
 
   private:
-    typename std::remove_reference<T>::type *Value_;
-    bool IsNone_;
+    typename std::remove_reference<T>::type *value_;
+    bool isNone_;
 };
 
 template <typename T> class Optional<T, typename std::enable_if<!std::is_reference<T>::value>::type>
 {
-    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Optional, Value_(Other.Value_))
+    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
 
   public:
     Optional Clone() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
         Optional clone;
-        clone.Value_ = Value_;
-        clone.IsNone_ = IsNone_;
+        clone.value_ = value_;
+        clone.isNone_ = isNone_;
         return clone;
     }
 
   private:
     void Move(Optional &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
-        To.Value_ = Value_;
-        To.IsNone_ = IsNone_;
-        Value_ = typename std::remove_const<T>::type();
-        IsNone_ = true;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.isNone_ = isNone_;
+        value_ = typename std::remove_const<T>::type();
+        isNone_ = true;
+        isMoved_ = true;
     }
 
   public:
     typedef T Type;
 
-    Optional() : IsNone_(true), IsMoved_(false)
+    Optional() : isNone_(true), isMoved_(false)
     {
     }
 
-    Optional(None) : IsNone_(true), IsMoved_(false)
+    Optional(None) : isNone_(true), isMoved_(false)
     {
     }
 
-    Optional(T Value) : Value_(Value), IsNone_(false), IsMoved_(false)
+    Optional(T Value) : value_(Value), isNone_(false), isMoved_(false)
     {
     }
 
@@ -1030,72 +1030,72 @@ template <typename T> class Optional<T, typename std::enable_if<!std::is_referen
 
     T Get() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return Value_;
+        return value_;
     }
 
     T Get(const T &Default) const
     {
-        if (IsMoved_)
+        if (isMoved_)
             return Default;
 
-        if (IsNone_)
+        if (isNone_)
             return Default;
 
-        return Value_;
+        return value_;
     }
 
     operator T() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return Value_;
+        return value_;
     }
 
     operator typename std::remove_reference<T>::type &()
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return Value_;
+        return value_;
     }
 
     T operator->() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (IsNone_)
+        if (isNone_)
             throw Exception();
 
-        return Value_;
+        return value_;
     }
 
     bool IsSome() const
     {
-        return !IsMoved_ && !IsNone_;
+        return !isMoved_ && !isNone_;
     }
 
     bool IsNone() const
     {
-        return !IsMoved_ && IsNone_;
+        return !isMoved_ && isNone_;
     }
 
   private:
-    typename std::remove_const<T>::type Value_;
-    bool IsNone_;
+    typename std::remove_const<T>::type value_;
+    bool isNone_;
 };
 
 #if defined(__cpp_variadic_templates)

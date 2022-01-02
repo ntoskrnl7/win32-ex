@@ -53,6 +53,8 @@ Environment:
 #include "Process.h"
 #include <algorithm>
 #include <functional>
+#include <list>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <stdlib.h>
@@ -347,6 +349,37 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
     bool Wait(Duration Timeout) override
     {
         return WaitForSingleObject(processInfo_.hProcess, Timeout) == WAIT_OBJECT_0;
+    }
+
+  public:
+    static std::list<_STD_NS_::shared_ptr<ProcessT>> All()
+    {
+        std::list<_STD_NS_::shared_ptr<ProcessT>> all;
+
+        HANDLE hSnapshot;
+        hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hSnapshot == INVALID_HANDLE_VALUE)
+            return std::list<_STD_NS_::shared_ptr<ProcessT>>();
+
+        PROCESSENTRY32T<CharType> pe32;
+        pe32.dwSize = sizeof(pe32);
+        if (!Process32FirstT<CharType>(hSnapshot, &pe32))
+        {
+            CloseHandle(hSnapshot);
+            return std::list<_STD_NS_::shared_ptr<ProcessT>>();
+        }
+
+        do
+        {
+#if defined(_MSC_VER) && _MSC_VER < 1600
+            all.push_back(_STD_NS_::shared_ptr<ProcessT>(new ProcessT(pe32.th32ProcessID)));
+#else
+            all.push_back(std::make_shared<ProcessT>(pe32.th32ProcessID));
+#endif
+        } while (Process32NextT<CharType>(hSnapshot, &pe32));
+
+        CloseHandle(hSnapshot);
+        return all;
     }
 };
 

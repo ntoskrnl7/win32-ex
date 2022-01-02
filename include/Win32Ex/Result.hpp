@@ -32,7 +32,7 @@ Environment:
 
 #include "Internal/misc.hpp"
 
-#include <exception>
+#include <stdexcept>
 
 namespace Win32Ex
 {
@@ -53,44 +53,44 @@ struct Error : std::runtime_error
 
 template <typename T> class Result<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
-    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Result, Value_(Other.Value_))
+    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
 
   public:
     Result Clone() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
         if (IsErr())
         {
-            Result clone(Error_);
+            Result clone(error_);
             return clone;
         }
-        Result clone(*Value_);
+        Result clone(*value_);
         return clone;
     }
 
   private:
     void Move(Result &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
-        To.Value_ = Value_;
-        To.Error_ = Error_;
-        Value_ = NULL;
-        Error_.ErrorCode = ERROR_SUCCESS;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.error_ = error_;
+        value_ = NULL;
+        error_.ErrorCode = ERROR_SUCCESS;
+        isMoved_ = true;
     }
 
   public:
     typedef T Type;
 
-    Result(const Error &Error) : Value_(NULL), Error_(Error), IsMoved_(false)
+    Result(const Error &Error) : value_(NULL), error_(Error), isMoved_(false)
     {
     }
 
-    Result(T Value) : Value_(&Value), Error_(ERROR_SUCCESS), IsMoved_(false)
+    Result(T Value) : value_(&Value), error_(ERROR_SUCCESS), isMoved_(false)
     {
     }
 
@@ -104,97 +104,97 @@ template <typename T> class Result<T, typename std::enable_if<std::is_reference<
 
     T Get() const
     {
-        if (Error_.ErrorCode)
-            throw Error_;
+        if (error_.ErrorCode)
+            throw error_;
 
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        return *Value_;
+        return *value_;
     }
 
     T Get(T Default) const
     {
-        if (Error_.ErrorCode)
+        if (error_.ErrorCode)
             return Default;
 
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        return *Value_;
+        return *value_;
     }
 
     T operator->() const
     {
-        if (Error_.ErrorCode)
-            throw Error_;
+        if (error_.ErrorCode)
+            throw error_;
 
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        return Value_;
+        return value_;
     }
 
     const Error &Error() const
     {
-        return Error_;
+        return error_;
     }
 
     bool IsOk() const
     {
-        return (!IsMoved_) && (Error_.ErrorCode == ERROR_SUCCESS);
+        return (!isMoved_) && (error_.ErrorCode == ERROR_SUCCESS);
     }
 
     bool IsErr() const
     {
-        return (!IsMoved_) && (Error_.ErrorCode != ERROR_SUCCESS);
+        return (!isMoved_) && (error_.ErrorCode != ERROR_SUCCESS);
     }
 
   private:
-    typename std::remove_reference<T>::type *Value_;
-    struct Error Error_;
+    typename std::remove_reference<T>::type *value_;
+    struct Error error_;
 };
 
 template <typename T> class Result<T, typename std::enable_if<!std::is_reference<T>::value>::type>
 {
-    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Result, Value_(Other.Value_))
+    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
 
   public:
     Result Clone() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
         if (IsErr())
         {
-            Result clone(Error_);
+            Result clone(error_);
             return clone;
         }
-        Result clone(Value_);
+        Result clone(value_);
         return clone;
     }
 
   private:
     void Move(Result &To)
     {
-        To.IsMoved_ = IsMoved_;
-        if (IsMoved_)
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
             return;
-        To.Value_ = Value_;
-        To.Error_ = Error_;
-        Value_ = typename std::remove_const<T>::type();
-        Error_.ErrorCode = ERROR_SUCCESS;
-        IsMoved_ = true;
+        To.value_ = value_;
+        To.error_ = error_;
+        value_ = typename std::remove_const<T>::type();
+        error_.ErrorCode = ERROR_SUCCESS;
+        isMoved_ = true;
     }
 
   public:
     typedef T Type;
 
-    Result(const Error &Error) : Error_(Error), IsMoved_(false)
+    Result(const Error &Error) : error_(Error), isMoved_(false)
     {
     }
 
-    Result(T Value) : Value_(Value), Error_(ERROR_SUCCESS), IsMoved_(false)
+    Result(T Value) : value_(Value), error_(ERROR_SUCCESS), isMoved_(false)
     {
     }
 
@@ -208,55 +208,55 @@ template <typename T> class Result<T, typename std::enable_if<!std::is_reference
 
     T Get() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (Error_.ErrorCode)
-            throw Error_;
+        if (error_.ErrorCode)
+            throw error_;
 
-        return Value_;
+        return value_;
     }
 
     T Get(const T &Default) const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (Error_.ErrorCode)
+        if (error_.ErrorCode)
             return Default;
 
-        return Value_;
+        return value_;
     }
 
     T operator->() const
     {
-        if (IsMoved_)
+        if (isMoved_)
             throw MovedException();
 
-        if (Error_.ErrorCode)
-            throw Error_;
+        if (error_.ErrorCode)
+            throw error_;
 
-        return Value_;
+        return value_;
     }
 
     const Error &Error() const
     {
-        return Error_;
+        return error_;
     }
 
     bool IsOk() const
     {
-        return (!IsMoved_) && (Error_.ErrorCode == ERROR_SUCCESS);
+        return (!isMoved_) && (error_.ErrorCode == ERROR_SUCCESS);
     }
 
     bool IsErr() const
     {
-        return (!IsMoved_) && (Error_.ErrorCode != ERROR_SUCCESS);
+        return (!isMoved_) && (error_.ErrorCode != ERROR_SUCCESS);
     }
 
   private:
-    typename std::remove_const<T>::type Value_;
-    struct Error Error_;
+    typename std::remove_const<T>::type value_;
+    struct Error error_;
 };
 } // namespace Win32Ex
 
