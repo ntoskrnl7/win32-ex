@@ -15,7 +15,7 @@ TEST(SessionTest, ThisSessionNewProcessT)
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
     auto process = Win32Ex::ThisSession::NewProcessT(Win32Ex::System::UserAccount, TEXT("notepad"));
 #else
-    Win32Ex::Result<Win32Ex::System::Session::RunnableProcessPtr> process =
+    Win32Ex::Result<Win32Ex::System::SessionT<>::RunnableProcessPtr> process =
         Win32Ex::ThisSession::NewProcessT<Win32Ex::StringT>(Win32Ex::System::UserAccount, TEXT("notepad"));
 #endif
     if (process.IsOk())
@@ -132,7 +132,7 @@ TEST(SessionTest, SessionTNewProcess)
     {
         auto process = session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
 #else
-    for each (Win32Ex::System::Session session in Win32Ex::System::SessionT<>::All())
+    for each (Win32Ex::System::SessionT<> session in Win32Ex::System::SessionT<>::All())
     {
         Win32Ex::Result<Win32Ex::System::SessionT<>::RunnableProcessPtr> process =
             session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
