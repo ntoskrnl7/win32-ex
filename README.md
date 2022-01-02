@@ -28,37 +28,41 @@ Win32 API Experimental(or Extension) features
           - [Functions](#functions)
           - [Classes](#classes)
           - [Namespaces](#namespaces)
-      - [Services](#services)
+      - [Remote Desktop Services](#remote-desktop-services)
         - [Reference](#reference-1)
           - [Classes](#classes-1)
+          - [Namespaces](#namespaces-1)
+      - [Services](#services)
+        - [Reference](#reference-2)
+          - [Classes](#classes-2)
           - [Example](#example)
       - [Windows System Information [Handles and Objects]](#windows-system-information-handles-and-objects)
-        - [Reference](#reference-2)
+        - [Reference](#reference-3)
           - [Functions](#functions-1)
           - [Example](#example-1)
     - [Security and Identity](#security-and-identity)
       - [Authorization [Privileges]](#authorization-privileges)
-        - [Reference](#reference-3)
+        - [Reference](#reference-4)
           - [Functions](#functions-2)
-          - [Classes](#classes-2)
+          - [Classes](#classes-3)
           - [Macros](#macros)
       - [Authorization [Access Tokens]](#authorization-access-tokens)
-        - [Reference](#reference-4)
-          - [Functions](#functions-3)
-          - [Classes](#classes-3)
-      - [Authorization [Security Descriptors]](#authorization-security-descriptors)
         - [Reference](#reference-5)
+          - [Functions](#functions-3)
+          - [Classes](#classes-4)
+      - [Authorization [Security Descriptors]](#authorization-security-descriptors)
+        - [Reference](#reference-6)
           - [Functions](#functions-4)
       - [Authorization [Security Identifiers]](#authorization-security-identifiers)
-        - [Reference](#reference-6)
+        - [Reference](#reference-7)
           - [Functions](#functions-5)
           - [Variables](#variables)
     - [Etc](#etc)
       - [Optional](#optional)
-        - [Classes](#classes-4)
+        - [Classes](#classes-5)
         - [Example](#example-2)
       - [Result](#result)
-        - [Classes](#classes-5)
+        - [Classes](#classes-6)
         - [Example](#example-3)
       - [Win32 Api Template](#win32-api-template)
         - [ShellApi](#shellapi)
@@ -235,6 +239,61 @@ Win32 API Experimental(or Extension) features
       {
           std::cout << parent.ExecutablePath() << '\n';
           parent = parent.Parent();
+      }
+      ```
+
+#### Remote Desktop Services
+
+- **Link :** <https://docs.microsoft.com/en-us/windows/win32/termserv/terminal-services-portal>
+- **Headers :** System\Session.hpp
+
+##### Reference
+
+###### Classes
+
+- Session
+  - Example
+    - Runs system account process and user account process at each sessions.
+
+      ```C++
+      for (auto session : Win32Ex::System::Session::All())
+      {
+          auto process = session.NewProcess(Win32Ex::System::UserAccount, "notepad");
+          if (process.IsOk())
+          {
+              process->RunAsync().Wait(500);
+              process->Exit();
+          }
+          process = session.NewProcess(Win32Ex::System::SystemAccount, "notepad");
+          if (process.IsOk())
+          {
+              process->RunAsync().Wait(500);
+              process->Exit();
+          }
+      }
+      ```
+
+- SessionW
+- SessionT\<class StringType = StringT\>
+
+###### Namespaces
+
+- Win32Ex::ThisSession
+  - Example
+    - Runs system account process and user account process at this session.
+
+      ```C++
+      auto process = Win32Ex::ThisSession::NewProcess(Win32Ex::System::UserAccount, "notepad");
+      if (process.IsOk())
+      {
+          process->RunAsync().Wait(500);
+          process->Exit();
+      }
+      process = Win32Ex::ThisSession::NewProcess(Win32Ex::System::SystemAccount, "notepad");
+      if (process.IsOk())
+      {
+          process->RunAsync().Wait(500);
+          process->Exit();
       }
       ```
 
@@ -1081,7 +1140,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.8")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.9")
 
 # link dependencies
 target_link_libraries(tests win32ex)
