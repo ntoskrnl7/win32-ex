@@ -75,7 +75,11 @@ TEST(TokenTest, LookupToken)
 
 TEST(TokenTest, LookupToken2)
 {
-    HANDLE token = LookupToken2(TOKEN_QUERY, NULL);
+#if (defined(_MSC_VER) && (_MSC_VER < 1600))
+	HANDLE token = LookupToken2(TOKEN_QUERY, NULL);
+#else
+	HANDLE token = LookupToken2(TOKEN_QUERY, nullptr);
+#endif
     EXPECT_NE(token, (HANDLE)NULL);
     if (token)
         CloseHandle(token);

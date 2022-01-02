@@ -127,7 +127,7 @@ template <class _StringType = StringT> class SessionT
     {
         if (Type == UserAccount)
         {
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
             return RunnableProcessPtr(new RunnableSessionProcessT<UserAccount, StringType>(
                 id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
                 EnvironmentBlock));
@@ -139,7 +139,7 @@ template <class _StringType = StringT> class SessionT
         }
         else if (Type == SystemAccount)
         {
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
             return RunnableProcessPtr(new RunnableSessionProcessT<SystemAccount, StringType>(
                 id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
                 EnvironmentBlock));

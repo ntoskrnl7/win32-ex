@@ -110,7 +110,7 @@ class WaitableObject
     virtual bool Wait(Duration Timeout) = 0;
 };
 
-#if defined(__cpp_rvalue_references)
+#if defined(__cpp_rvalue_references) || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
@@ -139,9 +139,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  \
-    _CLASS(const _CLASS &other) = delete;                                                                              \
-    _CLASS &operator=(const _CLASS &rhs) = delete;
+    }                                                                                                                  
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
@@ -170,9 +168,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  \
-    _CLASS(const _CLASS &other) = delete;                                                                              \
-    _CLASS &operator=(const _CLASS &rhs) = delete;
+    }                                                                                                                  
 
 #define WIN32EX_MOVE_ALWAYS_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \
@@ -193,9 +189,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  \
-    _CLASS(const _CLASS &other) = delete;                                                                              \
-    _CLASS &operator=(const _CLASS &rhs) = delete;
+    }                                                                                                                  
 #define WIN32EX_MOVE_ALWAYS_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
   public:                                                                                                              \
     _CLASS(_CLASS &&Other) : _INIT_STMT                                                                                \
@@ -215,9 +209,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  \
-    _CLASS(const _CLASS &other) = delete;                                                                              \
-    _CLASS &operator=(const _CLASS &rhs) = delete;
+    }                                                                                                                  
 #else
 #define WIN32EX_MOVE_ALWAYS_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \

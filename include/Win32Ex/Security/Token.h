@@ -59,7 +59,7 @@ using std::tr1::function;
 #define _WIN32_WINNT_WIN8 0x0602
 #endif
 
-#if (_WIN32_WINNT < _WIN32_WINNT_WIN8)
+#if (_WIN32_WINNT < _WIN32_WINNT_WIN8) || (defined(_MSC_VER) && (_MSC_VER < 1800))
 FORCEINLINE
 HANDLE
 GetCurrentProcessToken(VOID)
