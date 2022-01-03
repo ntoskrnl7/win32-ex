@@ -31,6 +31,7 @@ TEST(ProcessTest, ProcessTAll)
 #if defined(__cpp_range_based_for)
     for (auto process : Win32Ex::System::ProcessT<>::All())
 #else
+    // clang-format off
     for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessT<>> &process in Win32Ex::System::ProcessT<>::All())
 #endif
     {
@@ -55,6 +56,7 @@ TEST(ProcessTest, ProcessTAll)
             }
         }
     }
+    // clang-format on
 }
 
 TEST(ProcessTest, ProcessAll)
@@ -62,6 +64,7 @@ TEST(ProcessTest, ProcessAll)
 #if defined(__cpp_range_based_for)
     for (auto process : Win32Ex::System::Process::All())
 #else
+    // clang-format off
     for each (const _STD_NS_::shared_ptr<Win32Ex::System::Process> &process in Win32Ex::System::Process::All())
 #endif
     {
@@ -73,6 +76,7 @@ TEST(ProcessTest, ProcessAll)
                 std::cout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
         }
     }
+    // clang-format on
 }
 
 TEST(ProcessTest, ProcessWAll)
@@ -80,6 +84,7 @@ TEST(ProcessTest, ProcessWAll)
 #if defined(__cpp_range_based_for)
     for (auto process : Win32Ex::System::ProcessW::All())
 #else
+    // clang-format off
     for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessW> &process in Win32Ex::System::ProcessW::All())
 #endif
     {
@@ -91,6 +96,7 @@ TEST(ProcessTest, ProcessWAll)
                 std::wcout << "PID :" << process->Id() << "\t\tPATH : " << process->ExecutablePath() << '\n';
         }
     }
+    // clang-format on
 }
 
 TEST(ProcessTest, Parent)
@@ -263,7 +269,7 @@ TEST(ProcessTest, UserAccountProcess)
         Wow64DisableWow64FsRedirection(&oldValue);
 
         Win32Ex::System::UserAccountProcess process("CMD");
-        EXPECT_TRUE(process.Run(Win32Ex::None(), "/C QUERY SESSION"));
+        EXPECT_TRUE(process.Run("/C QUERY SESSION"));
 
         Wow64RevertWow64FsRedirection(oldValue);
     }

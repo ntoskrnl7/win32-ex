@@ -735,20 +735,16 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         return _RunnableProcess::processInfo_.hThread;
     }
 
-    bool Run(const Optional<DWORD> &SessionId = None(), const Optional<const StringType &> &Arguments = None(),
+    bool Run(const Optional<const StringType &> &Arguments = None(),
              const Optional<const StringType &> &CurrentDirectory = None(), Optional<DWORD> CreationFlags = None(),
              const Optional<typename Win32Ex::STARTUPINFOT<CharType>::Type *> &StartupInfo = None(),
              const Optional<BOOL> &InheritHandles = None(), const Optional<LPVOID> &EnvironmentBlock = None())
     {
-        if (SessionId.IsSome())
-            _RunnableProcess::sessionId_ = SessionId;
-
-        return RunAsync(_RunnableProcess::sessionId_, Arguments, CurrentDirectory, CreationFlags, StartupInfo,
-                        InheritHandles, EnvironmentBlock)
+        return RunAsync(Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles, EnvironmentBlock)
             .Wait();
     }
 
-    Waitable RunAsync(DWORD SessionId, const Optional<const StringType &> &Arguments = None(),
+    Waitable RunAsync(const Optional<const StringType &> &Arguments,
                       const Optional<const StringType &> &CurrentDirectory = None(),
                       const Optional<DWORD> &CreationFlags = None(),
                       const Optional<typename Win32Ex::STARTUPINFOT<CharType>::Type *> &StartupInfo = None(),
@@ -756,9 +752,6 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
     {
         if (!_RunnableProcess::Prepare())
             return Waitable(*this);
-
-        if (_RunnableProcess::sessionId_ != SessionId)
-            _RunnableProcess::sessionId_ = SessionId;
 
         if (Arguments.IsSome())
             _RunnableProcess::arguments_ = Arguments;
@@ -853,7 +846,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
   public:
     Waitable RunAsync() override
     {
-        return RunAsync(_RunnableProcess::sessionId_);
+        return RunAsync(_RunnableProcess::arguments_);
     }
 };
 
