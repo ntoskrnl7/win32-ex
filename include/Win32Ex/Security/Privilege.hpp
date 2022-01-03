@@ -59,19 +59,6 @@ inline bool operator==(const LUID &lhs, const LUID &rhs)
 
 namespace Security
 {
-////////////////////////////////////////////////////////////////////////
-//                                                                    //
-//               NT Defined Privileges                                //
-//                                                                    //
-////////////////////////////////////////////////////////////////////////
-#ifdef UNICODE
-#define SE_ASSIGNPRIMARYTOKEN_NAME_W SE_ASSIGNPRIMARYTOKEN_NAME
-#define SE_INCREASE_QUOTA_NAME_W SE_INCREASE_QUOTA_NAME
-#else
-#define SE_ASSIGNPRIMARYTOKEN_NAME_W _W(SE_ASSIGNPRIMARYTOKEN_NAME)
-#define SE_INCREASE_QUOTA_NAME_W _W(SE_INCREASE_QUOTA_NAME)
-#endif
-
 inline StringT ToPrivilegeName(LUID luid)
 {
     DWORD length = 256;

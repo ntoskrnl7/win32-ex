@@ -44,6 +44,7 @@ Win32 API Experimental(or Extension) features
       - [Authorization [Privileges]](#authorization-privileges)
         - [Reference](#reference-4)
           - [Functions](#functions-2)
+          - [Variables](#variables)
           - [Classes](#classes-3)
           - [Macros](#macros)
       - [Authorization [Access Tokens]](#authorization-access-tokens)
@@ -56,7 +57,7 @@ Win32 API Experimental(or Extension) features
       - [Authorization [Security Identifiers]](#authorization-security-identifiers)
         - [Reference](#reference-7)
           - [Functions](#functions-5)
-          - [Variables](#variables)
+          - [Variables](#variables-1)
     - [Etc](#etc)
       - [Optional](#optional)
         - [Classes](#classes-5)
@@ -88,7 +89,7 @@ Win32 API Experimental(or Extension) features
 #### Processes and Threads
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/procthread/processes-and-threads>
-- **Headers :** Win32Ex\System\Process.h, Win32Ex\System\Process.hpp
+- **Headers :** Win32Ex/System/Process.h, Win32Ex/System/Process.hpp
 
 ##### Reference
 
@@ -99,7 +100,7 @@ Win32 API Experimental(or Extension) features
     - Runs user account process at the current session.
 
       ```C
-      #include <Win32Ex\System\Process.h>
+      #include <Win32Ex/System/Process.h>
 
       CreateUserAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);    
       ```
@@ -109,7 +110,7 @@ Win32 API Experimental(or Extension) features
     - Runs system account process at the current session.
 
       ```C
-      #include <Win32Ex\System\Process.h>
+      #include <Win32Ex/System/Process.h>
 
       CreateSystemAccountProcess(WTSGetActiveConsoleSessionId(), NULL, TEXT("CMD.exe /C QUERY SESSION"), /* ... */);    
       ```
@@ -120,7 +121,7 @@ Win32 API Experimental(or Extension) features
     - Runs user account process at the current session.
 
       ```C++
-      #include <Win32Ex\System\Process.h>
+      #include <Win32Ex/System/Process.h>
 
       CreateUserAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
       ```
@@ -131,7 +132,7 @@ Win32 API Experimental(or Extension) features
     - Runs system account process at the current session.
 
       ```C++
-      #include <Win32Ex\System\Process.h>
+      #include <Win32Ex/System/Process.h>
 
       CreateSystemAccountProcessT<CHAR>(WTSGetActiveConsoleSessionId(), NULL, "CMD.exe /C QUERY SESSION", /* ... */);
       ```
@@ -139,11 +140,32 @@ Win32 API Experimental(or Extension) features
 ###### Classes
 
 - Process
+  - ProcessT<Win32Ex::String>
   - Example
+    - Attach Process by process id, process handle.
+
+      ```C++
+      #include <Win32Ex/System/Process.hpp>
+
+      DWORD pid = ...
+      Win32Ex::System::Process process(pid);
+      if (process.IsAttached())
+      {
+        process.ExecutablePath();
+      }
+
+      HANDLE hProcess = ..
+      Win32Ex::System::Process process(Win32Ex::System::ProcessHandle::FromHANDLE(hProcess));
+      if (process.IsAttached())
+      {
+        process.ExecutablePath();
+      }
+      ```
+
     - Enumerate all processes.
 
       ```C++
-      #include <Win32Ex\System\Process.hpp>
+      #include <Win32Ex/System/Process.hpp>
 
       for (auto process : Win32Ex::System::Process::All())
       {
@@ -158,14 +180,17 @@ Win32 API Experimental(or Extension) features
       ```
 
 - ProcessW
-- ProcessT\<class StringType = StringT\>
+  - ProcessT<Win32Ex::StringW>
+- ProcessT\<class StringType = Win32Ex::StringT\>
+  - Implements WaitableObject.
 - RunnableProcess
   - **Abstract**
+  - RunnableProcessT<Win32Ex::String>
   - Example
     - Use the RunnableProcess class to run 'user account process'.
 
       ```C++
-      #include <Win32Ex\System\Process.hpp>
+      #include <Win32Ex/System/Process.hpp>
 
       Win32Ex::System::UserAccountProcess process("CMD", "/C WHOAMI");
       Win32Ex::System::RunnableProcess &runnable = process;
@@ -174,23 +199,29 @@ Win32 API Experimental(or Extension) features
 
 - RunnableProcessW
   - **Abstract**
-- RunnableProcessT\<class StringType = StringT\>
+  - RunnableProcessT<Win32Ex::StringW>
+- RunnableProcessT\<class StringType = Win32Ex::StringT\>
   - **Abstract**
+  - Implements ProcessT.
 - UserAccountProcess
+  - RunnableSessionProcessT<UserAccount, Win32Ex::String>
   - Example
     - Runs user account process at the current session.
 
       ```C++
-      #include <Win32Ex\System\Process.hpp>
+      #include <Win32Ex/System/Process.hpp>
 
-      Win32Ex::System::UserAccountProcess process("CMD.exe /C QUERY SESSION");
-      process.Run();
+      Win32Ex::System::UserAccountProcess process("CMD.exe");
+      process.Run("/C QUERY SESSION");
+
+      auto waiter = process.RunAsync("/C QUERY SESSION");
+      waiter.Wait();
       ```
 
     - Runs user account process at each sessions.
 
       ```C++
-      #include <Win32Ex\System\Process.hpp>
+      #include <Win32Ex/System/Process.hpp>
 
       PWTS_SESSION_INFO sessionInfo = NULL;
       DWORD count = 0;
@@ -198,34 +229,39 @@ Win32 API Experimental(or Extension) features
       {
         for (DWORD i = 0; i < count; ++i)
         {
-          if (sessionInfo[i].State == WTSListen)
-            continue;
-
-          Win32Ex::System::UserAccountProcess userProcess(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
-          userProcess.Run();
+          Win32Ex::System::UserAccountProcess process(sessionInfo[i].SessionId, "CMD", "/C QUERY SESSION");
+          process.Run();
         }
       }
       ```
 
 - UserAccountProcessW
+  - RunnableSessionProcessT<UserAccount, Win32Ex::StringW>
 - UserAccountProcessT
+  - Implements RunnableProcessT.
 - SystemAccountProcess
+  - RunnableSessionProcessT<SystemAccount, Win32Ex::String>
 - SystemAccountProcessW
+  - RunnableSessionProcessT<SystemAccount, Win32Ex::StringW>
 - SystemAccountProcessT
-- RunnableSessionProcessT\<ProcessAccountType Type, class StringType = StringT\>
+  - Implements RunnableProcessT.
+- RunnableSessionProcessT\<ProcessAccountType Type, class StringType = Win32Ex::StringT\>
 - ElevatedProcess
+  - ElevatedProcessT<Win32Ex::String>
   - Example
     - Run with elevated permissions UAC.
 
       ```C++
-      #include <Win32Ex\System\Process.hpp>
+      #include <Win32Ex/System/Process.hpp>
 
       Win32Ex::System::ElevatedProcess process("notepad.exe");
       process.Run();
       ```
 
 - ElevatedProcessW
-- ElevatedProcessT\<class StringType = StringT\>
+  - ElevatedProcessT<Win32Ex::StringW>
+- ElevatedProcessT\<class StringType = Win32Ex::StringT\>
+  - Implements RunnableProcessT.
 
 ###### Namespaces
 
@@ -234,6 +270,8 @@ Win32 API Experimental(or Extension) features
     - Enumerate parent processes.
 
       ```C++
+      #include <Win32Ex/System/Process.hpp>
+
       Win32Ex::System::Process parent = Win32Ex::ThisProcess::Parent();
       while (parent.IsValid())
       {
@@ -245,13 +283,14 @@ Win32 API Experimental(or Extension) features
 #### Remote Desktop Services
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/termserv/terminal-services-portal>
-- **Headers :** System\Session.hpp
+- **Headers :** Win32Ex/System/Session.hpp
 
 ##### Reference
 
 ###### Classes
 
 - Session
+  - SessionT<Win32Ex::String>
   - Example
     - Runs system account process and user account process at each sessions.
 
@@ -274,12 +313,22 @@ Win32 API Experimental(or Extension) features
       ```
 
 - SessionW
-- SessionT\<class StringType = StringT\>
+  - SessionT<Win32Ex::StringW>
+- SessionT\<class StringType = Win32Ex::StringT\>
 
 ###### Namespaces
 
 - Win32Ex::ThisSession
   - Example
+    - Get the name of this session.
+
+      ```C++
+      Win32Ex::ThisSession::Name();
+      Win32Ex::ThisSession::NameW();
+      Win32Ex::ThisSession::NameT();
+      Win32Ex::ThisSession::NameT<Win32Ex::String>();
+      ```
+
     - Runs system account process and user account process at this session.
 
       ```C++
@@ -300,7 +349,7 @@ Win32 API Experimental(or Extension) features
 #### Services
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/services/services>
-- **Headers :** Win32Ex\System\Service.hpp
+- **Headers :** Win32Ex/System/Service.hpp
 
 ##### Reference
 
@@ -318,183 +367,186 @@ Win32 API Experimental(or Extension) features
 
 ###### Example
 
-C++
+- Enumerate the dependencies and dependent services of User Profile Service (ProfSvc).
 
-```C++
-Win32Ex::System::Service service("ProfSvc");
+  ```C++
+  Win32Ex::System::Service service("ProfSvc");
 
-std::cout << "\n\n-----------------Dependencies-------------------\n";
-for (auto &dep : service.Dependencies())
-{
-    std::cout << dep.Name() << '\n';
-    for (auto &dep2 : dep.Dependencies())
-      std::cout << "\t" << dep2.Name() << '\n';
-}
-
-std::cout << "\n\n-----------------DependentServices-------------------\n";
-for (auto &dep : service.DependentServices().Get({}))
-{
-    std::cout << dep.Name() << '\n';
-    for (auto &dep2 : dep.DependentServices().Get({}))
-      std::cout << "\t" << dep2.Name() << '\n';
-}
-```
-
-Simple service (Control Process)
-
-```C++
-#include <Win32Ex\System\Service.hpp>
-
-Win32Ex::System::Service SimpleService("SimpleSvc");
-
-int main()
-{
-  SimpleService.Install();
-  SimpleService.Start();
-  SimpleService.Pause();
-  SimpleService.Continue();
-  SimpleService.Stop();
-  SimpleService.Uninstall();
-}
-```
-
-Simple service (Service Process)
-
-```C++
-#include <Win32Ex\System\Service.hpp>
-
-using namespace Win32Ex::System;
-
-Service SimpleService("SimpleSvc");
-
-int main()
-{
-    Service::Instance<SimpleService>::GetInstance()
-        .OnStart([]() {
-            // TODO
-        })
-        .OnStop([]() {
-            // TODO
-        })
-        .OnPause([]() {
-            // TODO
-        })
-        .OnContinue([]() {
-            // TODO
-        })
-        .OnError([](DWORD ErrorCode, PCSTR Message) {
-            // TODO
-        })
-        .Run();
-}
-```
-
-Not stoppable service (Control Process)
-
-```C++
-Win32Ex::System::Service TestService("TestSvc");
-
-#define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
-
-int main(int argc, char* argv[])
-{
-  TestService.SetAcceptStop([]() -> bool
+  std::cout << "\n\n-----------------Dependencies-------------------\n";
+  for (auto &dep : service.Dependencies())
   {
-    SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-    if (serviceHandle == NULL)
-      return false;
-    SERVICE_STATUS ss = { 0 };
-    BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-    CloseServiceHandle(serviceHandle);
-    return (result == TRUE);
-  });
+      std::cout << dep.Name() << '\n';
+      for (auto &dep2 : dep.Dependencies())
+        std::cout << "\t" << dep2.Name() << '\n';
+  }
 
-  TestService.Stop();
-  TestService.Uninstall();
-}
-```
+  std::cout << "\n\n-----------------DependentServices-------------------\n";
+  for (auto &dep : service.DependentServices().Get({}))
+  {
+      std::cout << dep.Name() << '\n';
+      for (auto &dep2 : dep.DependentServices().Get({}))
+        std::cout << "\t" << dep2.Name() << '\n';
+  }
+  ```
 
-Not stoppable service (Service Process)
+- Simple service
+  - Control Process
 
-```C++
-Win32Ex::System::Service TestService("TestSvc");
-typedef Win32Ex::System::Service::Instance<TestService> TestServiceInstance;
+    ```C++
+    #include <Win32Ex/System/Service.hpp>
 
-#define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
+    Win32Ex::System::Service SimpleService("SimpleSvc");
 
-int main(int argc, char *argv[])
-{
-    TestServiceInstance &svc = Win32Ex::System::Service::Instance<TestService>::GetInstance();
-    svc.OnStart([&svc]() {
-           svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
-           // TODO
-       })
-        .OnStop([]() {
-            // TODO
-        })
-        .OnPause([]() {
-            // TODO
-        })
-        .OnContinue([]() {
-            // TODO
-        })
-        .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP,
-            [&svc]() {
-                if (!svc.SetControlsAccepted(SERVICE_ACCEPT_STOP))
-                {
-                    // TODO
-                }
+    int main()
+    {
+      SimpleService.Install();
+      SimpleService.Start();
+      SimpleService.Pause();
+      SimpleService.Continue();
+      SimpleService.Stop();
+      SimpleService.Uninstall();
+    }
+    ```
+
+  - Service Process
+
+    ```C++
+    #include <Win32Ex/System/Service.hpp>
+
+    using namespace Win32Ex::System;
+
+    Service SimpleService("SimpleSvc");
+
+    int main()
+    {
+        Service::Instance<SimpleService>::GetInstance()
+            .OnStart([]() {
                 // TODO
             })
-        .Run();
-}
-```
+            .OnStop([]() {
+                // TODO
+            })
+            .OnPause([]() {
+                // TODO
+            })
+            .OnContinue([]() {
+                // TODO
+            })
+            .OnError([](DWORD ErrorCode, PCSTR Message) {
+                // TODO
+            })
+            .Run();
+    }
+    ```
 
-Share process service (Control Process)
+- Not stoppable service
+  - Control Process
 
-```C++
-Win32Ex::System::Service TestService("TestSvc");
-Win32Ex::System::Service Test2Servic("Test2Svc");
+    ```C++
+    Win32Ex::System::Service TestService("TestSvc");
 
-int main()
-{
-  // ...
-  TestService.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
-  TestService.Start();
+    #define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
 
-  Test2Service.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
-  TestService.Start();
-  //...
-}
-```
+    int main(int argc, char* argv[])
+    {
+      TestService.SetAcceptStop([]() -> bool
+      {
+        SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
+        if (serviceHandle == NULL)
+          return false;
+        SERVICE_STATUS ss = { 0 };
+        BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
+        CloseServiceHandle(serviceHandle);
+        return (result == TRUE);
+      });
 
-Share process service (Service Process)
+      TestService.Stop();
+      TestService.Uninstall();
+    }
+    ```
 
-```C++
-using namespace Win32Ex::System;
+  - Service Process
 
-Service TestService("TestSvc");
-typedef Service::Instance<TestService> TestServiceInstance;
+    ```C++
+    Win32Ex::System::Service TestService("TestSvc");
+    typedef Win32Ex::System::Service::Instance<TestService> TestServiceInstance;
 
-Service Test2Service("Test2Svc");
-typedef Service::Instance<Test2Service> Test2ServiceInstance;
+    #define TEST_SVC_USER_CONTROL_ACCEPT_STOP 130
 
-int main()
-{
-  TestServiceInstance &svc = TestService::GetInstance();
-  Test2ServiceInstance &svc2 = Test2Service::GetInstance();
+    int main(int argc, char *argv[])
+    {
+        TestServiceInstance &svc = Win32Ex::System::Service::Instance<TestService>::GetInstance();
+        svc.OnStart([&svc]() {
+              svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
+              // TODO
+          })
+            .OnStop([]() {
+                // TODO
+            })
+            .OnPause([]() {
+                // TODO
+            })
+            .OnContinue([]() {
+                // TODO
+            })
+            .On(TEST_SVC_USER_CONTROL_ACCEPT_STOP,
+                [&svc]() {
+                    if (!svc.SetControlsAccepted(SERVICE_ACCEPT_STOP))
+                    {
+                        // TODO
+                    }
+                    // TODO
+                })
+            .Run();
+    }
+    ```
 
-  // ...
+- Share process service
+  - Control Process
 
-  return Service::Run(svc, svc2) ? EXIT_SUCCESS : EXIT_FAILURE;
-  // You may use 'Service::Run<TestServiceInstance, Test2ServiceInstance>()' instead.
-}
-```
+    ```C++
+    Win32Ex::System::Service TestService("TestSvc");
+    Win32Ex::System::Service Test2Servic("Test2Svc");
+
+    int main()
+    {
+      // ...
+      TestService.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
+      TestService.Start();
+
+      Test2Service.Install(SERVICE_WIN32_SHARE_PROCESS, // ... );
+      TestService.Start();
+      //...
+    }
+    ```
+
+  - Service Process
+
+    ```C++
+    using namespace Win32Ex::System;
+
+    Service TestService("TestSvc");
+    typedef Service::Instance<TestService> TestServiceInstance;
+
+    Service Test2Service("Test2Svc");
+    typedef Service::Instance<Test2Service> Test2ServiceInstance;
+
+    int main()
+    {
+      TestServiceInstance &svc = TestService::GetInstance();
+      Test2ServiceInstance &svc2 = Test2Service::GetInstance();
+
+      // ...
+
+      return Service::Run(svc, svc2) ? EXIT_SUCCESS : EXIT_FAILURE;
+      // You may use 'Service::Run<TestServiceInstance, Test2ServiceInstance>()' instead.
+    }
+    ```
 
 #### Windows System Information [Handles and Objects]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects>
-- **Headers :** Win32Ex\System\Object.h
+- **Headers :** Win32Ex/System/Object.h
 
 ##### Reference
 
@@ -510,7 +562,7 @@ int main()
 C/C++
 
 ```C
-#include <Win32Ex\System\Object.h>
+#include <Win32Ex/System/Object.h>
 
 HANDLE handle = ....
 MakePermanentObject(handle); // Administrator privilege required
@@ -526,7 +578,7 @@ IsTemporaryObject(handle); // == TRUE
 #### Authorization [Privileges]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges>
-- **Headers :** Win32Ex\Security\Privilege.h, Win32Ex\Security\Privilege.hpp
+- **Headers :** Win32Ex/Security/Privilege.h, Win32Ex/Security/Privilege.hpp
 
 ##### Reference
 
@@ -664,6 +716,47 @@ IsTemporaryObject(handle); // == TRUE
 - IsPrivilegesEnabledExV
   - Similar to IsPrivilegesEnabledV, but uses LUIDs instead of privilege names.
 
+
+###### Variables
+
+- Privilege LUID variables (**C++ Only**)
+  - SeCreateTokenPrivilege
+  - SeAssignPrimaryTokenPrivilege
+  - SeLockMemoryPrivilege
+  - SeIncreaseQuotaPrivilege
+  - SeUnsolicitedInputPrivilege
+  - SeMachineAccountPrivilege
+  - SeTcbPrivilege
+  - SeSecurityPrivilege
+  - SeTakeOwnershipPrivilege
+  - SeLoadDriverPrivilege
+  - SeSystemProfilePrivilege
+  - SeSystemtimePrivilege
+  - SeProfileSingleProcessPrivilege
+  - SeIncreaseBasePriorityPrivilege
+  - SeCreatePagefilePrivilege
+  - SeCreatePermanentPrivilege
+  - SeBackupPrivilege
+  - SeRestorePrivilege
+  - SeShutdownPrivilege
+  - SeDebugPrivilege
+  - SeAuditPrivilege
+  - SeSystemEnvironmentPrivilege
+  - SeChangeNotifyPrivilege
+  - SeRemoteShutdownPrivilege
+  - SeUndockPrivilege
+  - SeSyncAgentPrivilege
+  - SeEnableDelegationPrivilege
+  - SeManageVolumePrivilege
+  - SeImpersonatePrivilege
+  - SeCreateGlobalPrivilege
+  - SeTrustedCredManAccessPrivilege
+  - SeRelabelPrivilege
+  - SeIncreaseWorkingSetPrivilege
+  - SeTimeZonePrivilege
+  - SeCreateSymbolicLinkPrivilege
+  - SeDelegateSessionUserImpersonatePrivilege
+
 ###### Classes
 
 - TokenPrivileges
@@ -671,7 +764,7 @@ IsTemporaryObject(handle); // == TRUE
     - Adjust a debug and shutdown privileges.
 
       ```C++
-      #include <Win32Ex\System\Privilege.h>
+      #include <Win32Ex/System/Privilege.h>
       using namespace Win32Ex;
 
       Security::TokenPrivileges priv({Security::SeDebugPrivilege, Security::SeShutdownPrivilege});
@@ -689,7 +782,7 @@ IsTemporaryObject(handle); // == TRUE
     - Adjust debug privilege.
 
       ```C++
-      #include <Win32Ex\System\Privilege.hpp>
+      #include <Win32Ex/System/Privilege.hpp>
       using namespace Win32Ex;
 
       {
@@ -704,7 +797,7 @@ IsTemporaryObject(handle); // == TRUE
       ```
 
       ```C++
-      #include <Win32Ex\System\Privilege.hpp>
+      #include <Win32Ex/System/Privilege.hpp>
       using namespace Win32Ex;
 
       {
@@ -725,11 +818,35 @@ IsTemporaryObject(handle); // == TRUE
 
 - SE_MIN_WELL_KNOWN_PRIVILEGE
 - SE_MAX_WELL_KNOWN_PRIVILEGE
+- SE_PROF_SINGLE_PROCESS_NAME_W
+- SE_INC_BASE_PRIORITY_NAME_W
+- SE_CREATE_PAGEFILE_NAME_W
+- SE_CREATE_PERMANENT_NAME_W
+- SE_BACKUP_NAME_W
+- SE_RESTORE_NAME_W
+- SE_SHUTDOWN_NAME_W
+- SE_DEBUG_NAME_W
+- SE_AUDIT_NAME_W
+- SE_SYSTEM_ENVIRONMENT_NAME_W
+- SE_CHANGE_NOTIFY_NAME_W
+- SE_REMOTE_SHUTDOWN_NAME_W
+- SE_UNDOCK_NAME_W
+- SE_SYNC_AGENT_NAME_W
+- SE_ENABLE_DELEGATION_NAME_W
+- SE_MANAGE_VOLUME_NAME_W
+- SE_IMPERSONATE_NAME_W
+- SE_CREATE_GLOBAL_NAME_W
+- SE_TRUSTED_CREDMAN_ACCESS_NAME_W
+- SE_RELABEL_NAME_W
+- SE_INCORKING_SET_NAME_W
+- SE_TIME_ZONE_NAME_W
+- SE_CREATE_SYMBOLIC_LINK_NAME_W
+- SE_DELEGATE_SESSION_USER_IMPERSONATE_NAME_W
 
 #### Authorization [Access Tokens]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens>
-- **Headers :** Win32Ex\Security\Token.h, Win32Ex\Security\Token.hpp
+- **Headers :** Win32Ex/Security/Token.h, Win32Ex/Security/Token.hpp
 
 ##### Reference
 
@@ -754,7 +871,7 @@ IsTemporaryObject(handle); // == TRUE
     - Find the token containing the group logon id.
 
       ```C
-      #include <Win32Ex\System\Token.h>
+      #include <Win32Ex/System/Token.h>
 
       HANDLE token = LookupToken(TOKEN_QUERY, [](HANDLE TokenHandle) -> BOOL {
           Security::Token token(TokenHandle, false);
@@ -782,7 +899,7 @@ IsTemporaryObject(handle); // == TRUE
     - Get a local system token.
 
       ```C
-      #include <Win32Ex\System\Token.h>
+      #include <Win32Ex/System/Token.h>
 
       HANDLE token = GetLocalSystemToken(TOKEN_QUERY | TOKEN_READ | TOKEN_IMPERSONATE | TOKEN_QUERY_SOURCE |
                                           TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_EXECUTE);
@@ -839,7 +956,7 @@ IsTemporaryObject(handle); // == TRUE
     - Adjust shutdown privilege.
 
       ```C++
-      #include <Win32Ex\System\Token.hpp>
+      #include <Win32Ex/System/Token.hpp>
       using namespace Win32Ex;
 
       Security::Token token = Security::Token::Current();
@@ -857,7 +974,7 @@ IsTemporaryObject(handle); // == TRUE
     - Adjust a shutdown and time zone privileges.
 
       ```C++
-      #include <Win32Ex\System\Token.hpp>
+      #include <Win32Ex/System/Token.hpp>
       using namespace Win32Ex;
 
       Security::Token token = Security::Token::Current();
@@ -875,7 +992,7 @@ IsTemporaryObject(handle); // == TRUE
 #### Authorization [Security Descriptors]
 
 - **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors>
-- **Headers :** Win32Ex\Security\Descriptor.h
+- **Headers :** Win32Ex/Security/Descriptor.h
 
 ##### Reference
 
@@ -918,12 +1035,13 @@ IsTemporaryObject(handle); // == TRUE
 ##### Classes
 
 - Optional\<T\>
-- Optional\<class StringType\>
-- Optional\<class StringTypeW\>
-- Optional\<class StringTypeT\>
-- Optional\<class StringType &\>
-- Optional\<class StringTypeW &\>
-- Optional\<class StringTypeT &\>
+- Optional\<T &\>
+- Optional\<String\>
+- Optional\<StringW\>
+- Optional\<const String\>
+- Optional\<const StringW\>
+- Optional\<String &\>
+- Optional\<StringW &\>
 - Optional\<const String &\>
 - Optional\<const StringW &\>
 - Optional\<const StringT &\>
@@ -936,7 +1054,7 @@ IsTemporaryObject(handle); // == TRUE
 
 using namespace Win32Ex;
 
-void TestFn(Optional<int> arg0, Optional<double> arg1 = None(), Optional<String> arg2 = None())
+void TestFn(Optional<int> arg0 = None(), Optional<double> arg1 = None(), Optional<String> arg2 = None())
 {
   if (arg0.IsSome())
   {
@@ -1140,7 +1258,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.10")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.11")
 
 # link dependencies
 target_link_libraries(tests win32ex)
