@@ -125,31 +125,38 @@ template <class _StringType = StringT> class SessionT
                                           const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
                                           BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
     {
-        if (Type == UserAccount)
+        try
         {
+            if (Type == UserAccount)
+            {
 #if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
-            return RunnableProcessPtr(new RunnableSessionProcessT<UserAccount, StringType>(
-                id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
-                EnvironmentBlock));
+                return RunnableProcessPtr(new RunnableSessionProcessT<UserAccount, StringType>(
+                    id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
+                    EnvironmentBlock));
 #else
-            return (RunnableProcessPtr)std::make_shared<RunnableSessionProcessT<UserAccount, StringType>>(
-                id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
-                EnvironmentBlock);
+                return (RunnableProcessPtr)std::make_shared<RunnableSessionProcessT<UserAccount, StringType>>(
+                    id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
+                    EnvironmentBlock);
 #endif
+            }
+            else if (Type == SystemAccount)
+            {
+#if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
+                return RunnableProcessPtr(new RunnableSessionProcessT<SystemAccount, StringType>(
+                    id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
+                    EnvironmentBlock));
+#else
+                return (RunnableProcessPtr)std::make_shared<RunnableSessionProcessT<SystemAccount, StringType>>(
+                    id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
+                    EnvironmentBlock);
+#endif
+            }
+            return Error(ERROR_UNSUPPORTED_TYPE, "Invalid process account type");
         }
-        else if (Type == SystemAccount)
+        catch (const std::exception &e)
         {
-#if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
-            return RunnableProcessPtr(new RunnableSessionProcessT<SystemAccount, StringType>(
-                id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
-                EnvironmentBlock));
-#else
-            return (RunnableProcessPtr)std::make_shared<RunnableSessionProcessT<SystemAccount, StringType>>(
-                id_, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
-                EnvironmentBlock);
-#endif
+            return Error(ERROR_FUNCTION_FAILED, e.what());
         }
-        return Error(ERROR_INVALID_PARAMETER, "Invalid process account type");
     }
 
     DWORD Id() const
