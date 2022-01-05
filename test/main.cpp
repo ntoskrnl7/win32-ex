@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 #endif
             if (std::string(argv[1]) == TEST_SVC_NAME)
             {
-                TestServiceInstance &svc = TestServiceInstance::GetInstance();
+                TestServiceInstance &svc = TestServiceInstance::Get();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
             }
             else if (std::string(argv[1]) == "SharedService")
             {
-                TestServiceInstance &svc = TestServiceInstance::GetInstance();
-                Test2ServiceInstance &svc2 = Test2ServiceInstance::GetInstance();
+                TestServiceInstance &svc = TestServiceInstance::Get();
+                Test2ServiceInstance &svc2 = Test2ServiceInstance::Get();
 #ifdef __cpp_lambdas
                 svc.OnStart([&svc]() {
                        svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 #endif
                 if (std::string(argv[1]) == TEST_SVC_NAME)
                 {
-                    TestServiceInstanceW &svc = TestServiceInstanceW::GetInstance();
+                    TestServiceInstanceW &svc = TestServiceInstanceW::Get();
 #ifdef __cpp_lambdas
                     svc.OnStart([&svc]() {
                            svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -203,8 +203,8 @@ int main(int argc, char *argv[])
                 }
                 else if (std::string(argv[1]) == "SharedService")
                 {
-                    TestServiceInstanceW &svc = TestServiceInstanceW::GetInstance();
-                    Test2ServiceInstanceW &svc2 = Test2ServiceInstanceW::GetInstance();
+                    TestServiceInstanceW &svc = TestServiceInstanceW::Get();
+                    Test2ServiceInstanceW &svc2 = Test2ServiceInstanceW::Get();
 #ifdef __cpp_lambdas
                     svc.OnStart([&svc]() {
                            svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
 #endif
                 if (std::string(argv[1]) == TEST_SVC_NAME)
                 {
-                    TestServiceInstanceT &svc = TestServiceInstanceT::GetInstance();
+                    TestServiceInstanceT &svc = TestServiceInstanceT::Get();
 #ifdef __cpp_lambdas
                     svc.OnStart([&svc]() {
                            svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
@@ -316,8 +316,8 @@ int main(int argc, char *argv[])
                 }
                 else if (std::string(argv[1]) == "SharedService")
                 {
-                    TestServiceInstanceT &svc = TestServiceInstanceT::GetInstance();
-                    Test2ServiceInstanceT &svc2 = Test2ServiceInstanceT::GetInstance();
+                    TestServiceInstanceT &svc = TestServiceInstanceT::Get();
+                    Test2ServiceInstanceT &svc2 = Test2ServiceInstanceT::Get();
 #ifdef __cpp_lambdas
                     svc.OnStart([&svc]() {
                            svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);

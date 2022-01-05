@@ -1234,7 +1234,7 @@ template <class _StringType = StringT> class ServiceT
         }
 
       public:
-        static Instance &GetInstance()
+        static Instance &Get()
         {
             static Instance service;
             return service;
@@ -1369,7 +1369,7 @@ template <class _StringType = StringT> class ServiceT
         static DWORD WINAPI ServiceHandlerEx_(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
         {
             DWORD result = NO_ERROR;
-            Instance &service = GetInstance();
+            Instance &service = Get();
 
             UNREFERENCED_PARAMETER(lpContext);
 
@@ -1488,7 +1488,7 @@ template <class _StringType = StringT> class ServiceT
         static VOID WINAPI ServiceMain_(DWORD dwNumServicesArgs, CharType **lpServiceArgVectors)
         {
             DWORD errorCode;
-            Instance &instance = GetInstance();
+            Instance &instance = Get();
 
             instance.hCleanupCompleteEvent_ = CreateEvent(NULL, TRUE, FALSE, NULL);
             if (instance.hCleanupCompleteEvent_ == NULL)
@@ -1721,13 +1721,13 @@ template <class _StringType = StringT> class ServiceT
     template <class... InstanceType> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType::CharType *)(InstanceType::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType::CharType *)(InstanceType::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
             {NULL, NULL}};
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
-    template <class... InstanceType> static bool Run(InstanceType &...instance)
+    template <class... InstanceType> static bool Run(InstanceType &... instance)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType::CharType *)instance.service_.Name().c_str(),
@@ -1740,9 +1740,9 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)(InstanceType0::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)(InstanceType1::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
             {NULL, NULL}};
 
@@ -1751,11 +1751,11 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1, typename InstanceType2> static bool Run()
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
-            {(typename InstanceType0::CharType *)(InstanceType0::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType0::CharType *)(InstanceType0::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
-            {(typename InstanceType1::CharType *)(InstanceType1::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType1::CharType *)(InstanceType1::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType1::CharType>::Type)InstanceType1::ServiceMain_},
-            {(typename InstanceType2::CharType *)(InstanceType2::GetInstance()).service_.Name().c_str(),
+            {(typename InstanceType2::CharType *)(InstanceType2::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType2::CharType>::Type)InstanceType2::ServiceMain_},
             {NULL, NULL}};
 

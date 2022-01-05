@@ -96,31 +96,40 @@ TEST(ServiceTest, DependentServices)
     {
         std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
         for (auto &dep2 : dep.Dependencies())
-#else
+            std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
+                      << dep2.BinaryPathName() << '\n';
+    }
+#elif defined(_MSC_VER)
+    // clang-format off
     for each (const System::Service &dep in service.Dependencies())
     {
         std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
         for each (const System::Service &dep2 in dep.Dependencies())
-#endif
             std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
                       << dep2.BinaryPathName() << '\n';
     }
-
+        // clang-format on
+#endif
     std::cout << "\n\n-----------------DependentServices-------------------\n";
 #if defined(__cpp_range_based_for)
     for (auto &dep : service.DependentServices().Get({}))
     {
         std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
         for (auto &dep2 : dep.DependentServices().Get({}))
-#else
-    for each (const System::Service &dep in service.DependentServices().Get(std::list<System::Service>()))
-    {
-        std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
-        for each (const System::Service &dep2 in dep.DependentServices().Get(std::list<System::Service>()))
-#endif
             std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
                       << dep2.BinaryPathName() << '\n';
     }
+#elif defined(_MSC_VER)
+    // clang-format off
+    for each (const System::Service &dep in service.DependentServices().Get(std::list<System::Service>()))
+    {
+            std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+        for each (const System::Service &dep2 in dep.DependentServices().Get(std::list<System::Service>()))
+            std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
+                      << dep2.BinaryPathName() << '\n';
+    }
+#endif
+    // clang-format on
 }
 
 #include "TestService.h"
@@ -145,7 +154,7 @@ typedef Win32Ex::System::ServiceT<>::Instance<Test2ServiceT> Test2ServiceInstanc
 #ifndef TWIN32EX_USE_SERVICE_SIMULATE_MODE
 TEST(ServiceTest, InvalidServiceRun)
 {
-    EXPECT_FALSE(TestServiceInstance::GetInstance().Run());
+    EXPECT_FALSE(TestServiceInstance::Get().Run());
 }
 #else
 void OnTestSvcStart()
@@ -159,12 +168,12 @@ void OnTest2SvcStart()
 
 TEST(ServiceTest, SimulateMode)
 {
-    EXPECT_TRUE(TestServiceInstance::GetInstance().OnStart(OnTestSvcStart).Run());
+    EXPECT_TRUE(TestServiceInstance::Get().OnStart(OnTestSvcStart).Run());
 }
 
 TEST(ServiceTest, SimulateModeW)
 {
-    EXPECT_TRUE(TestServiceInstanceW::GetInstance().OnStart(OnTest2SvcStart).Run());
+    EXPECT_TRUE(TestServiceInstanceW::Get().OnStart(OnTest2SvcStart).Run());
 }
 #endif
 

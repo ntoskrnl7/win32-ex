@@ -419,7 +419,7 @@ Win32 API Experimental(or Extension) features
 
     int main()
     {
-        Service::Instance<SimpleService>::GetInstance()
+        Service::Instance<SimpleService>::Get()
             .OnStart([]() {
                 // TODO
             })
@@ -475,7 +475,7 @@ Win32 API Experimental(or Extension) features
 
     int main(int argc, char *argv[])
     {
-        TestServiceInstance &svc = Win32Ex::System::Service::Instance<TestService>::GetInstance();
+        TestServiceInstance &svc = TestServiceInstance::Get();
         svc.OnStart([&svc]() {
               svc.ClearControlsAccepted(SERVICE_ACCEPT_STOP);
               // TODO
@@ -533,8 +533,8 @@ Win32 API Experimental(or Extension) features
 
     int main()
     {
-      TestServiceInstance &svc = TestService::GetInstance();
-      Test2ServiceInstance &svc2 = Test2Service::GetInstance();
+      TestServiceInstance &svc = TestService::Get();
+      Test2ServiceInstance &svc2 = Test2Service::Get();
 
       // ...
 
