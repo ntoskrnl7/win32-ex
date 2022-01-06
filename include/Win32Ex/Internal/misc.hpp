@@ -43,6 +43,9 @@ Environment:
 #include <climits>
 #include <windows.h>
 
+#include <list>
+#include <memory>
+
 #define WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T
 #if defined(_MSC_VER) && _MSC_VER < 1800
 #undef WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T
@@ -50,6 +53,27 @@ Environment:
 
 namespace Win32Ex
 {
+#if defined(_MSC_VER) && _MSC_VER < 1600
+#define _STD_NS_ std::tr1
+#else
+#define _STD_NS_ std
+#endif
+
+template <typename T> struct SharedPtr : public _STD_NS_::shared_ptr<T>
+{
+    typedef T Type;
+
+  public:
+    SharedPtr()
+    {
+    }
+    SharedPtr(T *Ptr) : _STD_NS_::shared_ptr<T>(Ptr)
+    {
+    }
+};
+
+#undef _STD_NS_
+
 class Duration
 {
   public:
@@ -139,7 +163,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  
+    }
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
@@ -168,7 +192,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  
+    }
 
 #define WIN32EX_MOVE_ALWAYS_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \
@@ -189,7 +213,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  
+    }
 #define WIN32EX_MOVE_ALWAYS_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
   public:                                                                                                              \
     _CLASS(_CLASS &&Other) : _INIT_STMT                                                                                \
@@ -209,7 +233,7 @@ class WaitableObject
     {                                                                                                                  \
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
-    }                                                                                                                  
+    }
 #else
 #define WIN32EX_MOVE_ALWAYS_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \
@@ -309,6 +333,16 @@ typedef std::basic_string<TCHAR> StringT;
 
 namespace Convert
 {
+template <typename T, typename _CharType> void MultiSzToList(const _CharType *MultiSz, std::list<T> &list)
+{
+    while (MultiSz[0])
+    {
+        std::basic_string<_CharType> str = MultiSz;
+        list.push_back(T(str));
+        MultiSz += list.size() + 1;
+    }
+}
+
 namespace String
 {
 inline std::wstring operator!(const std::string &rhs)
