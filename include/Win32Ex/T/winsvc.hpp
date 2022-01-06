@@ -38,8 +38,11 @@ namespace Win32Ex
 {
 WIN32EX_API_DEFINE_STRUCT_T(QUERY_SERVICE_CONFIG);
 WIN32EX_API_DEFINE_STRUCT_T(SERVICE_DESCRIPTION);
+WIN32EX_API_DEFINE_STRUCT_T(SERVICE_FAILURE_ACTIONS);
+WIN32EX_API_DEFINE_STRUCT_T(SERVICE_REQUIRED_PRIVILEGES_INFO);
 WIN32EX_API_DEFINE_STRUCT_T(SERVICE_TABLE_ENTRY);
 WIN32EX_API_DEFINE_STRUCT_T(ENUM_SERVICE_STATUS);
+WIN32EX_API_DEFINE_STRUCT_T(ENUM_SERVICE_STATUS_PROCESS);
 
 #ifdef SERVICE_MAIN_FUNCTION
 #undef SERVICE_MAIN_FUNCTION
@@ -136,6 +139,23 @@ inline SC_HANDLE WINAPI OpenServiceT<WCHAR>(_In_ SC_HANDLE hSCManager, _In_ PCWS
 }
 
 template <typename _CharType>
+inline BOOL WINAPI QueryServiceConfig2T(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _Out_ LPBYTE lpBuffer,
+                                        _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded);
+template <>
+inline BOOL WINAPI QueryServiceConfig2T<CHAR>(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _Out_ LPBYTE lpBuffer,
+                                              _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded)
+{
+    return QueryServiceConfig2A(hService, dwInfoLevel, lpBuffer, cbBufSize, pcbBytesNeeded);
+}
+
+template <>
+inline BOOL WINAPI QueryServiceConfig2T<WCHAR>(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _Out_ LPBYTE lpBuffer,
+                                               _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded)
+{
+    return QueryServiceConfig2W(hService, dwInfoLevel, lpBuffer, cbBufSize, pcbBytesNeeded);
+}
+
+template <typename _CharType>
 inline BOOL WINAPI ChangeServiceConfig2T(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _In_opt_ LPVOID lpInfo);
 
 template <>
@@ -168,6 +188,35 @@ inline BOOL WINAPI QueryServiceConfigT<WCHAR>(_In_ SC_HANDLE hService,
                                               _Out_ LPDWORD pcbBytesNeeded)
 {
     return QueryServiceConfigW(hService, lpServiceConfig, cbBufSize, pcbBytesNeeded);
+}
+
+template <typename _CharType>
+inline BOOL WINAPI EnumServicesStatusExT(_In_ SC_HANDLE hSCManager, _In_ SC_ENUM_TYPE InfoLevel,
+                                         _In_ DWORD dwServiceType, _In_ DWORD dwServiceState, _Out_ LPBYTE lpServices,
+                                         _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded,
+                                         _Out_ LPDWORD lpServicesReturned, _Inout_opt_ LPDWORD lpResumeHandle,
+                                         _In_opt_ CONST _CharType *pszGroupName);
+
+template <>
+inline BOOL WINAPI EnumServicesStatusExT<CHAR>(_In_ SC_HANDLE hSCManager, _In_ SC_ENUM_TYPE InfoLevel,
+                                               _In_ DWORD dwServiceType, _In_ DWORD dwServiceState,
+                                               _Out_ LPBYTE lpServices, _In_ DWORD cbBufSize,
+                                               _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned,
+                                               _Inout_opt_ LPDWORD lpResumeHandle, _In_opt_ LPCSTR pszGroupName)
+{
+    return EnumServicesStatusExA(hSCManager, InfoLevel, dwServiceType, dwServiceState, lpServices, cbBufSize,
+                                 pcbBytesNeeded, lpServicesReturned, lpResumeHandle, pszGroupName);
+}
+
+template <>
+inline BOOL WINAPI EnumServicesStatusExT<WCHAR>(_In_ SC_HANDLE hSCManager, _In_ SC_ENUM_TYPE InfoLevel,
+                                                _In_ DWORD dwServiceType, _In_ DWORD dwServiceState,
+                                                _Out_ LPBYTE lpServices, _In_ DWORD cbBufSize,
+                                                _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned,
+                                                _Inout_opt_ LPDWORD lpResumeHandle, _In_opt_ LPCWSTR pszGroupName)
+{
+    return EnumServicesStatusExW(hSCManager, InfoLevel, dwServiceType, dwServiceState, lpServices, cbBufSize,
+                                 pcbBytesNeeded, lpServicesReturned, lpResumeHandle, pszGroupName);
 }
 
 template <typename _CharType>

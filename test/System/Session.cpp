@@ -80,10 +80,12 @@ TEST(SessionTest, SessionNewProcess)
     {
         auto process = session.NewProcess(Win32Ex::System::UserAccount, "notepad");
 #else
+    // clang-format off
     for each (Win32Ex::System::Session session in Win32Ex::System::Session::All())
     {
         Win32Ex::Result<Win32Ex::System::Session::RunnableProcessPtr> process =
             session.NewProcess(Win32Ex::System::UserAccount, "notepad");
+            // clang-format on
 #endif
         if (process.IsOk())
         {
@@ -106,10 +108,12 @@ TEST(SessionTest, SessionWNewProcess)
     {
         auto process = session.NewProcess(Win32Ex::System::UserAccount, L"notepad");
 #else
+    // clang-format off
     for each (Win32Ex::System::SessionW session in Win32Ex::System::SessionW::All())
     {
         Win32Ex::Result<Win32Ex::System::SessionW::RunnableProcessPtr> process =
             session.NewProcess(Win32Ex::System::UserAccount, L"notepad");
+            // clang-format on
 #endif
         if (process.IsOk())
         {
@@ -132,10 +136,12 @@ TEST(SessionTest, SessionTNewProcess)
     {
         auto process = session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
 #else
+    // clang-format off
     for each (Win32Ex::System::SessionT<> session in Win32Ex::System::SessionT<>::All())
     {
         Win32Ex::Result<Win32Ex::System::SessionT<>::RunnableProcessPtr> process =
             session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
+            // clang-format on
 #endif
         if (process.IsOk())
         {

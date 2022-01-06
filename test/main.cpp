@@ -26,6 +26,9 @@ typedef Win32Ex::System::ServiceT<>::Instance<Test2ServiceT> Test2ServiceInstanc
 
 int main(int argc, char *argv[])
 {
+    std::wcout.imbue(std::locale(""));
+    setlocale(LC_ALL, "");
+
     if (argc == 1)
     {
         ::testing::InitGoogleTest(&argc, argv);
@@ -37,25 +40,10 @@ int main(int argc, char *argv[])
         if (argc == 2)
         {
 #ifdef __cpp_lambdas
-            TestService.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                if (serviceHandle == NULL)
-                    return false;
-                SERVICE_STATUS ss = {0};
-                BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                CloseServiceHandle(serviceHandle);
-                return (result == TRUE);
-            });
+            TestService.SetAcceptStop([]() -> bool { return TestService.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP); });
 
-            Test2Service.SetAcceptStop([]() -> bool {
-                SC_HANDLE serviceHandle = Test2Service.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                if (serviceHandle == NULL)
-                    return false;
-                SERVICE_STATUS ss = {0};
-                BOOL result = ControlService(serviceHandle, TEST2_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                CloseServiceHandle(serviceHandle);
-                return (result == TRUE);
-            });
+            Test2Service.SetAcceptStop(
+                []() -> bool { return Test2Service.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP); });
 #endif
             if (std::string(argv[1]) == TEST_SVC_NAME)
             {
@@ -150,25 +138,11 @@ int main(int argc, char *argv[])
             if (argv[2][0] == 'W')
             {
 #ifdef __cpp_lambdas
-                TestServiceW.SetAcceptStop([]() -> bool {
-                    SC_HANDLE serviceHandle = TestServiceW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                    if (serviceHandle == NULL)
-                        return false;
-                    SERVICE_STATUS ss = {0};
-                    BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                    CloseServiceHandle(serviceHandle);
-                    return (result == TRUE);
-                });
+                TestServiceW.SetAcceptStop(
+                    []() -> bool { return TestServiceW.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP); });
 
-                Test2ServiceW.SetAcceptStop([]() -> bool {
-                    SC_HANDLE serviceHandle = Test2ServiceW.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                    if (serviceHandle == NULL)
-                        return false;
-                    SERVICE_STATUS ss = {0};
-                    BOOL result = ControlService(serviceHandle, TEST2_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                    CloseServiceHandle(serviceHandle);
-                    return (result == TRUE);
-                });
+                Test2ServiceW.SetAcceptStop(
+                    []() -> bool { return Test2ServiceW.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP); });
 #endif
                 if (std::string(argv[1]) == TEST_SVC_NAME)
                 {
@@ -263,25 +237,11 @@ int main(int argc, char *argv[])
             else if (argv[2][0] == 'T')
             {
 #ifdef __cpp_lambdas
-                TestServiceT.SetAcceptStop([]() -> bool {
-                    SC_HANDLE serviceHandle = TestServiceT.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                    if (serviceHandle == NULL)
-                        return false;
-                    SERVICE_STATUS ss = {0};
-                    BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                    CloseServiceHandle(serviceHandle);
-                    return (result == TRUE);
-                });
+                TestServiceT.SetAcceptStop(
+                    []() -> bool { return TestServiceT.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP); });
 
-                Test2ServiceT.SetAcceptStop([]() -> bool {
-                    SC_HANDLE serviceHandle = Test2ServiceT.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-                    if (serviceHandle == NULL)
-                        return false;
-                    SERVICE_STATUS ss = {0};
-                    BOOL result = ControlService(serviceHandle, TEST2_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-                    CloseServiceHandle(serviceHandle);
-                    return (result == TRUE);
-                });
+                Test2ServiceT.SetAcceptStop(
+                    []() -> bool { return Test2ServiceT.Control(TEST2_SVC_USER_CONTROL_ACCEPT_STOP); });
 #endif
                 if (std::string(argv[1]) == TEST_SVC_NAME)
                 {

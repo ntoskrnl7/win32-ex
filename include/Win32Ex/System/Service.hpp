@@ -50,11 +50,168 @@ Environment:
 
 #include "../Optional.hpp"
 #include "../Result.hpp"
+#include "../Security/Privilege.hpp"
 #include "../T/winsvc.hpp"
 #include "../T/winuser.hpp"
 #include "Process.hpp"
 
-#ifdef _INC__MINGW_H
+#if !defined(WIN32EX_DO_NOT_INCLUDE_MISSING_WINSVC_HEADER_DEFINITIONS)
+#if defined(_WIN32)
+#if !defined(SERVICE_CONTROL_PRESHUTDOWN)
+#define SERVICE_CONTROL_PRESHUTDOWN 0x0000000F
+#endif // !defined(SERVICE_CONTROL_PRESHUTDOWN)
+
+#if !defined(SERVICE_CONTROL_TRIGGEREVENT)
+#define SERVICE_CONTROL_TRIGGEREVENT 0x00000020
+#endif // !defined(SERVICE_CONTROL_TRIGGEREVENT)
+
+#if !defined(SERVICE_CONFIG_PRESHUTDOWN_INFO)
+#define SERVICE_CONFIG_PRESHUTDOWN_INFO 7
+//
+// Service preshutdown timeout setting
+//
+typedef struct _SERVICE_PRESHUTDOWN_INFO
+{
+    DWORD dwPreshutdownTimeout; // Timeout in msecs
+} SERVICE_PRESHUTDOWN_INFO, *LPSERVICE_PRESHUTDOWN_INFO;
+#endif // !defined(SERVICE_CONFIG_PRESHUTDOWN_INFO)
+
+#if !defined(SERVICE_CONTROL_TIMECHANGE)
+#define SERVICE_CONTROL_TIMECHANGE 0x00000010
+//
+// Time change information
+//
+typedef struct _SERVICE_TIMECHANGE_INFO
+{
+    LARGE_INTEGER liNewTime; // New time
+    LARGE_INTEGER liOldTime; // Old time
+} SERVICE_TIMECHANGE_INFO, *PSERVICE_TIMECHANGE_INFO;
+#endif // !defined(SERVICE_CONTROL_TIMECHANGE)
+
+#if defined(SERVICE_CONFIG_TRIGGER_INFO)
+#if !defined(SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT)
+#define SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT 6
+#endif // !defined(SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT)
+#if !defined(SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE)
+#define SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE 7
+#endif // !defined(SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE)
+#if !defined(SERVICE_TRIGGER_TYPE_AGGREGATE)
+#define SERVICE_TRIGGER_TYPE_AGGREGATE 30
+#endif // !defined(SERVICE_TRIGGER_TYPE_AGGREGATE)
+#else  // !defined(SERVICE_CONFIG_TRIGGER_INFO)
+#define SERVICE_CONFIG_TRIGGER_INFO 8
+
+//
+// Service trigger types
+//
+#define SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL 1
+#define SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY 2
+#define SERVICE_TRIGGER_TYPE_DOMAIN_JOIN 3
+#define SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT 4
+#define SERVICE_TRIGGER_TYPE_GROUP_POLICY 5
+#define SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT 6
+#define SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE 7
+#define SERVICE_TRIGGER_TYPE_CUSTOM 20
+#define SERVICE_TRIGGER_TYPE_AGGREGATE 30
+
+//
+// Service trigger actions
+//
+#define SERVICE_TRIGGER_ACTION_SERVICE_START 1
+#define SERVICE_TRIGGER_ACTION_SERVICE_STOP 2
+
+//
+// argv[1] passed into ServiceMain of trigger started services
+//
+#define SERVICE_TRIGGER_STARTED_ARGUMENT L"TriggerStarted"
+
+//
+//  Service trigger data item
+//
+typedef struct _SERVICE_TRIGGER_SPECIFIC_DATA_ITEM
+{
+    DWORD dwDataType; // Data type -- one of SERVICE_TRIGGER_DATA_TYPE_* constants
+#ifdef __midl
+    [range(0, 1024)]
+#endif
+        DWORD cbData; // Size of trigger specific data
+#ifdef __midl
+    [size_is(cbData)]
+#endif
+        PBYTE pData; // Trigger specific data
+} SERVICE_TRIGGER_SPECIFIC_DATA_ITEM, *PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+
+//
+//  Trigger-specific information
+//
+typedef struct _SERVICE_TRIGGER
+{
+    DWORD dwTriggerType;   // One of SERVICE_TRIGGER_TYPE_* constants
+    DWORD dwAction;        // One of SERVICE_TRIGGER_ACTION_* constants
+    GUID *pTriggerSubtype; // Provider GUID if the trigger type is SERVICE_TRIGGER_TYPE_CUSTOM
+                           // Device class interface GUID if the trigger type is
+                           // SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL
+                           // Aggregate identifier GUID if type is aggregate.
+#ifdef __midl
+    [range(0, 64)]
+#endif
+        DWORD cDataItems; // Number of data items in pDataItems array
+#ifdef __midl
+    [size_is(cDataItems)]
+#endif
+        PSERVICE_TRIGGER_SPECIFIC_DATA_ITEM pDataItems; // Trigger specific data
+} SERVICE_TRIGGER, *PSERVICE_TRIGGER;
+
+//
+// Service trigger information
+//
+typedef struct _SERVICE_TRIGGER_INFO
+{
+#ifdef __midl
+    [range(0, 64)]
+#endif
+        DWORD cTriggers; // Number of triggers in the pTriggers array
+#ifdef __midl
+    [size_is(cTriggers)]
+#endif
+        PSERVICE_TRIGGER pTriggers; // Array of triggers
+    PBYTE pReserved;                // Reserved, must be NULL
+} SERVICE_TRIGGER_INFO, *PSERVICE_TRIGGER_INFO;
+#endif // !defined(SERVICE_CONFIG_TRIGGER_INFO)
+
+#if !defined(SERVICE_CONFIG_PREFERRED_NODE)
+#define SERVICE_CONFIG_PREFERRED_NODE 9
+//
+// Preferred node information
+//
+typedef struct _SERVICE_PREFERRED_NODE_INFO
+{
+    USHORT usPreferredNode; // Preferred node
+    BOOLEAN fDelete;        // Delete the preferred node setting
+} SERVICE_PREFERRED_NODE_INFO, *LPSERVICE_PREFERRED_NODE_INFO;
+#endif // !defined(SERVICE_CONFIG_PREFERRED_NODE)
+
+#if !defined(SERVICE_CONFIG_LAUNCH_PROTECTED)
+#define SERVICE_CONFIG_LAUNCH_PROTECTED 12
+
+//
+// Service LaunchProtected types supported
+//
+#define SERVICE_LAUNCH_PROTECTED_NONE 0
+#define SERVICE_LAUNCH_PROTECTED_WINDOWS 1
+#define SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT 2
+#define SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT 3
+
+//
+// Service launch protected setting
+//
+typedef struct _SERVICE_LAUNCH_PROTECTED_INFO
+{
+    DWORD dwLaunchProtected; // Service launch protected
+} SERVICE_LAUNCH_PROTECTED_INFO, *PSERVICE_LAUNCH_PROTECTED_INFO;
+#endif // !defined(SERVICE_CONFIG_LAUNCH_PROTECTED)
+#endif // defined(_WIN32)
+#if defined(_INC__MINGW_H)
 //
 // winsvc.h
 //
@@ -120,7 +277,52 @@ typedef struct _SERVICE_TIMECHANGE_INFO
     LARGE_INTEGER liNewTime; // New time
     LARGE_INTEGER liOldTime; // Old time
 } SERVICE_TIMECHANGE_INFO, *PSERVICE_TIMECHANGE_INFO;
-#endif
+
+//
+// Preferred node information
+//
+typedef struct _SERVICE_PREFERRED_NODE_INFO
+{
+    USHORT usPreferredNode; // Preferred node
+    BOOLEAN fDelete;        // Delete the preferred node setting
+} SERVICE_PREFERRED_NODE_INFO, *LPSERVICE_PREFERRED_NODE_INFO;
+
+//
+// Service LaunchProtected types supported
+//
+#define SERVICE_LAUNCH_PROTECTED_NONE 0
+#define SERVICE_LAUNCH_PROTECTED_WINDOWS 1
+#define SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT 2
+#define SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT 3
+
+//
+// Service launch protected setting
+//
+typedef struct _SERVICE_LAUNCH_PROTECTED_INFO
+{
+    DWORD dwLaunchProtected; // Service launch protected
+} SERVICE_LAUNCH_PROTECTED_INFO, *PSERVICE_LAUNCH_PROTECTED_INFO;
+
+//
+// Service trigger actions
+//
+#define SERVICE_TRIGGER_ACTION_SERVICE_START 1
+#define SERVICE_TRIGGER_ACTION_SERVICE_STOP 2
+
+//
+// Service trigger types
+//
+#define SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL 1
+#define SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY 2
+#define SERVICE_TRIGGER_TYPE_DOMAIN_JOIN 3
+#define SERVICE_TRIGGER_TYPE_FIREWALL_PORT_EVENT 4
+#define SERVICE_TRIGGER_TYPE_GROUP_POLICY 5
+#define SERVICE_TRIGGER_TYPE_NETWORK_ENDPOINT 6
+#define SERVICE_TRIGGER_TYPE_CUSTOM_SYSTEM_STATE_CHANGE 7
+#define SERVICE_TRIGGER_TYPE_CUSTOM 20
+#define SERVICE_TRIGGER_TYPE_AGGREGATE 30
+#endif // defined(_INC__MINGW_H)
+#endif // defined(WIN32EX_DO_NOT_INCLUDE_MISSING_WINSVC_HEADER_DEFINITIONS)
 
 #include <dbt.h>
 #include <shellapi.h>
@@ -139,6 +341,8 @@ namespace Win32Ex
 namespace System
 {
 namespace Details
+{
+namespace Service
 {
 template <typename T> inline HANDLE CreateStopEvent(const T &Name);
 
@@ -163,6 +367,75 @@ template <> inline HANDLE OpenStopEvent(const StringW &Name)
 {
     return OpenEventW(EVENT_ALL_ACCESS, FALSE, (Name + L"StopEvent").c_str());
 }
+
+class Handle
+{
+  public:
+    Handle(SC_HANDLE hSCManager = OpenSCManagerW(NULL, NULL, SC_MANAGER_CONNECT))
+        : hSCManager(hSCManager), hService(NULL)
+    {
+    }
+
+    ~Handle()
+    {
+        Close();
+    }
+
+    template <typename CharType> bool Open(CONST CharType *lpServiceName, DWORD dwDesiredAccess = SERVICE_QUERY_CONFIG)
+    {
+        if (hSCManager == NULL)
+            hSCManager = OpenSCManagerW(NULL, NULL, SC_MANAGER_CONNECT);
+
+        if (hSCManager == NULL)
+            return false;
+
+        if (hService)
+            CloseServiceHandle(hService);
+        hService = OpenServiceT<CharType>(hSCManager, lpServiceName, dwDesiredAccess);
+        return hService != NULL;
+    }
+
+    void Close()
+    {
+        if (hService)
+        {
+            CloseServiceHandle(hService);
+            hService = NULL;
+        }
+        if (hSCManager)
+        {
+            CloseServiceHandle(hSCManager);
+            hSCManager = NULL;
+        }
+    }
+
+    bool Attach(SC_HANDLE ServiceHandle)
+    {
+        if (ServiceHandle == NULL)
+            return false;
+
+        if (hService)
+            CloseServiceHandle(hService);
+
+        hService = ServiceHandle;
+        return true;
+    }
+
+    operator SC_HANDLE() const
+    {
+        return hService;
+    }
+
+    bool IsValid() const
+    {
+        return hSCManager != NULL;
+    }
+
+  public:
+    SC_HANDLE hSCManager;
+    SC_HANDLE hService;
+};
+} // namespace Service
 } // namespace Details
 
 inline bool IsServiceMode()
@@ -195,25 +468,6 @@ template <class _StringType = StringT> class ServiceT
     typedef std::function<bool()> AcceptStopCallback;
     typedef std::function<bool()> AcceptPauseCallback;
 
-    typedef struct _SC_HANDLES
-    {
-        _SC_HANDLES(SC_HANDLE hSCManager = NULL) : hSCManager(hSCManager), hService(NULL)
-        {
-        }
-
-        ~_SC_HANDLES()
-        {
-            if (hService)
-                CloseServiceHandle(hService);
-            if (hSCManager)
-                CloseServiceHandle(hSCManager);
-        }
-
-        SC_HANDLE hSCManager;
-        SC_HANDLE hService;
-
-    } SC_HANDLES, *PSC_HANDLES;
-
     ServiceT(const StringType &Name, const Optional<const StringType &> &DisplayName = None(),
              const Optional<const StringType &> &Description = None())
         : name_(Name)
@@ -224,8 +478,11 @@ template <class _StringType = StringT> class ServiceT
         if (Description.IsSome())
             description_ = Description;
 
-        QUERY_SERVICE_CONFIGT<CharType> *config = QueryConfig_();
+        Details::Service::Handle handle;
+        if (!handle.Open<CharType>(name_.c_str()))
+            return;
 
+        SharedPtr<QUERY_SERVICE_CONFIGT<CharType>> config = QueryConfig_(handle);
         if (config)
         {
             serviceType_ = config->dwServiceType;
@@ -236,21 +493,15 @@ template <class _StringType = StringT> class ServiceT
                 loadOrderGroup_ = config->lpLoadOrderGroup;
             TagId_ = config->dwTagId;
             if (config->lpDependencies)
-            {
-                const CharType *dep = config->lpDependencies;
-                while (dep[0])
-                {
-                    StringType name = dep;
-                    dependencies_.push_back(ServiceT(dep));
-                    dep += name.size() + 1;
-                }
-            }
+                Convert::MultiSzToList<ServiceT>(config->lpDependencies, dependencies_);
             if (config->lpServiceStartName)
                 serviceStartName_ = config->lpServiceStartName;
             displayName_ = config->lpDisplayName;
-
-            FreeConfig_(config);
         }
+
+        SharedPtr<SERVICE_DESCRIPTIONT<CharType>> desc = QueryConfig2_<SERVICE_DESCRIPTIONT<CharType>>(handle);
+        if (desc && desc->lpDescription)
+            description_ = desc->lpDescription;
     }
 
     bool Install(DWORD ServiceType = SERVICE_WIN32_OWN_PROCESS, DWORD StartType = SERVICE_AUTO_START,
@@ -262,8 +513,8 @@ template <class _StringType = StringT> class ServiceT
                  const Optional<const StringType &> ServiceStartName = None(),
                  const Optional<const StringType &> Password = None())
     {
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CREATE_SERVICE));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CREATE_SERVICE));
+        if (handle.hSCManager == NULL)
             return false;
 
         if (BinaryPathName.IsSome())
@@ -285,14 +536,12 @@ template <class _StringType = StringT> class ServiceT
         }
         dependencies.push_back(0);
 
-        handles.hService = CreateServiceT<CharType>(
-            handles.hSCManager, name_.c_str(), displayName_.empty() ? NULL : displayName_.c_str(),
-            SERVICE_CHANGE_CONFIG, ServiceType, StartType, ErrorControl, binaryPathName_.c_str(),
-            loadOrderGroup_.empty() ? NULL : loadOrderGroup_.c_str(), TagId,
-            dependencies.empty() ? NULL : dependencies.c_str(),
-            ServiceStartName.IsSome() ? ServiceStartName.Get() : NULL, Password.IsSome() ? Password.Get() : NULL);
-
-        if (handles.hService == NULL)
+        if (!handle.Attach(CreateServiceT<CharType>(
+                handle.hSCManager, name_.c_str(), displayName_.empty() ? NULL : displayName_.c_str(),
+                SERVICE_CHANGE_CONFIG, ServiceType, StartType, ErrorControl, binaryPathName_.c_str(),
+                loadOrderGroup_.empty() ? NULL : loadOrderGroup_.c_str(), TagId,
+                dependencies.empty() ? NULL : dependencies.c_str(),
+                ServiceStartName.IsSome() ? ServiceStartName.Get() : NULL, Password.IsSome() ? Password.Get() : NULL)))
             return false;
 
         serviceType_ = ServiceType;
@@ -306,7 +555,7 @@ template <class _StringType = StringT> class ServiceT
         {
             SERVICE_DESCRIPTIONT<CharType> desc;
             desc.lpDescription = &description_[0];
-            ChangeServiceConfig2T<CharType>(handles.hService, SERVICE_CONFIG_DESCRIPTION, &desc);
+            ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_DESCRIPTION, &desc);
         }
 
         return true;
@@ -314,26 +563,24 @@ template <class _StringType = StringT> class ServiceT
 
     bool Uninstall(Duration Timeout = Duration::Second(30))
     {
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_ALL_ACCESS));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_ALL_ACCESS));
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), DELETE);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), DELETE))
             return false;
 
         SERVICE_STATUS ss = {0};
         if (QueryServiceStatus(ss) && (ss.dwCurrentState != SERVICE_STOPPED) && (!Stop(Timeout)))
             return false;
 
-        if (DeleteService(handles.hService))
+        if (DeleteService(handle))
         {
-            CloseServiceHandle(handles.hService);
-            handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), DELETE);
-            if (handles.hService == NULL)
+            handle.Close();
+            if (!handle.Open(name_.c_str(), DELETE))
                 return true;
 
-            if (DeleteService(handles.hService))
+            if (DeleteService(handle.hService))
                 return true;
 
             return GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE;
@@ -350,16 +597,14 @@ template <class _StringType = StringT> class ServiceT
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return false;
 
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(),
-                                                  SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL))
             return false;
 
-        return ControlService(handles.hService, ControlCode, &ss) == TRUE;
+        return ControlService(handle.hService, ControlCode, &ss) == TRUE;
     }
 
     bool Start(Duration Timeout = Duration::Second(30))
@@ -371,16 +616,14 @@ template <class _StringType = StringT> class ServiceT
         if (ss.dwCurrentState == SERVICE_RUNNING)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_START))
             return false;
 
-        if (!StartServiceA(handles.hService, 0, NULL))
+        if (!StartServiceA(handle.hService, 0, NULL))
             return false;
 
         return Wait(SERVICE_RUNNING, Timeout);
@@ -388,7 +631,7 @@ template <class _StringType = StringT> class ServiceT
 
     bool Stop(Duration Timeout = Duration::Second(30))
     {
-        HANDLE stopEvent = Details::OpenStopEvent<StringType>(name_);
+        HANDLE stopEvent = Details::Service::OpenStopEvent<StringType>(name_);
         if (stopEvent)
         {
             BOOL ret = SetEvent(stopEvent);
@@ -403,19 +646,17 @@ template <class _StringType = StringT> class ServiceT
         if (ss.dwCurrentState == SERVICE_STOPPED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_STOP))
             return false;
 
         if (acceptStopCallback_ && (!acceptStopCallback_()))
             return false;
 
-        if (!ControlService(handles.hService, SERVICE_CONTROL_STOP, &ss))
+        if (!ControlService(handle.hService, SERVICE_CONTROL_STOP, &ss))
             return false;
 
         return Wait(SERVICE_STOPPED, Timeout);
@@ -430,19 +671,17 @@ template <class _StringType = StringT> class ServiceT
         if (ss.dwCurrentState == SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE))
             return false;
 
         if (acceptPauseCallback_ && (!acceptPauseCallback_()))
             return false;
 
-        if (!ControlService(handles.hService, SERVICE_CONTROL_PAUSE, &ss))
+        if (!ControlService(handle.hService, SERVICE_CONTROL_PAUSE, &ss))
             return false;
 
         return Wait(SERVICE_PAUSED, Timeout);
@@ -457,16 +696,14 @@ template <class _StringType = StringT> class ServiceT
         if (ss.dwCurrentState != SERVICE_PAUSED)
             return true;
 
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_STATUS | SERVICE_PAUSE_CONTINUE))
             return false;
 
-        if (!ControlService(handles.hService, SERVICE_CONTROL_CONTINUE, &ss))
+        if (!ControlService(handle.hService, SERVICE_CONTROL_CONTINUE, &ss))
             return false;
 
         return Wait(SERVICE_RUNNING, Timeout);
@@ -507,64 +744,23 @@ template <class _StringType = StringT> class ServiceT
 
     bool Installed() const
     {
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle;
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService =
-            OpenServiceT<CharType>(handles.hSCManager, name_.c_str(),
-                                   SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS);
-        return (handles.hService != NULL);
-    }
-
-    const std::list<ServiceT> &Dependencies() const
-    {
-        return dependencies_;
-    }
-
-    Result<std::list<ServiceT>> DependentServices(DWORD ServiceState = SERVICE_STATE_ALL) const
-    {
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
-            return Error();
-
-        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_ENUMERATE_DEPENDENTS);
-
-        ENUM_SERVICE_STATUST<CharType> *dependencies = NULL;
-        DWORD bytesNeeded = 0;
-        DWORD count = 0;
-        if (EnumDependentServicesT<CharType>(handles.hService, ServiceState, dependencies, bytesNeeded, &bytesNeeded,
-                                             &count))
-            return std::list<ServiceT>();
-
-        dependencies = (ENUM_SERVICE_STATUST<CharType> *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
-
-        if (dependencies == NULL)
-            return Error();
-
-        if (!EnumDependentServicesT<CharType>(handles.hService, ServiceState, dependencies, bytesNeeded, &bytesNeeded,
-                                              &count))
-            return Error();
-
-        std::list<ServiceT> deps;
-        for (DWORD i = 0; i < count; ++i)
-            deps.push_back(ServiceT(dependencies[i].lpServiceName));
-
-        HeapFree(GetProcessHeap(), 0, dependencies);
-        return deps;
+        return handle.Open(name_.c_str(), SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS);
     }
 
     bool QueryServiceStatus(SERVICE_STATUS &ss) const
     {
-        SC_HANDLES handles(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
-        if (handles.hSCManager == NULL)
+        Details::Service::Handle handle(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT));
+        if (handle.hSCManager == NULL)
             return false;
 
-        handles.hService = OpenServiceT<CharType>(handles.hSCManager, name_.c_str(), SERVICE_INTERROGATE);
-        if (handles.hService == NULL)
+        if (!handle.Open(name_.c_str(), SERVICE_INTERROGATE))
             return false;
 
-        if (ControlService(handles.hService, SERVICE_CONTROL_INTERROGATE, &ss) == FALSE)
+        if (ControlService(handle.hService, SERVICE_CONTROL_INTERROGATE, &ss) == FALSE)
         {
             if (GetLastError() == ERROR_SERVICE_NOT_ACTIVE)
             {
@@ -576,6 +772,18 @@ template <class _StringType = StringT> class ServiceT
         }
 
         return true;
+    }
+
+    ServiceT &SetAcceptStop(AcceptStopCallback Callback)
+    {
+        acceptStopCallback_ = Callback;
+        return *this;
+    }
+
+    ServiceT &SetAcceptPause(AcceptPauseCallback Callback)
+    {
+        acceptPauseCallback_ = Callback;
+        return *this;
     }
 
     const StringType &Name() const
@@ -606,27 +814,134 @@ template <class _StringType = StringT> class ServiceT
         return binaryPathName_;
     }
 
-    SC_HANDLE ServiceHandle(DWORD DesiredAccess) const
+    const std::list<ServiceT> &Dependencies() const
     {
-        SC_HANDLE hSCManager = OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT);
-        if (hSCManager == NULL)
-            return NULL;
-        return OpenServiceT<CharType>(hSCManager, name_.c_str(), DesiredAccess);
+        return dependencies_;
     }
 
-    ServiceT &SetAcceptStop(AcceptStopCallback Callback)
+    Result<const std::list<StringType> &> RequiredPrivileges() const
     {
-        acceptStopCallback_ = Callback;
-        return *this;
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str()))
+            return Error();
+
+        SharedPtr<SERVICE_REQUIRED_PRIVILEGES_INFOT<CharType>> requredPrivsInfo =
+            QueryConfig2_<SERVICE_REQUIRED_PRIVILEGES_INFOT<CharType>>(handle.hService);
+        if (!requredPrivsInfo)
+            return Error();
+
+        if (requredPrivsInfo->pmszRequiredPrivileges != NULL && requiredPrivileges_.empty())
+            Convert::MultiSzToList<StringType>(requredPrivsInfo->pmszRequiredPrivileges, requiredPrivileges_);
+
+        return requiredPrivileges_;
     }
 
-    ServiceT &SetAcceptPause(AcceptPauseCallback Callback)
+    Result<std::list<ServiceT>> DependentServices(DWORD ServiceState = SERVICE_STATE_ALL) const
     {
-        acceptPauseCallback_ = Callback;
-        return *this;
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_ENUMERATE_DEPENDENTS))
+            return Error();
+
+        DWORD bytesNeeded = 0;
+        DWORD count = 0;
+        EnumDependentServicesT<CharType>(handle.hService, ServiceState, NULL, bytesNeeded, &bytesNeeded, &count);
+        if (GetLastError() != ERROR_MORE_DATA)
+            return Error();
+
+        SharedPtr<ENUM_SERVICE_STATUST<CharType>> dependencies((ENUM_SERVICE_STATUST<CharType> *)new BYTE[bytesNeeded]);
+        if (dependencies == NULL)
+            return Error();
+
+        if (!EnumDependentServicesT<CharType>(handle.hService, ServiceState, dependencies.get(), bytesNeeded,
+                                              &bytesNeeded, &count))
+            return Error();
+
+        std::list<ServiceT> deps;
+        for (DWORD i = 0; i < count; ++i)
+            deps.push_back(ServiceT(dependencies.get()[i].lpServiceName));
+
+        return deps;
     }
 
-    bool SetFailureActions(const SERVICE_FAILURE_ACTIONSA &FailureActions)
+    Result<SharedPtr<typename SERVICE_FAILURE_ACTIONST<CharType>::Type>> FailureActions() const
+    {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_CONFIG))
+            return Error();
+
+        SharedPtr<typename SERVICE_FAILURE_ACTIONST<CharType>::Type> failureActions =
+            QueryConfig2_<typename SERVICE_FAILURE_ACTIONST<CharType>::Type>(handle.hService);
+        if (!failureActions)
+            return Error();
+
+        return failureActions;
+    }
+
+    bool FailureActions(const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions)
+    {
+        Details::Service::Handle handle;
+        return FailureActions_(handle, FailureActions);
+    }
+
+    bool FailureActions(const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions, SERVICE_FAILURE_ACTIONS_FLAG Flags)
+    {
+        Details::Service::Handle handle;
+
+        if (!FailureActions_(handle, FailureActions))
+            return false;
+
+        return ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, (PVOID)&Flags) == TRUE;
+    }
+#if defined(SERVICE_CONFIG_TRIGGER_INFO)
+    Result<SharedPtr<SERVICE_TRIGGER_INFO>> Trigger() const
+    {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_CONFIG))
+            return Error();
+
+        SharedPtr<SERVICE_TRIGGER_INFO> info = QueryConfig2_<SERVICE_TRIGGER_INFO>(handle);
+        if (!info)
+            return Error();
+        return info;
+    }
+
+    bool Trigger(const SERVICE_TRIGGER_INFO &TriggerInfo)
+    {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_CHANGE_CONFIG))
+            return false;
+
+        return ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_TRIGGER_INFO, (PVOID)&TriggerInfo) == TRUE;
+    }
+#endif
+#ifdef SERVICE_CONFIG_PRESHUTDOWN_INFO
+    Result<SERVICE_PRESHUTDOWN_INFO> PreshutdownTimeout() const
+    {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_QUERY_CONFIG))
+            return Error();
+
+        SharedPtr<SERVICE_PRESHUTDOWN_INFO> info = QueryConfig2_<SERVICE_PRESHUTDOWN_INFO>(handle.hService);
+        if (!info)
+            return Error();
+
+        return *info;
+    }
+
+    bool PreshutdownTimeout(Duration PreshutdownTimeout)
+    {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_CHANGE_CONFIG))
+            return false;
+
+        SERVICE_PRESHUTDOWN_INFO info = {PreshutdownTimeout};
+        return ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_PRESHUTDOWN_INFO, &info) == TRUE;
+    }
+#endif
+
+  private:
+    bool FailureActions_(const Details::Service::Handle &Handle,
+                         const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions)
     {
         DWORD desireAccess = SERVICE_CHANGE_CONFIG;
         BOOL needToAcquireShutdownPrivilege = FALSE;
@@ -647,129 +962,92 @@ template <class _StringType = StringT> class ServiceT
             }
         }
 
-        SC_HANDLE hService = ServiceHandle(desireAccess);
-
-        if (hService != NULL)
-        {
-            PREVIOUS_TOKEN_PRIVILEGES prevState;
-            if (needToAcquireShutdownPrivilege)
-            {
-                needToAcquireShutdownPrivilege = EnablePrivilege(TRUE, SE_SHUTDOWN_NAME, &prevState, NULL);
-            }
-
-            bool ret = ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_FAILURE_ACTIONS,
-                                                       (PVOID)&FailureActions) == TRUE;
-
-            if (needToAcquireShutdownPrivilege)
-            {
-                RevertPrivileges(&prevState);
-            }
-
-            CloseServiceHandle(hService);
-            return ret;
-        }
-
-        return false;
-    }
-
-    bool SetFailureActions(const SERVICE_FAILURE_ACTIONSA &FailureActions, SERVICE_FAILURE_ACTIONS_FLAG Flags)
-    {
-        if (!SetFailureActions(FailureActions))
-        {
+        Details::Service::Handle handle;
+        if (!handle.Open(name_.c_str(), SERVICE_CHANGE_CONFIG))
             return false;
-        }
 
-        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
-
-        if (hService != NULL)
+        if (needToAcquireShutdownPrivilege)
         {
-            bool ret =
-                ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, (PVOID)&Flags) == TRUE;
-            CloseServiceHandle(hService);
-            return ret;
+            Security::TokenPrivileges privileges(Security::SeShutdownPrivilege);
+            return ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_FAILURE_ACTIONS, (PVOID)&FailureActions) ==
+                   TRUE;
         }
-
-        return false;
+        return ChangeServiceConfig2T<CharType>(handle, SERVICE_CONFIG_FAILURE_ACTIONS, (PVOID)&FailureActions) == TRUE;
     }
 
-#ifdef SERVICE_CONFIG_TRIGGER_INFO
-    bool SetTrigger(const SERVICE_TRIGGER_INFO &TriggerInfo) const
+    template <typename T> SharedPtr<T> QueryConfig2_(SC_HANDLE hService) const
     {
-        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
-        if (hService != NULL)
-        {
-            bool ret =
-                ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_TRIGGER_INFO, (PVOID)&TriggerInfo) == TRUE;
-            CloseServiceHandle(hService);
-            return ret;
-        }
+        typedef SharedPtr<T> result_type;
 
-        return false;
-    }
-#endif
-#ifdef SERVICE_CONFIG_PRESHUTDOWN_INFO
-    bool SetPreshutdownTimeout(Duration PreshutdownTimeout) const
-    {
-        SC_HANDLE hService = ServiceHandle(SERVICE_CHANGE_CONFIG);
         if (hService == NULL)
-            return false;
+            return result_type();
 
-        SERVICE_PRESHUTDOWN_INFO info = {PreshutdownTimeout};
-        bool ret = ChangeServiceConfig2T<CharType>(hService, SERVICE_CONFIG_PRESHUTDOWN_INFO, &info) == TRUE;
-        CloseServiceHandle(hService);
-        return ret;
-    }
+        DWORD infoLevel;
+        if (typeid(T) == typeid(SERVICE_DELAYED_AUTO_START_INFO))
+            infoLevel = SERVICE_CONFIG_DELAYED_AUTO_START_INFO;
+        else if ((typeid(T) == typeid(SERVICE_DESCRIPTIONT<CharType>)) ||
+                 (typeid(T) == typeid(typename SERVICE_DESCRIPTIONT<CharType>::Type)))
+            infoLevel = SERVICE_CONFIG_DESCRIPTION;
+        else if ((typeid(T) == typeid(SERVICE_FAILURE_ACTIONST<CharType>)) ||
+                 (typeid(T) == typeid(typename SERVICE_FAILURE_ACTIONST<CharType>::Type)))
+            infoLevel = SERVICE_CONFIG_FAILURE_ACTIONS;
+        else if (typeid(T) == typeid(SERVICE_FAILURE_ACTIONS_FLAG))
+            infoLevel = SERVICE_CONFIG_FAILURE_ACTIONS_FLAG;
+#if defined(SERVICE_CONFIG_PREFERRED_NODE)
+        else if (typeid(T) == typeid(SERVICE_PREFERRED_NODE_INFO))
+            infoLevel = SERVICE_CONFIG_PREFERRED_NODE;
 #endif
-  private:
-    QUERY_SERVICE_CONFIGT<CharType> *QueryConfig_() const
-    {
-        DWORD dwBytesNeeded;
-        DWORD cbBufSize = 0;
-        QUERY_SERVICE_CONFIGT<CharType> *lpsc = NULL;
-        SC_HANDLES handles;
+#if defined(SERVICE_CONFIG_PRESHUTDOWN_INFO)
+        else if (typeid(T) == typeid(SERVICE_PRESHUTDOWN_INFO))
+            infoLevel = SERVICE_CONFIG_PRESHUTDOWN_INFO;
+#endif
+        else if ((typeid(T) == typeid(SERVICE_REQUIRED_PRIVILEGES_INFOT<CharType>)) ||
+                 (typeid(T) == typeid(typename SERVICE_REQUIRED_PRIVILEGES_INFOT<CharType>::Type)))
+            infoLevel = SERVICE_CONFIG_REQUIRED_PRIVILEGES_INFO;
+        else if (typeid(T) == typeid(SERVICE_SID_INFO))
+            infoLevel = SERVICE_CONFIG_SERVICE_SID_INFO;
+#if defined(SERVICE_CONFIG_TRIGGER_INFO)
+        else if (typeid(T) == typeid(SERVICE_TRIGGER_INFO))
+            infoLevel = SERVICE_CONFIG_TRIGGER_INFO;
+#endif
+#if defined(SERVICE_CONFIG_LAUNCH_PROTECTED)
+        else if (typeid(T) == typeid(SERVICE_LAUNCH_PROTECTED_INFO))
+            infoLevel = SERVICE_CONFIG_LAUNCH_PROTECTED;
+#endif
+        else
+            return result_type();
 
-        SC_HANDLE schSCManager = OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_CONNECT);
-        SC_HANDLE schService = OpenServiceT<CharType>(schSCManager, name_.c_str(), SERVICE_QUERY_CONFIG);
-        if (!schService)
-            return NULL;
+        DWORD bytesNeeded;
+        QueryServiceConfig2T<CharType>(hService, infoLevel, NULL, 0, &bytesNeeded);
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+            return result_type();
 
-        if (!QueryServiceConfigT<CharType>(schService, NULL, 0, &dwBytesNeeded))
-        {
-            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-            {
-                cbBufSize = dwBytesNeeded;
-                lpsc = (QUERY_SERVICE_CONFIGT<CharType> *)LocalAlloc(LMEM_FIXED, cbBufSize);
-            }
-            else
-            {
-                CloseServiceHandle(schService);
-                return NULL;
-            }
-        }
-
+        result_type lpsc = result_type((T *)new BYTE[bytesNeeded]);
         if (lpsc == NULL)
-        {
-            CloseServiceHandle(schService);
-            return NULL;
-        }
+            return result_type();
 
-        if (!QueryServiceConfigT<CharType>(schService, lpsc, cbBufSize, &dwBytesNeeded))
-        {
-            if (lpsc)
-                LocalFree(lpsc);
-
-            CloseServiceHandle(schService);
-            return NULL;
-        }
-
-        CloseServiceHandle(schService);
-        return lpsc;
+        return QueryServiceConfig2T<CharType>(hService, infoLevel, (LPBYTE)lpsc.get(), bytesNeeded, &bytesNeeded)
+                   ? lpsc
+                   : result_type();
     }
 
-    void FreeConfig_(QUERY_SERVICE_CONFIGT<CharType> *Config)
+    SharedPtr<QUERY_SERVICE_CONFIGT<CharType>> QueryConfig_(SC_HANDLE hService) const
     {
-        if (Config)
-            LocalFree(Config);
+        typedef SharedPtr<QUERY_SERVICE_CONFIGT<CharType>> result_type;
+
+        if (hService == NULL)
+            return result_type();
+
+        DWORD bytesNeeded;
+        QueryServiceConfigT<CharType>(hService, NULL, 0, &bytesNeeded);
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+            return result_type();
+
+        result_type lpsc = result_type((QUERY_SERVICE_CONFIGT<CharType> *)new BYTE[bytesNeeded]);
+        if (lpsc == NULL)
+            return result_type();
+
+        return QueryServiceConfigT<CharType>(hService, lpsc.get(), bytesNeeded, &bytesNeeded) ? lpsc : result_type();
     }
 
   private:
@@ -783,9 +1061,8 @@ template <class _StringType = StringT> class ServiceT
     mutable std::list<ServiceT> dependencies_;
     StringType serviceStartName_;
     StringType displayName_;
-
     StringType description_;
-
+    mutable std::list<StringType> requiredPrivileges_;
     AcceptStopCallback acceptStopCallback_;
     AcceptPauseCallback acceptPauseCallback_;
 
@@ -1546,7 +1823,7 @@ template <class _StringType = StringT> class ServiceT
 #ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
             else
             {
-                instance.hStopedEvent_ = Details::CreateStopEvent(instance.service_.Name());
+                instance.hStopedEvent_ = Details::Service::CreateStopEvent(instance.service_.Name());
                 if (instance.hStopedEvent_ == NULL)
                 {
                     instance.RaiseError_(GetLastError(), "Failed to CreateEventW");
@@ -1717,6 +1994,53 @@ template <class _StringType = StringT> class ServiceT
     };
 
   public:
+    static std::list<ServiceT> All(DWORD ServiceType = SERVICE_DRIVER | SERVICE_WIN32,
+                                   DWORD ServiceState = SERVICE_STATE_ALL, Optional<StringType> GroupName = None())
+    {
+        Details::Service::Handle handle(OpenSCManagerT<CharType>(NULL, NULL, SC_MANAGER_ENUMERATE_SERVICE));
+        if (handle.hSCManager == NULL)
+            return std::list<ServiceT>();
+
+        const CharType *groupName = GroupName.IsSome() ? GroupName.Get() : NULL;
+        DWORD bytesNeeded = 0;
+        DWORD count = 0;
+        EnumServicesStatusExT<CharType>(handle.hSCManager, SC_ENUM_PROCESS_INFO, ServiceType, ServiceState, NULL, 0,
+                                        &bytesNeeded, &count, NULL, groupName);
+
+        ENUM_SERVICE_STATUS_PROCESST<CharType> *services =
+            (ENUM_SERVICE_STATUS_PROCESST<CharType> *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
+        if (services == NULL)
+            return std::list<ServiceT>();
+
+        std::list<ServiceT> all;
+        DWORD resumeHandle = 0;
+        while (EnumServicesStatusExT<CharType>(handle.hSCManager, SC_ENUM_PROCESS_INFO, ServiceType, ServiceState,
+                                               (LPBYTE)services, bytesNeeded, &bytesNeeded, &count, &resumeHandle,
+                                               groupName) == FALSE)
+        {
+            if (GetLastError() != ERROR_MORE_DATA)
+                break;
+
+            for (DWORD i = 0; i < count; ++i)
+                all.push_back(ServiceT(services[i].lpServiceName, services[0].lpDisplayName));
+
+            if (bytesNeeded == 0)
+                break;
+
+            services = (ENUM_SERVICE_STATUS_PROCESST<CharType> *)HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                                                                             services, bytesNeeded);
+            count = 0;
+            if (services == NULL)
+                return std::list<ServiceT>();
+        }
+
+        for (DWORD i = 0; i < count; ++i)
+            all.push_back(ServiceT(services[i].lpServiceName, services[0].lpDisplayName));
+
+        HeapFree(GetProcessHeap(), 0, services);
+        return all;
+    }
+
 #if defined(__cpp_variadic_templates)
     template <class... InstanceType> static bool Run()
     {
