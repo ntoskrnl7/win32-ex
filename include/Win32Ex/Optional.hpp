@@ -1061,7 +1061,7 @@ template <typename T> class Optional<T, typename std::enable_if<!std::is_referen
         return value_;
     }
 
-    operator typename std::remove_reference<T>::type &()
+    operator T &()
     {
         if (isMoved_)
             throw MovedException();
@@ -1099,7 +1099,7 @@ template <typename T> class Optional<T, typename std::enable_if<!std::is_referen
 };
 
 #if defined(__cpp_variadic_templates)
-template <typename... Args> bool IsAll(const Optional<Args> &...args)
+template <typename... Args> bool IsAll(const Optional<Args> &... args)
 {
     for (auto val : {
              args.IsNone()...,
@@ -1113,7 +1113,7 @@ template <typename... Args> bool IsAll(const Optional<Args> &...args)
     return true;
 }
 
-template <typename... Args> bool IsSome(const Optional<Args> &...args)
+template <typename... Args> bool IsSome(const Optional<Args> &... args)
 {
     for (auto val : {
              args.IsSome()...,
@@ -1127,12 +1127,12 @@ template <typename... Args> bool IsSome(const Optional<Args> &...args)
     return false;
 }
 
-template <typename... Args> bool IsAny(const Optional<Args> &...args)
+template <typename... Args> bool IsAny(const Optional<Args> &... args)
 {
     return IsSome(args...);
 }
 
-template <typename... Args> bool IsNone(const Optional<Args> &...args)
+template <typename... Args> bool IsNone(const Optional<Args> &... args)
 {
     for (auto val : {
              args.IsSome()...,

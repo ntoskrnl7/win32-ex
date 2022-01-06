@@ -217,6 +217,17 @@ template <typename T> class Result<T, typename std::enable_if<!std::is_reference
         return value_;
     }
 
+    const T &Ref() const
+    {
+        if (isMoved_)
+            throw MovedException();
+
+        if (error_.ErrorCode)
+            throw error_;
+
+        return value_;
+    }
+
     T Get(const T &Default) const
     {
         if (isMoved_)
