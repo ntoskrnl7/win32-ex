@@ -339,7 +339,7 @@ template <typename T, typename _CharType> void MultiSzToList(const _CharType *Mu
     {
         std::basic_string<_CharType> str = MultiSz;
         list.push_back(T(str));
-        MultiSz += list.size() + 1;
+        MultiSz += str.size() + 1;
     }
 }
 
