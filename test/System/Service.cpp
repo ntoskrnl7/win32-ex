@@ -525,7 +525,7 @@ TEST(ServiceTest, ServiceInstall)
 #endif
     path.append(" " TEST_SVC_NAME);
     EXPECT_TRUE(TestService.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(TestService.Installed());
+    EXPECT_TRUE(TestService.Installed());
 }
 
 TEST(ServiceTest, ServiceStart)
@@ -630,7 +630,7 @@ TEST(ServiceTest, ServiceWInstall)
 #endif
     path.append(L" " _W(TEST_SVC_NAME) L" W");
     EXPECT_TRUE(TestServiceW.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(TestServiceW.Installed());
+    EXPECT_TRUE(TestServiceW.Installed());
 }
 
 TEST(ServiceTest, ServiceWStart)
@@ -740,7 +740,7 @@ TEST(ServiceTest, ServiceTInstall)
 #endif
     path.append(TEXT(" ") TEXT(TEST_SVC_NAME) TEXT(" W"));
     EXPECT_TRUE(TestServiceT.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(TestServiceT.Installed());
+    EXPECT_TRUE(TestServiceT.Installed());
 }
 
 TEST(ServiceTest, ServiceTStart)
@@ -848,10 +848,10 @@ TEST(ServiceTest, SharedServiceInstall)
 #endif
     path.append(" SharedService");
     EXPECT_TRUE(TestService.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
-    // EXPECT_TRUE(TestService.Installed());
+    EXPECT_TRUE(TestService.Installed());
 
     EXPECT_TRUE(Test2Service.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path.c_str()));
-    // EXPECT_TRUE(Test2Service.Installed());
+    EXPECT_TRUE(Test2Service.Installed());
 }
 
 TEST(ServiceTest, SharedServiceStart)
@@ -993,10 +993,10 @@ TEST(ServiceTest, SharedServiceWInstall)
     path.append(L" SharedService W");
 
     EXPECT_TRUE(TestServiceW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(TestServiceW.Installed());
+    EXPECT_TRUE(TestServiceW.Installed());
 
     EXPECT_TRUE(Test2ServiceW.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(Test2ServiceW.Installed());
+    EXPECT_TRUE(Test2ServiceW.Installed());
 }
 
 TEST(ServiceTest, SharedServiceWStart)
@@ -1146,10 +1146,10 @@ TEST(ServiceTest, SharedServiceTInstall)
     path.append(TEXT(" SharedService T"));
 
     EXPECT_TRUE(TestServiceT.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(TestServiceT.Installed());
+    EXPECT_TRUE(TestServiceT.Installed());
 
     EXPECT_TRUE(Test2ServiceT.Install(SERVICE_WIN32_SHARE_PROCESS, SERVICE_AUTO_START, path));
-    // EXPECT_TRUE(Test2ServiceT.Installed());
+    EXPECT_TRUE(Test2ServiceT.Installed());
 }
 
 TEST(ServiceTest, SharedServiceTStart)

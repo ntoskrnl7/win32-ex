@@ -26,9 +26,6 @@ typedef Win32Ex::System::ServiceT<>::Instance<Test2ServiceT> Test2ServiceInstanc
 
 int main(int argc, char *argv[])
 {
-    std::wcout.imbue(std::locale(""));
-    setlocale(LC_ALL, "");
-
     if (argc == 1)
     {
         ::testing::InitGoogleTest(&argc, argv);
