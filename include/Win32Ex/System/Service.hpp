@@ -330,12 +330,6 @@ typedef struct _SERVICE_LAUNCH_PROTECTED_INFO
 #include "../Internal/misc.hpp"
 #include "Process.h"
 
-#if defined(_MSC_VER) && _MSC_VER < 1600
-#define _STD_NS_ std::tr1
-#else
-#define _STD_NS_ std
-#endif
-
 namespace Win32Ex
 {
 namespace System
@@ -2051,7 +2045,7 @@ template <class _StringType = StringT> class ServiceT
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
-    template <class... InstanceType> static bool Run(InstanceType &... instance)
+    template <class... InstanceType> static bool Run(InstanceType &...instance)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType::CharType *)instance.service_.Name().c_str(),
@@ -2119,7 +2113,5 @@ typedef ServiceT<String> Service;
 typedef ServiceT<StringW> ServiceW;
 } // namespace System
 } // namespace Win32Ex
-
-#undef _STD_NS_
 
 #endif // _WIN32EX_SYSTEM_SERVICE_HPP_

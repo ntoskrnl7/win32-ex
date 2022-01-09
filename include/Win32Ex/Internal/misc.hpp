@@ -67,6 +67,14 @@ template <typename T> struct SharedPtr : public _STD_NS_::shared_ptr<T>
     SharedPtr()
     {
     }
+#if defined(__cpp_rvalue_references)
+    SharedPtr(_STD_NS_::shared_ptr<T> &&Ptr) : _STD_NS_::shared_ptr<T>(std::move(Ptr))
+    {
+    }
+#endif
+    SharedPtr(const _STD_NS_::shared_ptr<T> &Ptr) : _STD_NS_::shared_ptr<T>(Ptr)
+    {
+    }
     SharedPtr(T *Ptr) : _STD_NS_::shared_ptr<T>(Ptr)
     {
     }

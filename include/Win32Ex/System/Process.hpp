@@ -352,27 +352,27 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
     }
 
   public:
-    static std::list<_STD_NS_::shared_ptr<ProcessT>> All()
+    static std::list<SharedPtr<ProcessT>> All()
     {
-        std::list<_STD_NS_::shared_ptr<ProcessT>> all;
+        std::list<SharedPtr<ProcessT>> all;
 
         HANDLE hSnapshot;
         hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (hSnapshot == INVALID_HANDLE_VALUE)
-            return std::list<_STD_NS_::shared_ptr<ProcessT>>();
+            return std::list<SharedPtr<ProcessT>>();
 
         PROCESSENTRY32T<CharType> pe32;
         pe32.dwSize = sizeof(pe32);
         if (!Process32FirstT<CharType>(hSnapshot, &pe32))
         {
             CloseHandle(hSnapshot);
-            return std::list<_STD_NS_::shared_ptr<ProcessT>>();
+            return std::list<SharedPtr<ProcessT>>();
         }
 
         do
         {
 #if defined(_MSC_VER) && _MSC_VER < 1600
-            all.push_back(_STD_NS_::shared_ptr<ProcessT>(new ProcessT(pe32.th32ProcessID)));
+            all.push_back(SharedPtr<ProcessT>(new ProcessT(pe32.th32ProcessID)));
 #else
             all.push_back(std::make_shared<ProcessT>(pe32.th32ProcessID));
 #endif

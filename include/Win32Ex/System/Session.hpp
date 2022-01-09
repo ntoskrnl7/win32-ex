@@ -59,12 +59,7 @@ template <class _StringType = StringT> class SessionT
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
     typedef RunnableProcessT<StringType> RunnableProcess;
-
-#if defined(_MSC_VER) && _MSC_VER < 1600
-    typedef std::tr1::shared_ptr<RunnableProcess> RunnableProcessPtr;
-#else
-    typedef std::shared_ptr<RunnableProcess> RunnableProcessPtr;
-#endif
+    typedef SharedPtr<RunnableProcess> RunnableProcessPtr;
 
   public:
     static std::list<SessionT> All()

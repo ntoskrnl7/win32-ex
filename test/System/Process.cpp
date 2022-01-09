@@ -32,7 +32,7 @@ TEST(ProcessTest, ProcessTAll)
     for (auto process : Win32Ex::System::ProcessT<>::All())
 #else
     // clang-format off
-    for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessT<>> &process in Win32Ex::System::ProcessT<>::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::ProcessT<>> &process in Win32Ex::System::ProcessT<>::All())
 #endif
     {
         if (process)
@@ -65,7 +65,7 @@ TEST(ProcessTest, ProcessAll)
     for (auto process : Win32Ex::System::Process::All())
 #else
     // clang-format off
-    for each (const _STD_NS_::shared_ptr<Win32Ex::System::Process> &process in Win32Ex::System::Process::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::Process> &process in Win32Ex::System::Process::All())
 #endif
     {
         if (process)
@@ -85,7 +85,7 @@ TEST(ProcessTest, ProcessWAll)
     for (auto process : Win32Ex::System::ProcessW::All())
 #else
     // clang-format off
-    for each (const _STD_NS_::shared_ptr<Win32Ex::System::ProcessW> &process in Win32Ex::System::ProcessW::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::ProcessW> &process in Win32Ex::System::ProcessW::All())
 #endif
     {
         if (process)
