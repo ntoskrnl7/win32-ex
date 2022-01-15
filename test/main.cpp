@@ -1,7 +1,7 @@
 ﻿#include <gtest/gtest.h>
 #include <string>
 
-#define TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#define WIN32EX_USE_SERVICE_SIMULATE_MODE
 #include <Win32Ex/System/Service.hpp>
 
 #include "System/TestService.h"

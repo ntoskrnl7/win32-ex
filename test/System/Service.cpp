@@ -1,6 +1,6 @@
 ﻿#include <Win32Ex/System/Process.hpp>
 
-#define TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#define WIN32EX_USE_SERVICE_SIMULATE_MODE
 #include <Win32Ex/System/Service.hpp>
 #include <gtest/gtest.h>
 
@@ -487,7 +487,7 @@ typedef Win32Ex::System::ServiceT<>::Instance<TestServiceT> TestServiceInstanceT
 extern Win32Ex::System::ServiceT<> Test2ServiceT;
 typedef Win32Ex::System::ServiceT<>::Instance<Test2ServiceT> Test2ServiceInstanceT;
 
-#ifndef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#ifndef WIN32EX_USE_SERVICE_SIMULATE_MODE
 TEST(ServiceTest, InvalidServiceRun)
 {
     EXPECT_FALSE(TestServiceInstance::Get().Run());
