@@ -43,7 +43,7 @@ Environment:
 #endif
 #include <windows.h>
 
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#ifdef WIN32EX_USE_SERVICE_SIMULATE_MODE
 #include <wtsapi32.h>
 #pragma comment(lib, "Wtsapi32.lib")
 #endif
@@ -871,13 +871,14 @@ template <class _StringType = StringT> class ServiceT
         return failureActions;
     }
 
-    bool FailureActions(const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions)
+    bool FailureActions(const typename SERVICE_FAILURE_ACTIONST<CharType>::Type &FailureActions)
     {
         Details::Service::Handle handle;
         return FailureActions_(handle, FailureActions);
     }
 
-    bool FailureActions(const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions, SERVICE_FAILURE_ACTIONS_FLAG Flags)
+    bool FailureActions(const typename SERVICE_FAILURE_ACTIONST<CharType>::Type &FailureActions,
+                        SERVICE_FAILURE_ACTIONS_FLAG Flags)
     {
         Details::Service::Handle handle;
 
@@ -935,7 +936,7 @@ template <class _StringType = StringT> class ServiceT
 
   private:
     bool FailureActions_(const Details::Service::Handle &Handle,
-                         const SERVICE_FAILURE_ACTIONST<CharType> &FailureActions)
+                         const typename SERVICE_FAILURE_ACTIONST<CharType>::Type &FailureActions)
     {
         DWORD desireAccess = SERVICE_CHANGE_CONFIG;
         BOOL needToAcquireShutdownPrivilege = FALSE;
@@ -1425,7 +1426,7 @@ template <class _StringType = StringT> class ServiceT
 
                 return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
             }
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#ifdef WIN32EX_USE_SERVICE_SIMULATE_MODE
             else
             {
 #if _CRT_DECLARE_GLOBAL_VARIABLES_DIRECTLY
@@ -1519,7 +1520,7 @@ template <class _StringType = StringT> class ServiceT
             SetWin32ExitCode(ErrorCode);
         }
 
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#ifdef WIN32EX_USE_SERVICE_SIMULATE_MODE
         static BOOL WINAPI ConsoleHandlerRoutine_(DWORD dwCtrlType)
         {
             ServiceHandlerEx_(SERVICE_CONTROL_STOP, dwCtrlType, NULL, NULL);
@@ -1814,7 +1815,7 @@ template <class _StringType = StringT> class ServiceT
                 instance.Cleanup_();
                 return;
             }
-#ifdef TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#ifdef WIN32EX_USE_SERVICE_SIMULATE_MODE
             else
             {
                 instance.hStopedEvent_ = Details::Service::CreateStopEvent(instance.service_.Name());
@@ -1941,7 +1942,7 @@ template <class _StringType = StringT> class ServiceT
                     SetConsoleCtrlHandler(ConsoleHandlerRoutine_, FALSE);
                 return;
             }
-#endif // TWIN32EX_USE_SERVICE_SIMULATE_MODE
+#endif // WIN32EX_USE_SERVICE_SIMULATE_MODE
         }
 
       protected:
@@ -2045,7 +2046,7 @@ template <class _StringType = StringT> class ServiceT
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
-    template <class... InstanceType> static bool Run(InstanceType &...instance)
+    template <class... InstanceType> static bool Run(InstanceType &... instance)
     {
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType::CharType *)instance.service_.Name().c_str(),
