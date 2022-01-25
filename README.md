@@ -140,7 +140,7 @@ Win32 API Experimental(or Extension) features
 ###### Classes
 
 - Process
-  - ProcessT<Win32Ex::String>
+  - ProcessT\<Win32Ex::String\>
   - Example
     - Attach Process by process id, process handle.
 
@@ -180,12 +180,12 @@ Win32 API Experimental(or Extension) features
       ```
 
 - ProcessW
-  - ProcessT<Win32Ex::StringW>
+  - ProcessT\<Win32Ex::StringW\>
 - ProcessT\<class StringType = Win32Ex::StringT\>
   - Implements WaitableObject.
 - RunnableProcess
   - **Abstract**
-  - RunnableProcessT<Win32Ex::String>
+  - RunnableProcessT\<Win32Ex::String\>
   - Example
     - Use the RunnableProcess class to run 'user account process'.
 
@@ -199,12 +199,12 @@ Win32 API Experimental(or Extension) features
 
 - RunnableProcessW
   - **Abstract**
-  - RunnableProcessT<Win32Ex::StringW>
+  - RunnableProcessT\<Win32Ex::StringW\>
 - RunnableProcessT\<class StringType = Win32Ex::StringT\>
   - **Abstract**
   - Implements ProcessT.
 - UserAccountProcess
-  - RunnableSessionProcessT<UserAccount, Win32Ex::String>
+  - RunnableSessionProcessT\<UserAccount, Win32Ex::String\>
   - Example
     - Runs user account process at the current session.
 
@@ -236,18 +236,18 @@ Win32 API Experimental(or Extension) features
       ```
 
 - UserAccountProcessW
-  - RunnableSessionProcessT<UserAccount, Win32Ex::StringW>
+  - RunnableSessionProcessT\<UserAccount, Win32Ex::StringW\>
 - UserAccountProcessT
   - Implements RunnableProcessT.
 - SystemAccountProcess
-  - RunnableSessionProcessT<SystemAccount, Win32Ex::String>
+  - RunnableSessionProcessT\<SystemAccount, Win32Ex::String\>
 - SystemAccountProcessW
-  - RunnableSessionProcessT<SystemAccount, Win32Ex::StringW>
+  - RunnableSessionProcessT\<SystemAccount, Win32Ex::StringW\>
 - SystemAccountProcessT
   - Implements RunnableProcessT.
 - RunnableSessionProcessT\<ProcessAccountType Type, class StringType = Win32Ex::StringT\>
 - ElevatedProcess
-  - ElevatedProcessT<Win32Ex::String>
+  - ElevatedProcessT\<Win32Ex::String\>
   - Example
     - Run with elevated permissions UAC.
 
@@ -259,7 +259,7 @@ Win32 API Experimental(or Extension) features
       ```
 
 - ElevatedProcessW
-  - ElevatedProcessT<Win32Ex::StringW>
+  - ElevatedProcessT\<Win32Ex::StringW\>
 - ElevatedProcessT\<class StringType = Win32Ex::StringT\>
   - Implements RunnableProcessT.
 
@@ -290,7 +290,7 @@ Win32 API Experimental(or Extension) features
 ###### Classes
 
 - Session
-  - SessionT<Win32Ex::String>
+  - SessionT\<Win32Ex::String\>
   - Example
     - Runs system account process and user account process at each sessions.
 
@@ -313,7 +313,7 @@ Win32 API Experimental(or Extension) features
       ```
 
 - SessionW
-  - SessionT<Win32Ex::StringW>
+  - SessionT\<Win32Ex::StringW\>
 - SessionT\<class StringType = Win32Ex::StringT\>
 
 ###### Namespaces
@@ -449,17 +449,7 @@ Win32 API Experimental(or Extension) features
 
     int main(int argc, char* argv[])
     {
-      TestService.SetAcceptStop([]() -> bool
-      {
-        SC_HANDLE serviceHandle = TestService.ServiceHandle(SERVICE_USER_DEFINED_CONTROL);
-        if (serviceHandle == NULL)
-          return false;
-        SERVICE_STATUS ss = { 0 };
-        BOOL result = ControlService(serviceHandle, TEST_SVC_USER_CONTROL_ACCEPT_STOP, &ss);
-        CloseServiceHandle(serviceHandle);
-        return (result == TRUE);
-      });
-
+      TestService.SetAcceptStop([]() -> bool { return Test2Service.Control(TEST_SVC_USER_CONTROL_ACCEPT_STOP); });
       TestService.Stop();
       TestService.Uninstall();
     }
@@ -1148,11 +1138,11 @@ value = GetValue(false).Get(); // == 1
 
 ###### Functions
 
-- ShellExecuteExT<_CharType>
+- ShellExecuteExT\<_CharType\>
 
 ###### Structures
 
-- SHELLEXECUTEINFOT<_CharType>
+- SHELLEXECUTEINFOT\<_CharType\>
 
 ###### Example
 
@@ -1175,14 +1165,14 @@ Win32Ex::ShellExecuteExT<CHAR>(&sei);
 
 ###### Functions
 
-- CreateProcessT<_CharType>
-- CreateProcessAsUserT<_CharType>
-- QueryFullProcessImageNameT<_CharType>
+- CreateProcessT\<_CharType\>
+- CreateProcessAsUserT\<_CharType\>
+- QueryFullProcessImageNameT\<_CharType\>
 
 ###### Structures
 
-- STARTUPINFOT<_CharType>
-- STARTUPINFOEXT<_CharType>
+- STARTUPINFOT\<_CharType\>
+- STARTUPINFOEXT\<_CharType\>
 
 ###### Example
 
@@ -1202,12 +1192,12 @@ Win32Ex::CreateProcessAsUserT<CHAR>(..., &si, ..);
 
 ###### Functions
 
-- Process32FirstT<_CharType>
-- Process32NextT<_CharType>
+- Process32FirstT\<_CharType\>
+- Process32NextT<\_CharType\>
 
 ###### Structures
 
-- PROCESSENTRY32T<_CharType>
+- PROCESSENTRY32T\<_CharType\>
 
 ###### Example
 
@@ -1258,7 +1248,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.13")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.14")
 
 # link dependencies
 target_link_libraries(tests win32ex)

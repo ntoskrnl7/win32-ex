@@ -43,6 +43,8 @@ Environment:
 #endif
 #include <windows.h>
 
+#pragma comment(lib, "Advapi32.lib")
+
 #ifdef WIN32EX_USE_SERVICE_SIMULATE_MODE
 #include <wtsapi32.h>
 #pragma comment(lib, "Wtsapi32.lib")

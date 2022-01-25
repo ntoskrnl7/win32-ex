@@ -11,7 +11,7 @@ option(WIN32EX_BUILD_TESTS "Set to ON to build tests" OFF)
 
 add_library(win32ex INTERFACE)
 
-target_link_libraries(win32ex INTERFACE Wtsapi32 Userenv)
+target_link_libraries(win32ex INTERFACE Wtsapi32 Userenv advapi32)
 
 target_include_directories(win32ex INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
