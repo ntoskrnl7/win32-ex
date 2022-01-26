@@ -8,6 +8,7 @@ TEST(SessionTest, ThisSession)
                  Win32Ex::System::Session(Win32Ex::ThisSession::Id()).Name().c_str());
     EXPECT_STREQ(Win32Ex::ThisSession::UserName().c_str(),
                  Win32Ex::System::Session(Win32Ex::ThisSession::Id()).UserName().c_str());
+    EXPECT_EQ(Win32Ex::ThisSession::State(), WTSActive);
 }
 
 TEST(SessionTest, ThisSessionNewProcessT)
@@ -78,13 +79,13 @@ TEST(SessionTest, SessionNewProcess)
 #if defined(__cpp_range_based_for)
     for (auto session : Win32Ex::System::Session::All())
     {
-        auto process = session.NewProcess(Win32Ex::System::UserAccount, "notepad");
+        auto process = session->NewProcess(Win32Ex::System::UserAccount, "notepad");
 #else
     // clang-format off
-    for each (Win32Ex::System::Session session in Win32Ex::System::Session::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::Session> &session in Win32Ex::System::Session::All())
     {
         Win32Ex::Result<Win32Ex::System::Session::RunnableProcessPtr> process =
-            session.NewProcess(Win32Ex::System::UserAccount, "notepad");
+            session->NewProcess(Win32Ex::System::UserAccount, "notepad");
             // clang-format on
 #endif
         if (process.IsOk())
@@ -92,7 +93,7 @@ TEST(SessionTest, SessionNewProcess)
             process->RunAsync().Wait(500);
             process->Exit();
         }
-        process = session.NewProcess(Win32Ex::System::SystemAccount, "notepad");
+        process = session->NewProcess(Win32Ex::System::SystemAccount, "notepad");
         if (process.IsOk())
         {
             process->RunAsync().Wait(500);
@@ -106,13 +107,13 @@ TEST(SessionTest, SessionWNewProcess)
 #if defined(__cpp_range_based_for)
     for (auto session : Win32Ex::System::SessionW::All())
     {
-        auto process = session.NewProcess(Win32Ex::System::UserAccount, L"notepad");
+        auto process = session->NewProcess(Win32Ex::System::UserAccount, L"notepad");
 #else
     // clang-format off
-    for each (Win32Ex::System::SessionW session in Win32Ex::System::SessionW::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::SessionW> &session in Win32Ex::System::SessionW::All())
     {
         Win32Ex::Result<Win32Ex::System::SessionW::RunnableProcessPtr> process =
-            session.NewProcess(Win32Ex::System::UserAccount, L"notepad");
+            session->NewProcess(Win32Ex::System::UserAccount, L"notepad");
             // clang-format on
 #endif
         if (process.IsOk())
@@ -120,7 +121,7 @@ TEST(SessionTest, SessionWNewProcess)
             process->RunAsync().Wait(500);
             process->Exit();
         }
-        process = session.NewProcess(Win32Ex::System::SystemAccount, L"notepad");
+        process = session->NewProcess(Win32Ex::System::SystemAccount, L"notepad");
         if (process.IsOk())
         {
             process->RunAsync().Wait(500);
@@ -134,13 +135,13 @@ TEST(SessionTest, SessionTNewProcess)
 #if defined(__cpp_range_based_for)
     for (auto session : Win32Ex::System::SessionT<>::All())
     {
-        auto process = session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
+        auto process = session->NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
 #else
     // clang-format off
-    for each (Win32Ex::System::SessionT<> session in Win32Ex::System::SessionT<>::All())
+    for each (const Win32Ex::SharedPtr<Win32Ex::System::SessionT<>> &session in Win32Ex::System::SessionT<>::All())
     {
         Win32Ex::Result<Win32Ex::System::SessionT<>::RunnableProcessPtr> process =
-            session.NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
+            session->NewProcess(Win32Ex::System::UserAccount, TEXT("notepad"));
             // clang-format on
 #endif
         if (process.IsOk())
@@ -148,7 +149,7 @@ TEST(SessionTest, SessionTNewProcess)
             process->RunAsync().Wait(500);
             process->Exit();
         }
-        process = session.NewProcess(Win32Ex::System::SystemAccount, TEXT("notepad"));
+        process = session->NewProcess(Win32Ex::System::SystemAccount, TEXT("notepad"));
         if (process.IsOk())
         {
             process->RunAsync().Wait(500);

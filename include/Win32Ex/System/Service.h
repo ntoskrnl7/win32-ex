@@ -26,9 +26,9 @@ Environment:
 #define _WIN32EX_SYSTEM_SERVICE_H_
 
 #include "../Internal/version.h"
-#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_MAJOR WIN32EX_VERSION_MAJOR
-#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
-#define WIN32EX_SYSTEM_SERVICE_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
+#define WIN32EX_SYSTEM_SERVICE_H_VERSION_MAJOR WIN32EX_VERSION_MAJOR
+#define WIN32EX_SYSTEM_SERVICE_H_VERSION_MINOR WIN32EX_VERSION_MINOR
+#define WIN32EX_SYSTEM_SERVICE_H_VERSION_PATCH WIN32EX_VERSION_PATCH
 
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
@@ -75,8 +75,13 @@ STATIC_OR_INLINE LPENUM_SERVICE_STATUS_PROCESSW LookupServiceStatusProcessByProc
                 free(statusProcess);
                 return NULL;
             }
+#ifdef _MSC_VER
             result->lpDisplayName = _wcsdup(statusProcess[i].lpDisplayName);
             result->lpServiceName = _wcsdup(statusProcess[i].lpServiceName);
+#else
+            result->lpDisplayName = wcsdup(statusProcess[i].lpDisplayName);
+            result->lpServiceName = wcsdup(statusProcess[i].lpServiceName);
+#endif
             result->ServiceStatusProcess = statusProcess[i].ServiceStatusProcess;
             return result;
         }

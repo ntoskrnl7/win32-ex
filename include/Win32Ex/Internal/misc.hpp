@@ -30,7 +30,6 @@ Environment:
 #define WIN32EX_MISC_HPP_VERSION_MINOR WIN32EX_VERSION_MINOR
 #define WIN32EX_MISC_HPP_VERSION_PATCH WIN32EX_VERSION_PATCH
 
-#include "misc.h"
 #include <string>
 #include <tchar.h>
 
@@ -45,6 +44,9 @@ Environment:
 
 #include <list>
 #include <memory>
+
+#include "../T/winbase.hpp"
+#include "misc.h"
 
 #define WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T
 #if defined(_MSC_VER) && _MSC_VER < 1800
@@ -389,6 +391,39 @@ inline std::string operator!(const std::wstring &rhs)
 
 class Exception : public std::exception
 {
+};
+
+class FailureException : public Exception
+{
+  public:
+    FailureException() : errorCode_(GetLastError())
+    {
+    }
+
+    FailureException(DWORD ErrorCode) : errorCode_(ErrorCode)
+    {
+    }
+
+    DWORD ErrorCode() const
+    {
+        return errorCode_;
+    }
+
+    template <class StringType> StringType message(DWORD LanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)) const
+    {
+        typename StringType::value_type *buffer = NULL;
+        size_t size = FormatMessageT<typename StringType::value_type>(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+            errorCode_, LanguageId, &buffer, 0, NULL);
+        if (size == 0)
+            return StringType();
+        StringType message(buffer, size);
+        LocalFree(buffer);
+        return message;
+    }
+
+  private:
+    DWORD errorCode_;
 };
 
 class NullException : public Exception

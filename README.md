@@ -81,6 +81,7 @@ Win32 API Experimental(or Extension) features
   - [Test](#test)
   - [Usage](#usage)
     - [CMakeLists.txt](#cmakeliststxt)
+    - [test.cpp](#testcpp)
 
 ## Features
 
@@ -297,13 +298,13 @@ Win32 API Experimental(or Extension) features
       ```C++
       for (auto session : Win32Ex::System::Session::All())
       {
-          auto process = session.NewProcess(Win32Ex::System::UserAccount, "notepad");
+          auto process = session->NewProcess(Win32Ex::System::UserAccount, "notepad");
           if (process.IsOk())
           {
               process->RunAsync().Wait(500);
               process->Exit();
           }
-          process = session.NewProcess(Win32Ex::System::SystemAccount, "notepad");
+          process = session->NewProcess(Win32Ex::System::SystemAccount, "notepad");
           if (process.IsOk())
           {
               process->RunAsync().Wait(500);
@@ -1248,8 +1249,23 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.14")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.15")
 
 # link dependencies
 target_link_libraries(tests win32ex)
+```
+
+### test.cpp
+
+```C++
+#include <iostream>
+#include <Win32Ex/System/Process.hpp>
+// or #include <Win32Ex.h>
+// or #include <Win32Ex/System.h>
+
+int main()
+{
+    std::cout << Win32Ex::System::Process::All().size();
+    return 0;
+}
 ```

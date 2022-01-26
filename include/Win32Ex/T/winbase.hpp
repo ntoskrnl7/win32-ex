@@ -35,6 +35,27 @@ Environment:
 namespace Win32Ex
 {
 template <typename _CharType>
+inline DWORD WINAPI FormatMessageT(_In_ DWORD dwFlags, _In_opt_ LPCVOID lpSource, _In_ DWORD dwMessageId,
+                                   _In_ DWORD dwLanguageId, _Out_ _CharType *lpBuffer, _In_ DWORD nSize,
+                                   _In_opt_ va_list *Arguments);
+
+template <>
+inline DWORD WINAPI FormatMessageT<CHAR>(_In_ DWORD dwFlags, _In_opt_ LPCVOID lpSource, _In_ DWORD dwMessageId,
+                                         _In_ DWORD dwLanguageId, _Out_ LPSTR lpBuffer, _In_ DWORD nSize,
+                                         _In_opt_ va_list *Arguments)
+{
+    return FormatMessageA(dwFlags, lpSource, dwMessageId, dwLanguageId, lpBuffer, nSize, Arguments);
+}
+
+template <>
+inline DWORD WINAPI FormatMessageT<WCHAR>(_In_ DWORD dwFlags, _In_opt_ LPCVOID lpSource, _In_ DWORD dwMessageId,
+                                          _In_ DWORD dwLanguageId, _Out_ LPWSTR lpBuffer, _In_ DWORD nSize,
+                                          _In_opt_ va_list *Arguments)
+{
+    return FormatMessageW(dwFlags, lpSource, dwMessageId, dwLanguageId, lpBuffer, nSize, Arguments);
+}
+
+template <typename _CharType>
 inline BOOL WINAPI LookupPrivilegeNameT(_In_opt_ CONST _CharType *lpSystemName, _In_ PLUID lpLuid,
                                         _Out_ _CharType *lpName, _Inout_ LPDWORD cchName);
 

@@ -55,6 +55,32 @@ namespace System
 {
 template <class _StringType = StringT> class SessionT
 {
+    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(SessionT)
+
+  public:
+    SessionT Clone() const
+    {
+        if (isMoved_)
+            throw MovedException();
+
+        SessionT clone(id_);
+        return clone;
+    }
+
+  private:
+    void Move(SessionT &To)
+    {
+        To.isMoved_ = isMoved_;
+        if (isMoved_)
+            return;
+
+        To.id_ = id_;
+        To.name_.swap(name_);
+        To.userName_.swap(userName_);
+        id_ = MAXDWORD;
+        isMoved_ = true;
+    }
+
   public:
     typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
@@ -62,16 +88,19 @@ template <class _StringType = StringT> class SessionT
     typedef SharedPtr<RunnableProcess> RunnableProcessPtr;
 
   public:
-    static std::list<SessionT> All()
+    static std::list<SharedPtr<SessionT>> All()
     {
-        std::list<SessionT> all;
+        std::list<SharedPtr<SessionT>> all;
         WTS_SESSION_INFOT<CharType> *sessionInfo = NULL;
         DWORD count = 0;
         if (WTSEnumerateSessionsT<CharType>(WTS_CURRENT_SERVER, 0, 1, &sessionInfo, &count))
         {
             for (DWORD i = 0; i < count; ++i)
-                all.push_back(SessionT(sessionInfo[i]));
-
+#if (defined(_MSC_VER) && _MSC_VER < 1600) || defined(_VARIADIC_EXPAND_0X)
+                all.push_back(SharedPtr<SessionT>(new SessionT(sessionInfo[i])));
+#else
+                all.push_back(std::make_shared<SessionT>(sessionInfo[i]));
+#endif
             WTSFreeMemory(sessionInfo);
         }
         return all;
@@ -104,11 +133,13 @@ template <class _StringType = StringT> class SessionT
     }
 
   public:
-    SessionT(DWORD SessionId) : id_(SessionId)
+    SessionT(DWORD SessionId) : id_(SessionId), isMoved_(false)
     {
         Init_();
     }
-    SessionT(const WTS_SESSION_INFOT<CharType> &Info) : id_(Info.SessionId), name_(Info.pWinStationName)
+
+    SessionT(const WTS_SESSION_INFOT<CharType> &Info)
+        : id_(Info.SessionId), name_(Info.pWinStationName), isMoved_(false)
     {
         Init_();
     }
@@ -118,7 +149,7 @@ template <class _StringType = StringT> class SessionT
                                           const Optional<const StringType &> &CurrentDirectory = None(),
                                           DWORD CreationFlags = 0L,
                                           const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
-                                          BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+                                          BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL) const
     {
         try
         {
@@ -157,6 +188,22 @@ template <class _StringType = StringT> class SessionT
     DWORD Id() const
     {
         return id_;
+    }
+
+    WTS_CONNECTSTATE_CLASS State() const
+    {
+        WTS_CONNECTSTATE_CLASS result;
+        DWORD bytesReturned = 0;
+        CharType *value;
+
+        if (WTSQuerySessionInformationT<CharType>(WTS_CURRENT_SERVER_HANDLE, id_, WTSConnectState, &value,
+                                                  &bytesReturned))
+        {
+            result = *(WTS_CONNECTSTATE_CLASS *)value;
+            WTSFreeMemory(value);
+            return result;
+        }
+        throw FailureException();
     }
 
     const StringType &Name() const
@@ -223,6 +270,11 @@ String UserName()
 StringW UserNameW()
 {
     return UserNameT<StringW>();
+}
+
+WTS_CONNECTSTATE_CLASS State()
+{
+    return System::Session(ThisSession::Id()).State();
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)

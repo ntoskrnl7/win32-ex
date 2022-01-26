@@ -30,17 +30,15 @@ Environment:
 #define WIN32EX_SYSTEM_NTDLL_H_VERSION_MINOR WIN32EX_VERSION_MINOR
 #define WIN32EX_SYSTEM_NTDLL_H_VERSION_PATCH WIN32EX_VERSION_PATCH
 
+#include "../internal/misc.h"
+
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
 #endif
 #if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
-#if !defined(WIN32_NO_STATUS)
-#define WIN32_NO_STATUS
-#endif
 #include <windows.h>
-#include <ntstatus.h>
 
 #ifndef STATUS_ENTRYPOINT_NOT_FOUND
 #define STATUS_ENTRYPOINT_NOT_FOUND ((DWORD)0xC0000139L)
