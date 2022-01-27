@@ -796,8 +796,8 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         if (_Type == SystemAccount)
         {
             if (!CreateSystemAccountProcessT<CharType>(
-                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
-                    (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
+                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL, inheritHandles_, creationFlags_,
+                    environmentBlock_,
                     _RunnableProcess::currentDirectory_.IsSome() ? _RunnableProcess::currentDirectory_.Get() : NULL,
                     &si.StartupInfo, &(_RunnableProcess::processInfo_)))
             {
@@ -810,8 +810,8 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         else if (_Type == UserAccount)
         {
             if (!CreateUserAccountProcessT<CharType>(
-                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL,
-                    (InheritHandles.IsSome() ? (BOOL)InheritHandles : FALSE), creationFlags_, environmentBlock_,
+                    _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL, inheritHandles_, creationFlags_,
+                    environmentBlock_,
                     _RunnableProcess::currentDirectory_.IsSome() ? _RunnableProcess::currentDirectory_.Get() : NULL,
                     &si.StartupInfo, &(_RunnableProcess::processInfo_)))
             {
