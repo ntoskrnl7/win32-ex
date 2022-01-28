@@ -1088,6 +1088,26 @@ template <class _StringType = StringT>
 #else
 template <class _StringType>
 #endif
+static _StringType &CommandLineT()
+{
+    static _StringType cmdline_(MAX_PATH, 0);
+    cmdline_ = GetCommandLineT<typename _StringType::value_type>();
+    return cmdline_;
+}
+static String CommandLine()
+{
+    return CommandLineT<String>();
+}
+static StringW CommandLineW()
+{
+    return CommandLineT<StringW>();
+}
+
+#if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
+template <class _StringType = StringT>
+#else
+template <class _StringType>
+#endif
 static _StringType CurrentDirectoryT()
 {
     _StringType cwd(MAX_PATH, 0);

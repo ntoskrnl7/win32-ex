@@ -86,7 +86,6 @@ DWORD TestFn(const Optional<int> &arg0 = None(), const Optional<int> &arg1 = Non
         flags |= 0x00000200;
     }
 
-#if defined(__cpp_variadic_templates)
     if (IsSome(arg0, arg1, arg2))
     {
         std::cout << "IsSome(arg0, arg1, arg2)\n";
@@ -110,7 +109,6 @@ DWORD TestFn(const Optional<int> &arg0 = None(), const Optional<int> &arg1 = Non
         std::cout << "IsNone(arg0, arg1, arg2)\n";
         flags |= 0x80000000;
     }
-#endif
     return flags;
 }
 
@@ -122,11 +120,8 @@ DWORD TestFn2(const Optional<int> &arg0 = None(), const Optional<int> &arg1 = No
 
 TEST(OptionalTest, Basic)
 {
-#if defined(__cpp_variadic_templates)
     const DWORD validFlags = 0xFFFFFFFF;
-#else
-    const DWORD validFlags = 0x0FFFFFFF;
-#endif
+
     std::cout << "TestFn()\n";
     EXPECT_EQ(TestFn(), 0x80000200 & validFlags);
 

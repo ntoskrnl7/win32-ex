@@ -57,6 +57,8 @@ Environment:
 #include "../T/winuser.hpp"
 #include "Process.hpp"
 
+#include <ext/string>
+
 #if !defined(WIN32EX_DO_NOT_INCLUDE_MISSING_WINSVC_HEADER_DEFINITIONS)
 #if defined(_WIN32)
 #if !defined(SERVICE_CONTROL_PRESHUTDOWN)
@@ -1421,6 +1423,9 @@ template <class _StringType = StringT> class ServiceT
         {
             if (IsServiceMode())
             {
+                if (!ext::string::equal(Service.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+                    return false;
+
                 typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
                     {(CharType *)Service.Name().c_str(),
                      (typename LPSERVICE_MAIN_FUNCTIONT<CharType>::Type)ServiceMain_},
@@ -2041,6 +2046,13 @@ template <class _StringType = StringT> class ServiceT
 #if defined(__cpp_variadic_templates)
     template <class... InstanceType> static bool Run()
     {
+        for (const auto &path : {
+                 (InstanceType::Get()).service_.binaryPathName_...,
+             })
+        {
+            if (!ext::string::equal(path, ThisProcess::CommandLineT<StringType>()))
+                return false;
+        }
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType::CharType *)(InstanceType::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
@@ -2050,6 +2062,14 @@ template <class _StringType = StringT> class ServiceT
     }
     template <class... InstanceType> static bool Run(InstanceType &... instance)
     {
+        for (const auto &path : {
+                 instance.service_.binaryPathName_...,
+             })
+        {
+            if (!ext::string::equal(path, ThisProcess::CommandLineT<StringType>()))
+                return false;
+        }
+
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType::CharType *)instance.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType::CharType>::Type)InstanceType::ServiceMain_}...,
@@ -2060,6 +2080,13 @@ template <class _StringType = StringT> class ServiceT
 #else
     template <typename InstanceType0, typename InstanceType1> static bool Run()
     {
+        if (!ext::string::equal((InstanceType0::Get()).service_.binaryPathName_,
+                                ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal((InstanceType1::Get()).service_.binaryPathName_,
+                                ThisProcess::CommandLineT<StringType>()))
+            return false;
+
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType0::CharType *)(InstanceType0::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
@@ -2071,6 +2098,16 @@ template <class _StringType = StringT> class ServiceT
     }
     template <typename InstanceType0, typename InstanceType1, typename InstanceType2> static bool Run()
     {
+        if (!ext::string::equal((InstanceType0::Get()).service_.binaryPathName_,
+                                ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal((InstanceType1::Get()).service_.binaryPathName_,
+                                ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal((InstanceType2::Get()).service_.binaryPathName_,
+                                ThisProcess::CommandLineT<StringType>()))
+            return false;
+
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType0::CharType *)(InstanceType0::Get()).service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
@@ -2086,6 +2123,11 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1>
     static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1)
     {
+        if (!ext::string::equal(Instance0.service_.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal(Instance1.service_.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+            return false;
+
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType0::CharType *)Instance0.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},
@@ -2098,6 +2140,13 @@ template <class _StringType = StringT> class ServiceT
     template <typename InstanceType0, typename InstanceType1, typename InstanceType2>
     static bool Run(InstanceType0 &Instance0, InstanceType1 &Instance1, InstanceType2 &Instance2)
     {
+        if (!ext::string::equal(Instance0.service_.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal(Instance1.service_.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+            return false;
+        if (!ext::string::equal(Instance2.service_.binaryPathName_, ThisProcess::CommandLineT<StringType>()))
+            return false;
+
         typename SERVICE_TABLE_ENTRYT<CharType>::Type DispatchTable[] = {
             {(typename InstanceType0::CharType *)Instance0.service_.Name().c_str(),
              (typename LPSERVICE_MAIN_FUNCTIONT<typename InstanceType0::CharType>::Type)InstanceType0::ServiceMain_},

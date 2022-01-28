@@ -1146,7 +1146,50 @@ template <typename... Args> bool IsNone(const Optional<Args> &... args)
     return true;
 }
 #else
-#endif
+template <typename Arg0, typename Arg1> bool IsAll(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1)
+{
+    return arg0.IsSome() && arg1.IsSome();
+}
+
+template <typename Arg0, typename Arg1> bool IsSome(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1)
+{
+    return arg0.IsSome() || arg1.IsSome();
+}
+
+template <typename Arg0, typename Arg1> bool IsAny(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1)
+{
+    return IsSome(arg0, arg1);
+}
+
+template <typename Arg0, typename Arg1> bool IsNone(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1)
+{
+    return arg0.IsNone() && arg1.IsNone();
+}
+
+template <typename Arg0, typename Arg1, typename Arg2>
+bool IsAll(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1, const Optional<Arg2> &arg2)
+{
+    return arg0.IsSome() && arg1.IsSome() && arg2.IsSome();
+}
+
+template <typename Arg0, typename Arg1, typename Arg2>
+bool IsSome(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1, const Optional<Arg2> &arg2)
+{
+    return arg0.IsSome() || arg1.IsSome() || arg2.IsSome();
+}
+
+template <typename Arg0, typename Arg1, typename Arg2>
+bool IsAny(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1, const Optional<Arg2> &arg2)
+{
+    return IsSome(arg0, arg1, arg2);
+}
+
+template <typename Arg0, typename Arg1, typename Arg2>
+bool IsNone(const Optional<Arg0> &arg0, const Optional<Arg1> &arg1, const Optional<Arg2> &arg2)
+{
+    return arg0.IsNone() && arg1.IsNone() && arg2.IsNone();
+}
+#endif // defined(__cpp_variadic_templates)
 } // namespace Win32Ex
 
 #endif // _WIN32EX_OPTIONAL_HPP_
