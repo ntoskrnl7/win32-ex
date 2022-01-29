@@ -38,8 +38,8 @@
 ### Functions
 
 #### CreateUserAccountProcess
-
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+ 
+- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
 - Example
   - Runs user account process at the current session.
 
@@ -51,7 +51,7 @@
 
 #### CreateSystemAccountProcess
 
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
 - Example
   - Runs system account process at the current session.
 
@@ -64,7 +64,7 @@
 #### CreateUserAccountProcessT\<typename CharType\>
 
 - **C++ only**
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
 - Example
   - Runs user account process at the current session.
 
@@ -77,7 +77,7 @@
 #### CreateSystemAccountProcessT\<typename CharType\>
 
 - **C++ only**
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
 - Example
   - Runs system account process at the current session.
 
@@ -166,7 +166,7 @@
 #### UserAccountProcess
 
 - RunnableSessionProcessT\<UserAccount, Win32Ex::String\>
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 - Example
   - Runs user account process at the current session.
 
@@ -200,22 +200,22 @@
 #### UserAccountProcessW
 
 - RunnableSessionProcessT\<UserAccount, Win32Ex::StringW\>
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 
 #### UserAccountProcessT
 
 - Implements RunnableProcessT.
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 
 #### SystemAccountProcess
 
 - RunnableSessionProcessT\<SystemAccount, Win32Ex::String\>
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 
 #### SystemAccountProcessW
 
 - RunnableSessionProcessT\<SystemAccount, Win32Ex::StringW\>
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 
 #### SystemAccountProcessT
 
@@ -223,7 +223,7 @@
 
 #### RunnableSessionProcessT\<ProcessAccountType Type, class StringType = Win32Ex::StringT\>
 
-- [We usually recommend using the Wini32Ex::System::Session::NewSession method.](./termserv.md#session)
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 
 #### ElevatedProcess
 
