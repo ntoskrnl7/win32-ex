@@ -39,9 +39,9 @@
 
 #### CreateUserAccountProcess
  
-- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this funtion.
 - Example
-  - Runs user account process at the current session.
+  - Creating a user account process in the current session.
 
     ```C
     #include <Win32Ex/System/Process.h>
@@ -51,9 +51,9 @@
 
 #### CreateSystemAccountProcess
 
-- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this funtion.
 - Example
-  - Runs system account process at the current session.
+  - Creating a system account process in the current session.
 
     ```C
     #include <Win32Ex/System/Process.h>
@@ -64,9 +64,9 @@
 #### CreateUserAccountProcessT\<typename CharType\>
 
 - **C++ only**
-- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this funtion.
 - Example
-  - Runs user account process at the current session.
+  - Creating a user account process at the current session.
 
     ```C++
     #include <Win32Ex/System/Process.h>
@@ -77,9 +77,9 @@
 #### CreateSystemAccountProcessT\<typename CharType\>
 
 - **C++ only**
-- It's better using [Wini32Ex::System::Session::NewSession method](./termserv.md#session) than this funtion.
+- It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this funtion.
 - Example
-  - Runs system account process at the current session.
+  - Creating a system account process at the current session.
 
     ```C++
     #include <Win32Ex/System/Process.h>
@@ -168,7 +168,7 @@
 - RunnableSessionProcessT\<UserAccount, Win32Ex::String\>
 - It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this class.
 - Example
-  - Runs user account process at the current session.
+  - Creating a user account process at the current session.
 
       ```C++
       #include <Win32Ex/System/Process.hpp>
@@ -229,7 +229,7 @@
 
 - ElevatedProcessT\<Win32Ex::String\>
 - Example
-  - Run with elevated permissions UAC.
+  - Creating a with elevated permissions UAC.
 
       ```C++
       #include <Win32Ex/System/Process.hpp>
