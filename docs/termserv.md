@@ -23,7 +23,7 @@
 
 - SessionT\<Win32Ex::String\>
 - Example
-  - Runs system account process and user account process at each sessions.
+  - Creating a system account process and user account process in each sessions.
 
       ```C++
       for (auto session : Win32Ex::System::Session::All())
@@ -63,7 +63,7 @@
       Win32Ex::ThisSession::NameT<Win32Ex::String>();
       ```
 
-  - Runs system account process and user account process at this session.
+  - Creating a system account process and user account process in this session.
 
       ```C++
       auto process = Win32Ex::ThisSession::NewProcess(Win32Ex::System::UserAccount, "notepad");
