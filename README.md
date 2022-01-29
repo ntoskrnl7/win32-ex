@@ -164,7 +164,7 @@ Win32 API Experimental(or Extension) features
 
 ## Usage
 
-*We usually recommend using CMake. However, if you are using Visual Studio directly, add the include path to **{this repository}\include**.*
+*We usually recommend using CMake. However, if you are using Visual Studio directly, add **{this repository}\include**.* to 'addtional include path'.
 
 ### CMakeLists.txt
 
