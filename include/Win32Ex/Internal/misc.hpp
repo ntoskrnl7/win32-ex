@@ -135,15 +135,6 @@ class Duration
     DWORD Millisecond_;
 };
 
-class WaitableObject
-{
-    friend class Waitable;
-
-  private:
-    virtual bool IsWaitable() = 0;
-    virtual bool Wait(Duration Timeout) = 0;
-};
-
 #if defined(__cpp_rvalue_references) || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #define WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
@@ -309,6 +300,15 @@ class WaitableObject
         return *this;                                                                                                  \
     }
 #endif
+
+class WaitableObject
+{
+    friend class Waitable;
+
+  private:
+    virtual bool IsWaitable() = 0;
+    virtual bool Wait(Duration Timeout) = 0;
+};
 
 class Waitable
 {
