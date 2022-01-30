@@ -1,6 +1,6 @@
 # Security Descriptors
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors>
+- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/security-descriptors>
 - **Headers :** Win32Ex/Security/Descriptor.h
 
 ## Contents

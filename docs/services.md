@@ -1,6 +1,6 @@
 # Services
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/services/services>
+- **Link :** <https://docs.microsoft.com/windows/win32/services/services>
 - **Headers :** Win32Ex/System/Service.hpp
 
 ## Contents

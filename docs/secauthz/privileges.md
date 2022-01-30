@@ -1,6 +1,6 @@
 # Privileges
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/privileges>
+- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/privileges>
 - **Headers :** Win32Ex/Security/Privilege.h, Win32Ex/Security/Privilege.hpp
 
 ## Contents

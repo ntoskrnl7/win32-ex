@@ -1,6 +1,6 @@
 # Handles and Objects
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects>
+- **Link :** <https://docs.microsoft.com/windows/win32/sysinfo/handles-and-objects>
 - **Headers :** Win32Ex/System/Object.h
 
 ## Contents

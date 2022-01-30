@@ -1,6 +1,6 @@
 # Remote Desktop Services
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/termserv/terminal-services-portal>
+- **Link :** <https://docs.microsoft.com/windows/win32/termserv/terminal-services-portal>
 - **Headers :** Win32Ex/System/Session.hpp
 
 ## Contents

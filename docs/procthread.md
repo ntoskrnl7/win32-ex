@@ -1,6 +1,6 @@
 # Processes and threads
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/procthread/processes-and-threads>
+- **Link :** <https://docs.microsoft.com/windows/win32/procthread/processes-and-threads>
 - **Headers :** Win32Ex/System/Process.h, Win32Ex/System/Process.hpp
 
 ## Contents

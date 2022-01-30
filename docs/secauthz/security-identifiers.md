@@ -1,6 +1,6 @@
 # Security Identifiers
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/security-identifiers>
+- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/security-identifiers>
 - **Headers :** Security\Sid.h
 
 ## Contents
@@ -32,7 +32,7 @@
 
 #### GetLogonSid
 
-- [Reference](<https://docs.microsoft.com/en-us/windows/win32/api/securityappcontainer/nf-securityappcontainer-getappcontainernamedobjectpath>)
+- [Reference](<https://docs.microsoft.com/windows/win32/api/securityappcontainer/nf-securityappcontainer-getappcontainernamedobjectpath>)
 
 #### FreeLogonSid
 

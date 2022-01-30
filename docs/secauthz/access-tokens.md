@@ -1,6 +1,6 @@
 # Access Tokens
 
-- **Link :** <https://docs.microsoft.com/en-us/windows/win32/secauthz/access-tokens>
+- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/access-tokens>
 - **Headers :** Win32Ex/Security/Token.h, Win32Ex/Security/Token.hpp
 
 ## Contents
@@ -55,7 +55,7 @@
 
 #### IsUserAdmin
 
-- [Reference](<https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership>)
+- [Reference](<https://docs.microsoft.com/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership>)
 
 #### EqualTokenUserSid
 
