@@ -70,71 +70,59 @@ This library is designed for use in legacy development environments. So it shoul
 
 ## Features
 
-- **Link :** <https://docs.microsoft.com/windows/win32/desktop-app-technologies>
 - **Headers :** Win32Ex.h
 
 ### System Services
 
-- **Link :** <https://docs.microsoft.com/windows/win32/system-services>
 - **Headers :** Win32Ex/System.h
 - [More](docs/system-services.md)
 
 #### Processes and Threads
 
-- **Link :** <https://docs.microsoft.com/windows/win32/procthread/processes-and-threads>
 - **Headers :** Win32Ex/System/Process.h, Win32Ex/System/Process.hpp
 - [More](docs/procthread.md)
 
 #### Remote Desktop Services
 
-- **Link :** <https://docs.microsoft.com/windows/win32/termserv/terminal-services-portal>
 - **Headers :** Win32Ex/System/Session.hpp
 - [More](docs/termserv.md)
 
 #### Services
 
-- **Link :** <https://docs.microsoft.com/windows/win32/services/services>
 - **Headers :** Win32Ex/System/Service.hpp
 - [More](docs/services.md)
 
 #### Windows System Information
 
-- **Link :** <https://docs.microsoft.com/windows/win32/sysinfo/windows-system-information>
 - [More](docs/sysinfo.md)
 
 ##### Handles and Objects
 
-- **Link :** <https://docs.microsoft.com/windows/win32/sysinfo/handles-and-objects>
 - **Headers :** Win32Ex/System/Object.h
 - [More](docs/sysinfo/handles-and-objects.md)
 
 ### Security and Identity
 
-- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/authorization-portal>
 - **Headers :** Win32Ex/Security.h
 - [More](docs/secauthz.md)
 
 #### Privileges
 
-- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/privileges>
 - **Headers :** Win32Ex/Security/Privilege.h, Win32Ex/Security/Privilege.hpp
 - [More](docs/secauthz/privileges.md)
 
 #### Access Tokens
 
-- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/access-tokens>
 - **Headers :** Win32Ex/Security/Token.h, Win32Ex/Security/Token.hpp
 - [More](docs/secauthz/access-tokens.md)
 
 #### Security Descriptors
 
-- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/security-descriptors>
 - **Headers :** Win32Ex/Security/Descriptor.h
 - [More](docs/secauthz/security-descriptors.md)
 
 #### Security Identifiers
 
-- **Link :** <https://docs.microsoft.com/windows/win32/secauthz/security-identifiers>
 - **Headers :** Security\Sid.h
 - [More](docs/secauthz/security-identifiers.md)
 
