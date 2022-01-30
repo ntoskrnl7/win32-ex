@@ -38,7 +38,7 @@
 ### Functions
 
 #### CreateUserAccountProcess
- 
+
 - It's better using [Wini32Ex::System::Session::NewProcess method](./termserv.md#session) than this funtion.
 - Example
   - Creating a user account process in the current session.
@@ -147,7 +147,7 @@
 
       ```C++
       #include <Win32Ex/System/Process.hpp>
-      // We usually recommend using the Wini32Ex::System::Session::NewSession method.
+      // It's better using the Wini32Ex::System::Session::NewProcess method than this class.
       Win32Ex::System::UserAccountProcess process("CMD", "/C WHOAMI");
       Win32Ex::System::RunnableProcess &runnable = process;
       runnable.Run();
