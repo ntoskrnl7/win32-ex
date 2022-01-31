@@ -55,7 +55,7 @@ namespace System
 {
 template <class _StringType = StringT> class SessionT
 {
-    WIN32EX_MOVE_ALWAYS_CLASS_WITH_IS_MOVED(SessionT)
+    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED(SessionT)
 
   public:
     SessionT Clone() const

@@ -138,7 +138,7 @@ DECLSPEC_SELECTANY LUID SeDelegateSessionUserImpersonatePrivilege =
 
 class TokenPrivileges
 {
-    WIN32EX_MOVE_ALWAYS_CLASS(TokenPrivileges)
+    WIN32EX_ALWAYS_MOVE_CLASS(TokenPrivileges)
 
   private:
     void Move(TokenPrivileges &To)
