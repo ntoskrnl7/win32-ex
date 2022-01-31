@@ -4,7 +4,7 @@ Win32 API Experimental(or Extension) features.
 
 [![CMake](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml/badge.svg)](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml) [![MSYS2](https://github.com/ntoskrnl7/win32-ex/actions/workflows/msys2.yml/badge.svg)](https://github.com/ntoskrnl7/win32-ex/actions/workflows/msys2.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/ntoskrnl7/win32-ex)
 
-This library is designed for use in legacy development environments. So it should support Visual Studio 2008 SP1 (probably C++03).
+This library is designed for use in legacy development environments also. Because of that, we will support Visual Studio 2008 SP1 (probably C++03).
 
 ---
 
