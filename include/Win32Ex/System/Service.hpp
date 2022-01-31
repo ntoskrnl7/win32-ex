@@ -2046,9 +2046,10 @@ template <class _StringType = StringT> class ServiceT
 #if defined(__cpp_variadic_templates)
     template <class... InstanceType> static bool Run()
     {
-        for (const auto &path : {
-                 (InstanceType::Get()).service_.binaryPathName_...,
-             })
+        std::vector<StringType> paths = {
+            (InstanceType::Get()).service_.binaryPathName_...,
+        };
+        for (const auto &path : paths)
         {
             if (!ext::string::equal(path, ThisProcess::CommandLineT<StringType>()))
                 return false;
@@ -2060,7 +2061,7 @@ template <class _StringType = StringT> class ServiceT
 
         return StartServiceCtrlDispatcherT<CharType>(DispatchTable) == TRUE;
     }
-    template <class... InstanceType> static bool Run(InstanceType &... instance)
+    template <class... InstanceType> static bool Run(InstanceType &...instance)
     {
         for (const auto &path : {
                  instance.service_.binaryPathName_...,

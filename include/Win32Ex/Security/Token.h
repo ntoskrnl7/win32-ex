@@ -166,7 +166,7 @@ FORCEINLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
     return NULL;
 }
 
-/// https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
+/// https://docs.microsoft.com/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
 #ifdef __cplusplus
 FORCEINLINE BOOL IsUserAdmin(HANDLE hToken = NULL)
 #else

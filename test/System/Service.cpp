@@ -111,7 +111,7 @@ TEST(ServiceTest, DependentServices)
         // clang-format on
 #endif
     std::cout << "\n\n-----------------ProfSvc.DependentServices-------------------\n";
-#if defined(__cpp_range_based_for)
+#if defined(__cpp_range_based_for) && defined(__cpp_initializer_lists)
     for (auto &dep : service.DependentServices().Get({}))
     {
         std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
@@ -137,7 +137,7 @@ TEST(ServiceTest, RequiredPrivileges)
     using namespace Win32Ex;
     System::Service service("ProfSvc");
     std::cout << "\n\n-----------------ProfSvc.RequiredPrivileges-------------------\n";
-#if defined(__cpp_range_based_for)
+#if defined(__cpp_range_based_for) && defined(__cpp_initializer_lists)
     for (auto &privilege : service.RequiredPrivileges().Get({}))
         std::cout << privilege << '\n';
 #elif defined(_MSC_VER)
