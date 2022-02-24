@@ -57,7 +57,7 @@ template <class _StringType> class OptionalConstStringRef
     typedef typename _StringType::value_type CharType;
     typedef const CharType *ConstPtrType;
 
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED(OptionalConstStringRef)
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(OptionalConstStringRef)
 
   public:
     OptionalConstStringRef Clone() const
@@ -243,7 +243,7 @@ template <class _StringType> class OptionalString
     friend class OptionalConstStringRef<_StringType>;
     friend class OptionalConstStringRef<typename std::remove_const<_StringType>::type>;
 
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED(OptionalString)
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(OptionalString)
 
   public:
     OptionalString Clone() const
@@ -410,7 +410,7 @@ template <> class Optional<const String &> : public Details::OptionalConstString
   public:
     typedef OptionalConstStringRef::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -491,7 +491,7 @@ template <> class Optional<const StringW &> : public Details::OptionalConstStrin
   public:
     typedef OptionalConstStringRef::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -575,7 +575,7 @@ template <> class Optional<String> : public Details::OptionalString<String>
   public:
     typedef OptionalString::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -661,7 +661,7 @@ template <> class Optional<StringW> : public Details::OptionalString<StringW>
   public:
     typedef OptionalString::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -747,7 +747,7 @@ template <> class Optional<const String> : public Details::OptionalString<const 
   public:
     typedef OptionalString::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -811,7 +811,7 @@ template <> class Optional<const StringW> : public Details::OptionalString<const
   public:
     typedef OptionalString::Type Type;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(Optional)
+    WIN32EX_MOVE_ONLY_CLASS(Optional)
 
   public:
     bool IsMoved() const
@@ -872,7 +872,7 @@ template <> class Optional<const StringW> : public Details::OptionalString<const
 
 template <typename T> class Optional<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
 
   public:
     Optional Clone() const
@@ -978,7 +978,7 @@ template <typename T> class Optional<T, typename std::enable_if<std::is_referenc
 
 template <typename T> class Optional<T, typename std::enable_if<!std::is_reference<T>::value>::type>
 {
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(Optional, value_(Other.value_))
 
   public:
     Optional Clone() const

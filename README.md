@@ -198,7 +198,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.18")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.19")
 
 # link dependencies
 target_link_libraries(tests win32ex)

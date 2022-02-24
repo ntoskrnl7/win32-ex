@@ -136,7 +136,7 @@ class Duration
 };
 
 #if defined(__cpp_rvalue_references) || (defined(_MSC_VER) && _MSC_VER >= 1600)
-#define WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
+#define WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
                                                                                                                        \
@@ -165,7 +165,7 @@ class Duration
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }
-#define WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
+#define WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
                                                                                                                        \
@@ -195,7 +195,7 @@ class Duration
         return *this;                                                                                                  \
     }
 
-#define WIN32EX_ALWAYS_MOVE_CLASS(_CLASS)                                                                              \
+#define WIN32EX_MOVE_ONLY_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \
     _CLASS(_CLASS &&Other)                                                                                             \
     {                                                                                                                  \
@@ -215,7 +215,7 @@ class Duration
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }
-#define WIN32EX_ALWAYS_MOVE_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
+#define WIN32EX_MOVE_ONLY_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
   public:                                                                                                              \
     _CLASS(_CLASS &&Other) : _INIT_STMT                                                                                \
     {                                                                                                                  \
@@ -236,7 +236,7 @@ class Duration
         return *this;                                                                                                  \
     }
 #else
-#define WIN32EX_ALWAYS_MOVE_CLASS(_CLASS)                                                                              \
+#define WIN32EX_MOVE_ONLY_CLASS(_CLASS)                                                                              \
   public:                                                                                                              \
     _CLASS(_CLASS &Other)                                                                                              \
     {                                                                                                                  \
@@ -247,7 +247,7 @@ class Duration
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }
-#define WIN32EX_ALWAYS_MOVE_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
+#define WIN32EX_MOVE_ONLY_CLASS_EX(_CLASS, _INIT_STMT)                                                               \
   public:                                                                                                              \
     _CLASS(_CLASS &Other) : _INIT_STMT                                                                                 \
     {                                                                                                                  \
@@ -259,7 +259,7 @@ class Duration
         return *this;                                                                                                  \
     }
 
-#define WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
+#define WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(_CLASS)                                                                \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
                                                                                                                        \
@@ -279,7 +279,7 @@ class Duration
         Rhs.Move(*this);                                                                                               \
         return *this;                                                                                                  \
     }
-#define WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
+#define WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(_CLASS, _INIT_STMT)                                                 \
   private:                                                                                                             \
     bool isMoved_;                                                                                                     \
                                                                                                                        \

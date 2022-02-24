@@ -193,6 +193,25 @@ TEST(ProcessTest, AttachByHandle)
     EXPECT_STRCASEEQ(process.ExecutablePath().c_str(), Win32Ex::ThisProcess::ExecutablePath().c_str());
 }
 
+TEST(ProcessTest, StdIn)
+{
+    Win32Ex::System::UserAccountProcess process("cmd /c more");
+    process.RunAsync();
+    process.StdIn() << "test 1\n";
+    process.StdIn() << "test 2\ntest 3\n";
+    process.StdIn().Close();
+    std::cout << process.ExecutablePath();
+    std::cout << process.StdOut().ReadAll();
+}
+
+TEST(ProcessTest, StdOut)
+{
+    Win32Ex::System::UserAccountProcess process("cmd /c dir .");
+    process.RunAsync();
+    std::cout << process.ExecutablePath();
+    std::cout << process.StdOut().ReadAll();
+}
+
 TEST(ProcessTest, RunnableProcess)
 {
     PVOID oldValue = NULL;

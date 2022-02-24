@@ -59,6 +59,12 @@ Environment:
 #include <stdexcept>
 #include <stdlib.h>
 
+#if defined(__GLIBCXX__)
+#include <io.h>
+#endif
+
+#include <ext/pipe>
+
 #if defined(_MSC_VER) && _MSC_VER < 1600
 #define _STD_NS_ std::tr1
 #else
@@ -122,7 +128,7 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
 {
     friend class RunnableProcessT<_StringType>;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(ProcessT)
+    WIN32EX_MOVE_ONLY_CLASS(ProcessT)
 
   private:
     void Move(ProcessT &To)
@@ -699,7 +705,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
     RunnableSessionProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
                             const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
                             const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
-                            BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+                            BOOL InheritHandles = TRUE, LPVOID EnvironmentBlock = NULL)
         : RunnableProcessT<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
@@ -710,7 +716,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
                             const Optional<const StringType &> &Arguments = None(),
                             const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
                             const typename Win32Ex::STARTUPINFOT<CharType>::Type *StartupInfo = NULL,
-                            BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
+                            BOOL InheritHandles = TRUE, LPVOID EnvironmentBlock = NULL)
         : RunnableProcessT<StringType>(ExecutablePath, Arguments, CurrentDirectory), creationFlags_(CreationFlags),
           startupInfo_(StartupInfo), inheritHandles_(InheritHandles), environmentBlock_(EnvironmentBlock)
     {
@@ -793,6 +799,34 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
             command += _RunnableProcess::arguments_;
         }
 
+        ext::pipe in;
+        ext::pipe out;
+        ext::pipe err;
+        si.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+#ifdef __cpp_rvalue_references
+        in_ = std::move(OutputStream(std::move(in.write())));
+        out_ = std::move(InputStream(std::move(out.read())));
+        err_ = std::move(InputStream(std::move(err.read())));
+#else
+        in_.swap(in.write());
+        out_.swap(out.read());
+        err_.swap(err.read());
+#endif // __cpp_rvalue_references
+#if defined(__GLIBCXX__)
+        si.StartupInfo.hStdInput = (HANDLE)_get_osfhandle(in.read().native_handle());
+        si.StartupInfo.hStdOutput = (HANDLE)_get_osfhandle(out.write().native_handle());
+        si.StartupInfo.hStdError = (HANDLE)_get_osfhandle(err.write().native_handle());
+        SetHandleInformation((HANDLE)_get_osfhandle(in_.native_handle()), HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation((HANDLE)_get_osfhandle(out_.native_handle()), HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation((HANDLE)_get_osfhandle(err_.native_handle()), HANDLE_FLAG_INHERIT, 0);
+#else
+        si.StartupInfo.hStdInput = in.read().native_handle();
+        si.StartupInfo.hStdOutput = out.write().native_handle();
+        si.StartupInfo.hStdError = err.write().native_handle();
+        SetHandleInformation(in_.native_handle(), HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(out_.native_handle(), HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(err_.native_handle(), HANDLE_FLAG_INHERIT, 0);
+#endif // defined(__GLIBCXX__)
         if (_Type == SystemAccount)
         {
             if (!CreateSystemAccountProcessT<CharType>(
@@ -834,7 +868,80 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         return Waitable(*this);
     }
 
+    class OutputStream : public ext::opstream
+    {
+      public:
+        OutputStream()
+        {
+        }
+#ifdef __cpp_rvalue_references
+        OutputStream(ext::opstream &&stream) : ext::opstream(std::move(stream))
+        {
+        }
+#endif
+        void Close()
+        {
+            ext::opstream::close();
+        }
+    };
+
+    class InputStream : public ext::ipstream
+    {
+      public:
+        InputStream()
+        {
+        }
+#ifdef __cpp_rvalue_references
+        InputStream(ext::ipstream &&stream) : ext::ipstream(std::move(stream))
+        {
+        }
+#endif
+        std::string ReadAll() const
+        {
+            return std::string((std::istreambuf_iterator<char>(ext::ipstream::rdbuf())),
+                               (std::istreambuf_iterator<char>()));
+        }
+
+        void Close()
+        {
+            ext::ipstream::close();
+        }
+    };
+
+    OutputStream &StdIn()
+    {
+        if (_RunnableProcess::IsValid())
+            return in_;
+        if (_RunnableProcess::errorCallbackWithSelf_)
+            _RunnableProcess::errorCallbackWithSelf_(*this, ERROR_INVALID_HANDLE,
+                                                     std::runtime_error("Unknown process type"));
+        throw std::runtime_error("Invalid proceses");
+    }
+
+    const InputStream &StdOut()
+    {
+        if (_RunnableProcess::IsValid())
+            return out_;
+        if (_RunnableProcess::errorCallbackWithSelf_)
+            _RunnableProcess::errorCallbackWithSelf_(*this, ERROR_INVALID_HANDLE,
+                                                     std::runtime_error("Unknown process type"));
+        throw std::runtime_error("Invalid proceses");
+    }
+
+    const InputStream &StdErr()
+    {
+        if (_RunnableProcess::IsValid())
+            return err_;
+        if (_RunnableProcess::errorCallbackWithSelf_)
+            _RunnableProcess::errorCallbackWithSelf_(*this, ERROR_INVALID_HANDLE,
+                                                     std::runtime_error("Unknown process type"));
+        throw std::runtime_error("Invalid proceses");
+    }
+
   private:
+    OutputStream in_;
+    InputStream out_;
+    InputStream err_;
     DWORD creationFlags_;
     BOOL inheritHandles_;
     LPVOID environmentBlock_;
@@ -877,7 +984,7 @@ template <typename _StringType = StringT> class ElevatedProcessT : public Runnab
 
         executeInfo_.nShow = CmdShow;
         if (CmdShow == SW_HIDE)
-            executeInfo_.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
+            executeInfo_.fMask |= SEE_MASK_NO_CONSOLE;
 
         _RunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }

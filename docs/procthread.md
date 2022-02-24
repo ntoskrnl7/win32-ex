@@ -197,6 +197,18 @@
       }
       ```
 
+  - Tests standard output and standard input.
+
+    ```C++
+    Win32Ex::System::UserAccountProcess process("cmd /c more");
+    process.RunAsync();
+    process.StdIn() << "test 1\n";
+    process.StdIn() << "test 2\ntest 3\n";
+    process.StdIn().Close();
+    std::cout << process.ExecutablePath();
+    std::cout << process.StdOut().ReadAll();
+    ```
+
 #### UserAccountProcessW
 
 - RunnableSessionProcessT\<UserAccount, Win32Ex::StringW\>

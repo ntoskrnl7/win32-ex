@@ -50,7 +50,7 @@ namespace Security
 {
 class Token
 {
-    WIN32EX_ALWAYS_MOVE_CLASS(Token)
+    WIN32EX_MOVE_ONLY_CLASS(Token)
 
   private:
     void Move(Token &To)
