@@ -877,7 +877,7 @@ template <typename _StringType = StringT> class ElevatedProcessT : public Runnab
 
         executeInfo_.nShow = CmdShow;
         if (CmdShow == SW_HIDE)
-            executeInfo_.fMask |= SEE_MASK_FLAG_NO_UI | SEE_MASK_NO_CONSOLE;
+            executeInfo_.fMask |= SEE_MASK_NO_CONSOLE;
 
         _RunnableProcess::sessionId_ = WTSGetActiveConsoleSessionId();
     }
