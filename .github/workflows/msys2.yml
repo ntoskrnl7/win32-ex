@@ -70,7 +70,12 @@ jobs:
         working-directory: test/build
 
       - name: Configure CMake
-        if: ${{ matrix.gen != '' }}
+        if: ${{ (matrix.gen != '') && ((matrix.sys == 'CLANG32') || (matrix.sys == 'CLANG64')) }}
+        run: cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "${{matrix.gen}}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        working-directory: test/build
+  
+      - name: Configure CMake
+        if: ${{ (matrix.gen != '') && (!((matrix.sys == 'CLANG32') || (matrix.sys == 'CLANG64'))) }}
         run: cmake .. -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "${{matrix.gen}}"
         working-directory: test/build
 
