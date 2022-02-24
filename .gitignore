@@ -33,4 +33,8 @@
 
 /build*
 /test/build*
-/.vscode/
+/.vscode
+
+# Rust
+/target
+Cargo.lock
