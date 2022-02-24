@@ -122,7 +122,7 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
 {
     friend class RunnableProcessT<_StringType>;
 
-    WIN32EX_ALWAYS_MOVE_CLASS(ProcessT)
+    WIN32EX_MOVE_ONLY_CLASS(ProcessT)
 
   private:
     void Move(ProcessT &To)

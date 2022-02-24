@@ -53,7 +53,7 @@ struct Error : std::runtime_error
 
 template <typename T> class Result<T, typename std::enable_if<std::is_reference<T>::value>::type>
 {
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
 
   public:
     Result Clone() const
@@ -157,7 +157,7 @@ template <typename T> class Result<T, typename std::enable_if<std::is_reference<
 
 template <typename T> class Result<T, typename std::enable_if<!std::is_reference<T>::value>::type>
 {
-    WIN32EX_ALWAYS_MOVE_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
+    WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED_EX(Result, value_(Other.value_))
 
   public:
     Result Clone() const
