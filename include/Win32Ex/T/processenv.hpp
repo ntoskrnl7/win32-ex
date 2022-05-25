@@ -40,7 +40,7 @@ Environment:
 
 namespace Win32Ex
 {
-template <typename _CharType> inline _CharType *WINAPI GetCommandLineT(VOID);
+template <typename CharType> inline CharType *WINAPI GetCommandLineT(VOID);
 
 template <> inline LPSTR WINAPI GetCommandLineT<CHAR>(VOID)
 {
@@ -52,7 +52,7 @@ template <> inline LPWSTR WINAPI GetCommandLineT<WCHAR>(VOID)
     return GetCommandLineW();
 }
 
-template <typename _CharType> inline DWORD GetCurrentDirectoryT(_In_ DWORD nBufferLength, _Out_ _CharType *lpBuffer);
+template <typename CharType> inline DWORD GetCurrentDirectoryT(_In_ DWORD nBufferLength, _Out_ CharType *lpBuffer);
 
 template <> inline DWORD GetCurrentDirectoryT<CHAR>(_In_ DWORD nBufferLength, _Out_ LPSTR lpBuffer)
 {

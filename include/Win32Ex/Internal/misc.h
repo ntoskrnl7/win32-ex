@@ -41,10 +41,6 @@ Environment:
 #define PtrOffset(B, O) ((ULONG)((ULONG_PTR)(O) - (ULONG_PTR)(B)))
 #endif
 
-//
-//  플래그 설정, 제거, 검사 매크로.
-//
-
 #ifndef FlagOn
 #define FlagOn(_F, _SF) ((_F) & (_SF))
 #endif
@@ -61,41 +57,26 @@ Environment:
 #define ClearFlag(_F, _SF) ((_F) &= ~(_SF))
 #endif
 
-//
-//  크기/정렬 메크로.
-//
-
 #ifndef ROUND_TO_SIZE
 //
 //  This macro takes a length & rounds it up to a multiple of the alignment
 //  Alignment is given as a power of 2
 //
-
 #define ROUND_TO_SIZE(_length, _alignment) ((((ULONG_PTR)(_length)) + ((_alignment)-1)) & ~((ULONG_PTR)(_alignment)-1))
-
 #endif
 
 #ifndef IS_ALIGNED
-
 //
 //  Checks if 1st argument is aligned on given power of 2 boundary specified
 //  by 2nd argument
 //
-
 #define IS_ALIGNED(_pointer, _alignment) ((((ULONG_PTR)(_pointer)) & ((_alignment)-1)) == 0)
-
-#endif
-
-#if defined(__GNUC__)
-#define VA_FN_INLINE static
-#else
-#define VA_FN_INLINE FORCEINLINE
 #endif
 
 #if defined(__cplusplus) || !defined(__GNUC__)
-#define STATIC_OR_INLINE FORCEINLINE
+#define WIN32EX_ALWAYS_INLINE FORCEINLINE
 #else
-#define STATIC_OR_INLINE static
+#define WIN32EX_ALWAYS_INLINE __inline__ static //__attribute__((always_inline))
 #endif
 
 #endif // _WIN32EX_MISC_H_

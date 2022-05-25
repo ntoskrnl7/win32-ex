@@ -122,11 +122,11 @@ struct ProcessHandle
     }
 };
 
-template <typename _StringType> class RunnableProcessT;
+template <typename StringType> class RunnableProcessT;
 
-template <typename _StringType = StringT> class ProcessT : public WaitableObject
+template <typename StringType = StringT> class ProcessT : public WaitableObject
 {
-    friend class RunnableProcessT<_StringType>;
+    friend class RunnableProcessT<StringType>;
 
     WIN32EX_MOVE_ONLY_CLASS(ProcessT)
 
@@ -164,7 +164,6 @@ template <typename _StringType = StringT> class ProcessT : public WaitableObject
     }
 
   public:
-    typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
     ProcessT(ProcessHandle ProcessHandle)
@@ -395,18 +394,17 @@ enum ProcessAccountType
     UserAccount
 };
 
-template <ProcessAccountType _Type, typename _StringType> class RunnableSessionProcessT;
-template <typename _StringType> class ElevatedProcessT;
+template <ProcessAccountType Type, typename StringType> class RunnableSessionProcessT;
+template <typename StringType> class ElevatedProcessT;
 
-template <typename _StringType = StringT> class RunnableProcessT : public ProcessT<_StringType>
+template <typename StringType = StringT> class RunnableProcessT : public ProcessT<StringType>
 {
-    friend class RunnableSessionProcessT<SystemAccount, _StringType>;
-    friend class RunnableSessionProcessT<UserAccount, _StringType>;
-    friend class ElevatedProcessT<_StringType>;
-    friend class ElevatedProcessT<_StringType>;
+    friend class RunnableSessionProcessT<SystemAccount, StringType>;
+    friend class RunnableSessionProcessT<UserAccount, StringType>;
+    friend class ElevatedProcessT<StringType>;
+    friend class ElevatedProcessT<StringType>;
 
   public:
-    typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
   private:
@@ -692,14 +690,13 @@ template <typename _StringType = StringT> class RunnableProcessT : public Proces
     }
 };
 
-template <ProcessAccountType _Type, typename _StringType = StringT>
-class RunnableSessionProcessT : public RunnableProcessT<_StringType>
+template <ProcessAccountType Type, typename StringType = StringT>
+class RunnableSessionProcessT : public RunnableProcessT<StringType>
 {
   private:
-    typedef RunnableProcessT<_StringType> _RunnableProcess;
+    typedef RunnableProcessT<StringType> _RunnableProcess;
 
   public:
-    typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
     RunnableSessionProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
@@ -725,7 +722,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
 
     bool IsAdmin() const
     {
-        if (_Type == SystemAccount)
+        if (Type == SystemAccount)
             return true;
 
         return _RunnableProcess::IsAdmin();
@@ -749,7 +746,15 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         return RunAsync(Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles, EnvironmentBlock)
             .Wait();
     }
-
+    void test(const ext::opstream &xx)
+    {
+    }
+    void test(ext::opstream &xx)
+    {
+    }
+    void test(ext::opstream &&xx)
+    {
+    }
     Waitable RunAsync(const Optional<const StringType &> &Arguments,
                       const Optional<const StringType &> &CurrentDirectory = None(),
                       const Optional<DWORD> &CreationFlags = None(),
@@ -804,30 +809,30 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         ext::pipe err;
         si.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
 #ifdef __cpp_rvalue_references
-        in_ = std::move(OutputStream(std::move(in.write())));
-        out_ = std::move(InputStream(std::move(out.read())));
-        err_ = std::move(InputStream(std::move(err.read())));
+        in_ = std::move(in.out());
+        out_ = std::move(out.in());
+        err_ = std::move(err.in());
 #else
-        in_.swap(in.write());
-        out_.swap(out.read());
-        err_.swap(err.read());
+        in_.swap(in.out());
+        out_.swap(out.in());
+        err_.swap(err.in());
 #endif // __cpp_rvalue_references
 #if defined(__GLIBCXX__)
-        si.StartupInfo.hStdInput = (HANDLE)_get_osfhandle(in.read().native_handle());
-        si.StartupInfo.hStdOutput = (HANDLE)_get_osfhandle(out.write().native_handle());
-        si.StartupInfo.hStdError = (HANDLE)_get_osfhandle(err.write().native_handle());
+        si.StartupInfo.hStdInput = (HANDLE)_get_osfhandle(in.in().native_handle());
+        si.StartupInfo.hStdOutput = (HANDLE)_get_osfhandle(out.out().native_handle());
+        si.StartupInfo.hStdError = (HANDLE)_get_osfhandle(err.out().native_handle());
         SetHandleInformation((HANDLE)_get_osfhandle(in_.native_handle()), HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation((HANDLE)_get_osfhandle(out_.native_handle()), HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation((HANDLE)_get_osfhandle(err_.native_handle()), HANDLE_FLAG_INHERIT, 0);
 #else
-        si.StartupInfo.hStdInput = in.read().native_handle();
-        si.StartupInfo.hStdOutput = out.write().native_handle();
-        si.StartupInfo.hStdError = err.write().native_handle();
+        si.StartupInfo.hStdInput = in.in().native_handle();
+        si.StartupInfo.hStdOutput = out.out().native_handle();
+        si.StartupInfo.hStdError = err.out().native_handle();
         SetHandleInformation(in_.native_handle(), HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(out_.native_handle(), HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(err_.native_handle(), HANDLE_FLAG_INHERIT, 0);
 #endif // defined(__GLIBCXX__)
-        if (_Type == SystemAccount)
+        if (Type == SystemAccount)
         {
             if (!CreateSystemAccountProcessT<CharType>(
                     _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL, inheritHandles_, creationFlags_,
@@ -841,7 +846,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
                 return Waitable(*this);
             }
         }
-        else if (_Type == UserAccount)
+        else if (Type == UserAccount)
         {
             if (!CreateUserAccountProcessT<CharType>(
                     _RunnableProcess::sessionId_, NULL, &command[0], NULL, NULL, inheritHandles_, creationFlags_,
@@ -878,6 +883,12 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         OutputStream(ext::opstream &&stream) : ext::opstream(std::move(stream))
         {
         }
+
+        OutputStream &operator=(ext::opstream &&rhs)
+        {
+            swap(rhs);
+            return *this;
+        }
 #endif
         void Close()
         {
@@ -894,6 +905,12 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
 #ifdef __cpp_rvalue_references
         InputStream(ext::ipstream &&stream) : ext::ipstream(std::move(stream))
         {
+        }
+
+        InputStream &operator=(ext::ipstream &&rhs)
+        {
+            swap(rhs);
+            return *this;
         }
 #endif
         std::string ReadAll() const
@@ -918,7 +935,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         throw std::runtime_error("Invalid proceses");
     }
 
-    const InputStream &StdOut()
+    InputStream &StdOut()
     {
         if (_RunnableProcess::IsValid())
             return out_;
@@ -928,7 +945,7 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
         throw std::runtime_error("Invalid proceses");
     }
 
-    const InputStream &StdErr()
+    InputStream &StdErr()
     {
         if (_RunnableProcess::IsValid())
             return err_;
@@ -957,13 +974,12 @@ class RunnableSessionProcessT : public RunnableProcessT<_StringType>
     }
 };
 
-template <typename _StringType = StringT> class ElevatedProcessT : public RunnableProcessT<_StringType>
+template <typename StringType = StringT> class ElevatedProcessT : public RunnableProcessT<StringType>
 {
   private:
-    typedef RunnableProcessT<_StringType> _RunnableProcess;
+    typedef RunnableProcessT<StringType> _RunnableProcess;
 
   public:
-    typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
 
     ElevatedProcessT(const StringType &ExecutablePath, const Optional<const StringType &> &Arguments = None(),
@@ -1153,15 +1169,15 @@ static bool IsAdmin()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-static _StringType &ExecutablePathT()
+static StringType &ExecutablePathT()
 {
-    static _StringType executablePath_(MAX_PATH, 0);
+    static StringType executablePath_(MAX_PATH, 0);
     size_t returnSize =
-        GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0], (DWORD)executablePath_.size());
+        GetModuleFileNameT<typename StringType::value_type>(NULL, &executablePath_[0], (DWORD)executablePath_.size());
     for (;;)
     {
         if (returnSize < executablePath_.size())
@@ -1172,8 +1188,8 @@ static _StringType &ExecutablePathT()
         else
         {
             executablePath_.resize(returnSize + MAX_PATH);
-            returnSize = GetModuleFileNameT<typename _StringType::value_type>(NULL, &executablePath_[0],
-                                                                              (DWORD)executablePath_.size());
+            returnSize = GetModuleFileNameT<typename StringType::value_type>(NULL, &executablePath_[0],
+                                                                             (DWORD)executablePath_.size());
             executablePath_.resize(returnSize);
         }
         if (GetLastError() == ERROR_SUCCESS)
@@ -1191,14 +1207,14 @@ static StringW ExecutablePathW()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-static _StringType &CommandLineT()
+static StringType &CommandLineT()
 {
-    static _StringType cmdline_(MAX_PATH, 0);
-    cmdline_ = GetCommandLineT<typename _StringType::value_type>();
+    static StringType cmdline_(MAX_PATH, 0);
+    cmdline_ = GetCommandLineT<typename StringType::value_type>();
     return cmdline_;
 }
 static String CommandLine()
@@ -1211,18 +1227,18 @@ static StringW CommandLineW()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-static _StringType CurrentDirectoryT()
+static StringType CurrentDirectoryT()
 {
-    _StringType cwd(MAX_PATH, 0);
-    size_t length = Win32Ex::GetCurrentDirectoryT<typename _StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
+    StringType cwd(MAX_PATH, 0);
+    size_t length = Win32Ex::GetCurrentDirectoryT<typename StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
     if (length > cwd.size())
     {
         cwd.resize(length);
-        length = Win32Ex::GetCurrentDirectoryT<typename _StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
+        length = Win32Ex::GetCurrentDirectoryT<typename StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
     }
     cwd.resize(length);
     return cwd;
@@ -1237,13 +1253,13 @@ static StringW CurrentDirectoryW()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-inline System::ProcessT<_StringType> ParentT()
+inline System::ProcessT<StringType> ParentT()
 {
-    return System::ProcessT<_StringType>(GetParentProcessId(ThisProcess::Id()));
+    return System::ProcessT<StringType>(GetParentProcessId(ThisProcess::Id()));
 }
 inline System::Process Parent()
 {

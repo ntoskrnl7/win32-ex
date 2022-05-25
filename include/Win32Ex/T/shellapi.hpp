@@ -47,8 +47,8 @@ namespace Win32Ex
 {
 WIN32EX_API_DEFINE_STRUCT_T(SHELLEXECUTEINFO);
 
-template <typename _CharType>
-inline BOOL ShellExecuteExT(_Inout_ typename SHELLEXECUTEINFOT<_CharType>::Type *pExecInfo);
+template <typename CharType>
+inline BOOL ShellExecuteExT(_Inout_ typename SHELLEXECUTEINFOT<CharType>::Type *pExecInfo);
 
 template <> inline BOOL ShellExecuteExT<CHAR>(_Inout_ SHELLEXECUTEINFOA *pExecInfo)
 {

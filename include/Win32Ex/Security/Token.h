@@ -60,7 +60,7 @@ using std::tr1::function;
 #endif
 
 #if (_WIN32_WINNT < _WIN32_WINNT_WIN8) || (defined(_MSC_VER) && (_MSC_VER < 1800))
-FORCEINLINE
+WIN32EX_ALWAYS_INLINE
 HANDLE
 GetCurrentProcessToken(VOID)
 {
@@ -68,8 +68,8 @@ GetCurrentProcessToken(VOID)
 }
 #endif
 
-FORCEINLINE PVOID GetTokenInfo(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
-                               _Out_opt_ PDWORD ReturnLength)
+WIN32EX_ALWAYS_INLINE PVOID GetTokenInfo(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+                                         _Out_opt_ PDWORD ReturnLength)
 {
     DWORD returnedLength = 0;
     DWORD bufferSize = 128;
@@ -106,37 +106,37 @@ retry:
     return NULL;
 }
 
-FORCEINLINE VOID FreeTokenInfo(_In_ PVOID Info)
+WIN32EX_ALWAYS_INLINE VOID FreeTokenInfo(_In_ PVOID Info)
 {
     HeapFree(GetProcessHeap(), 0, Info);
 }
 
-FORCEINLINE PTOKEN_USER GetTokenUser(_In_ HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE PTOKEN_USER GetTokenUser(_In_ HANDLE TokenHandle)
 {
     return (PTOKEN_USER)GetTokenInfo(TokenHandle, TokenUser, NULL);
 }
 
-FORCEINLINE VOID FreeTokenUser(_In_ PTOKEN_USER TokenUser)
+WIN32EX_ALWAYS_INLINE VOID FreeTokenUser(_In_ PTOKEN_USER TokenUser)
 {
     HeapFree(GetProcessHeap(), 0, TokenUser);
 }
 
-FORCEINLINE PTOKEN_GROUPS GetTokenGroups(_In_ HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE PTOKEN_GROUPS GetTokenGroups(_In_ HANDLE TokenHandle)
 {
     return (PTOKEN_GROUPS)GetTokenInfo(TokenHandle, TokenGroups, NULL);
 }
 
-FORCEINLINE VOID FreeTokenGroups(_In_ PTOKEN_GROUPS TokenGroups)
+WIN32EX_ALWAYS_INLINE VOID FreeTokenGroups(_In_ PTOKEN_GROUPS TokenGroups)
 {
     HeapFree(GetProcessHeap(), 0, TokenGroups);
 }
 
-FORCEINLINE VOID FreeTokenUserSid(_In_ PSID Sid)
+WIN32EX_ALWAYS_INLINE VOID FreeTokenUserSid(_In_ PSID Sid)
 {
     HeapFree(GetProcessHeap(), 0, Sid);
 }
 
-FORCEINLINE PSID DuplicateTokenUserSid(_In_ PSID Sid, _In_ DWORD SidLength)
+WIN32EX_ALWAYS_INLINE PSID DuplicateTokenUserSid(_In_ PSID Sid, _In_ DWORD SidLength)
 {
     PVOID sid = HeapAlloc(GetProcessHeap(), 0, SidLength);
     if (!sid)
@@ -150,7 +150,7 @@ FORCEINLINE PSID DuplicateTokenUserSid(_In_ PSID Sid, _In_ DWORD SidLength)
     return sid;
 }
 
-FORCEINLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
+WIN32EX_ALWAYS_INLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
 {
     HANDLE TokenHandle;
     PSID sid = NULL;
@@ -168,9 +168,9 @@ FORCEINLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
 
 /// https://docs.microsoft.com/windows/win32/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
 #ifdef __cplusplus
-FORCEINLINE BOOL IsUserAdmin(HANDLE hToken = NULL)
+WIN32EX_ALWAYS_INLINE BOOL IsUserAdmin(HANDLE hToken = NULL)
 #else
-FORCEINLINE BOOL IsUserAdmin(HANDLE hToken)
+WIN32EX_ALWAYS_INLINE BOOL IsUserAdmin(HANDLE hToken)
 #endif
 /*++
 Routine Description: This routine returns TRUE if the caller's
@@ -200,7 +200,7 @@ Return Value:
     return (b);
 }
 
-FORCEINLINE BOOL EqualTokenUserSid(_In_ HANDLE TokenHandle, _In_ PSID Sid)
+WIN32EX_ALWAYS_INLINE BOOL EqualTokenUserSid(_In_ HANDLE TokenHandle, _In_ PSID Sid)
 {
     BOOL equal = FALSE;
     DWORD returnedLength = 0;
@@ -213,30 +213,30 @@ FORCEINLINE BOOL EqualTokenUserSid(_In_ HANDLE TokenHandle, _In_ PSID Sid)
     return equal;
 }
 
-FORCEINLINE BOOL IsNetworkServiceToken(_In_ HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE BOOL IsNetworkServiceToken(_In_ HANDLE TokenHandle)
 {
     return EqualTokenUserSid(TokenHandle, &NetworkServiceSid);
 }
 
-FORCEINLINE BOOL IsLocalServiceToken(_In_ HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE BOOL IsLocalServiceToken(_In_ HANDLE TokenHandle)
 {
     return EqualTokenUserSid(TokenHandle, &LocalServiceSid);
 }
 
-FORCEINLINE BOOL IsLocalSystemToken(_In_ HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE BOOL IsLocalSystemToken(_In_ HANDLE TokenHandle)
 {
     return EqualTokenUserSid(TokenHandle, &LocalSystemSid);
 }
 
 #ifdef __cplusplus
-FORCEINLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess,
-                                  _In_ std::function<BOOL(DWORD, HANDLE, PVOID)> TokenCondition,
-                                  _Inout_opt_ PVOID Context)
+WIN32EX_ALWAYS_INLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess,
+                                            _In_ std::function<BOOL(DWORD, HANDLE, PVOID)> TokenCondition,
+                                            _Inout_opt_ PVOID Context)
 #else
 typedef BOOL (*PTOKEN_CONDITION_ROUTINE_EX_2)(DWORD ProcessId, HANDLE TokenHandle, PVOID Context);
 
-FORCEINLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX_2 TokenCondition,
-                                  _Inout_opt_ PVOID Context)
+WIN32EX_ALWAYS_INLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX_2 TokenCondition,
+                                            _Inout_opt_ PVOID Context)
 #endif
 {
     DWORD cbNeeded = 0, cProcesses = 0;
@@ -286,13 +286,14 @@ FORCEINLINE HANDLE LookupTokenEx2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION
 }
 
 #ifdef __cplusplus
-FORCEINLINE BOOL __DefaultLookupTokenCondition2_cpp(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition2_cpp(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     std::function<BOOL(DWORD, HANDLE)> *cond = (std::function<BOOL(DWORD, HANDLE)> *)Context;
     return (cond && *cond) ? (*cond)(ProcessId, TokenHandle) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ std::function<BOOL(DWORD, HANDLE)> TokenCondition)
+WIN32EX_ALWAYS_INLINE HANDLE LookupToken2(_In_ DWORD DesireAccess,
+                                          _In_ std::function<BOOL(DWORD, HANDLE)> TokenCondition)
 {
 #ifdef __cpp_lambdas
     return LookupTokenEx2(
@@ -308,12 +309,12 @@ FORCEINLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ std::function<BOOL
 #else
 typedef BOOL (*PTOKEN_CONDITION_ROUTINE_2)(DWORD ProcessId, HANDLE TokenHandle);
 
-STATIC_OR_INLINE BOOL __DefaultLookupTokenCondition2(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition2(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     return (Context) ? ((PTOKEN_CONDITION_ROUTINE_2)Context)(ProcessId, TokenHandle) : TRUE;
 }
 
-STATIC_OR_INLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_2 TokenCondition)
+WIN32EX_ALWAYS_INLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_2 TokenCondition)
 {
     return LookupTokenEx2(DesireAccess, __DefaultLookupTokenCondition2, TokenCondition);
 }
@@ -326,14 +327,15 @@ typedef struct
     PVOID Context;
 } __DefaultLookupTokenExConditionContext_cpp;
 
-FORCEINLINE BOOL __DefaultLookupTokenExCondition_cpp(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition_cpp(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     __DefaultLookupTokenExConditionContext_cpp *ctx = (__DefaultLookupTokenExConditionContext_cpp *)Context;
     return (ctx->TokenCondition) ? (ctx->TokenCondition)(TokenHandle, ctx->Context) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ std::function<BOOL(HANDLE, PVOID)> TokenCondition,
-                                 _Inout_opt_ PVOID Context)
+WIN32EX_ALWAYS_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess,
+                                           _In_ std::function<BOOL(HANDLE, PVOID)> TokenCondition,
+                                           _Inout_opt_ PVOID Context)
 {
 #ifdef __cpp_lambdas
     return LookupTokenEx2(
@@ -358,14 +360,14 @@ typedef struct
     PVOID Context;
 } __DefaultLookupTokenExConditionContext;
 
-STATIC_OR_INLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
     __DefaultLookupTokenExConditionContext *ctx = (__DefaultLookupTokenExConditionContext *)Context;
     return (ctx->TokenCondition) ? ctx->TokenCondition(TokenHandle, ctx->Context) : TRUE;
 }
 
-STATIC_OR_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX TokenCondition,
-                                      _Inout_opt_ PVOID Context)
+WIN32EX_ALWAYS_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_EX TokenCondition,
+                                           _Inout_opt_ PVOID Context)
 {
     __DefaultLookupTokenExConditionContext ctx;
     ctx.TokenCondition = TokenCondition;
@@ -375,13 +377,13 @@ STATIC_OR_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDI
 #endif
 
 #ifdef __cplusplus
-FORCEINLINE BOOL __DefaultLookupTokenCondition_cpp(HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition_cpp(HANDLE TokenHandle, PVOID Context)
 {
     std::function<BOOL(HANDLE)> *cond = (std::function<BOOL(HANDLE)> *)Context;
     return (cond) ? (*cond)(TokenHandle) : TRUE;
 }
 
-FORCEINLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ std::function<BOOL(HANDLE)> TokenCondition)
+WIN32EX_ALWAYS_INLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ std::function<BOOL(HANDLE)> TokenCondition)
 {
 #ifdef __cpp_lambdas
     return LookupTokenEx(
@@ -394,23 +396,23 @@ FORCEINLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ std::function<BOOL(
 #else
 typedef BOOL (*PTOKEN_CONDITION_ROUTINE)(HANDLE TokenHandle);
 
-STATIC_OR_INLINE BOOL __DefaultLookupTokenCondition(HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition(HANDLE TokenHandle, PVOID Context)
 {
     return (Context) ? ((PTOKEN_CONDITION_ROUTINE)Context)(TokenHandle) : TRUE;
 }
 
-STATIC_OR_INLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE TokenCondition)
+WIN32EX_ALWAYS_INLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE TokenCondition)
 {
     return LookupTokenEx(DesireAccess, __DefaultLookupTokenCondition, TokenCondition);
 }
 #endif
 
-STATIC_OR_INLINE BOOL __IsLocalSystemTokenCondition(DWORD ProcessId, HANDLE TokenHandle)
+WIN32EX_ALWAYS_INLINE BOOL __IsLocalSystemTokenCondition(DWORD ProcessId, HANDLE TokenHandle)
 {
     return IsLocalSystemToken(TokenHandle);
 }
 
-STATIC_OR_INLINE HANDLE GetLocalSystemToken(_In_ DWORD DesireAccess)
+WIN32EX_ALWAYS_INLINE HANDLE GetLocalSystemToken(_In_ DWORD DesireAccess)
 {
     return LookupToken2(DesireAccess, __IsLocalSystemTokenCondition);
 }

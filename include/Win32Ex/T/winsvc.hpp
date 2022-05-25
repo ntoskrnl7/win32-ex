@@ -64,9 +64,9 @@ WIN32EX_API_DEFINE_FN_T(LPSERVICE_MAIN_FUNCTION);
 #endif // UNICODE
 #endif
 
-template <typename _CharType>
-inline SC_HANDLE WINAPI OpenSCManagerT(_In_opt_ CONST _CharType *lpMachineName,
-                                       _In_opt_ CONST _CharType *lpDatabaseName, _In_ DWORD dwDesiredAccess);
+template <typename CharType>
+inline SC_HANDLE WINAPI OpenSCManagerT(_In_opt_ CONST CharType *lpMachineName,
+                                       _In_opt_ CONST CharType *lpDatabaseName, _In_ DWORD dwDesiredAccess);
 
 template <>
 inline SC_HANDLE WINAPI OpenSCManagerT<CHAR>(_In_opt_ LPCSTR lpMachineName, _In_opt_ LPCSTR lpDatabaseName,
@@ -82,15 +82,15 @@ inline SC_HANDLE WINAPI OpenSCManagerT<WCHAR>(_In_opt_ LPCWSTR lpMachineName, _I
     return OpenSCManagerW(lpMachineName, lpDatabaseName, dwDesiredAccess);
 }
 
-template <typename _CharType>
-inline SC_HANDLE WINAPI CreateServiceT(_In_ SC_HANDLE hSCManager, _In_ const _CharType *lpServiceName,
-                                       _In_opt_ const _CharType *lpDisplayName, _In_ DWORD dwDesiredAccess,
+template <typename CharType>
+inline SC_HANDLE WINAPI CreateServiceT(_In_ SC_HANDLE hSCManager, _In_ const CharType *lpServiceName,
+                                       _In_opt_ const CharType *lpDisplayName, _In_ DWORD dwDesiredAccess,
                                        _In_ DWORD dwServiceType, _In_ DWORD dwStartType, _In_ DWORD dwErrorControl,
-                                       _In_opt_ const _CharType *lpBinaryPathName,
-                                       _In_opt_ const _CharType *lpLoadOrderGroup, _Out_opt_ LPDWORD lpdwTagId,
-                                       _In_opt_ const _CharType *lpDependencies,
-                                       _In_opt_ const _CharType *lpServiceStartName,
-                                       _In_opt_ const _CharType *lpPassword);
+                                       _In_opt_ const CharType *lpBinaryPathName,
+                                       _In_opt_ const CharType *lpLoadOrderGroup, _Out_opt_ LPDWORD lpdwTagId,
+                                       _In_opt_ const CharType *lpDependencies,
+                                       _In_opt_ const CharType *lpServiceStartName,
+                                       _In_opt_ const CharType *lpPassword);
 
 template <>
 inline SC_HANDLE WINAPI CreateServiceT<CHAR>(_In_ SC_HANDLE hSCManager, _In_ LPCSTR lpServiceName,
@@ -120,8 +120,8 @@ inline SC_HANDLE WINAPI CreateServiceT<WCHAR>(_In_ SC_HANDLE hSCManager, _In_ LP
                           lpServiceStartName, lpPassword);
 }
 
-template <typename _CharType>
-inline SC_HANDLE WINAPI OpenServiceT(_In_ SC_HANDLE hSCManager, _In_ const _CharType *lpServiceName,
+template <typename CharType>
+inline SC_HANDLE WINAPI OpenServiceT(_In_ SC_HANDLE hSCManager, _In_ const CharType *lpServiceName,
                                      _In_ DWORD dwDesiredAccess);
 
 template <>
@@ -138,7 +138,7 @@ inline SC_HANDLE WINAPI OpenServiceT<WCHAR>(_In_ SC_HANDLE hSCManager, _In_ PCWS
     return OpenServiceW(hSCManager, lpServiceName, dwDesiredAccess);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI QueryServiceConfig2T(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _Out_ LPBYTE lpBuffer,
                                         _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded);
 template <>
@@ -155,7 +155,7 @@ inline BOOL WINAPI QueryServiceConfig2T<WCHAR>(_In_ SC_HANDLE hService, _In_ DWO
     return QueryServiceConfig2W(hService, dwInfoLevel, lpBuffer, cbBufSize, pcbBytesNeeded);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI ChangeServiceConfig2T(_In_ SC_HANDLE hService, _In_ DWORD dwInfoLevel, _In_opt_ LPVOID lpInfo);
 
 template <>
@@ -170,8 +170,8 @@ inline BOOL WINAPI ChangeServiceConfig2T<WCHAR>(_In_ SC_HANDLE hService, _In_ DW
     return ChangeServiceConfig2W(hService, dwInfoLevel, lpInfo);
 }
 
-template <typename _CharType>
-inline BOOL WINAPI QueryServiceConfigT(_In_ SC_HANDLE hService, _Out_ QUERY_SERVICE_CONFIGT<_CharType> *lpServiceConfig,
+template <typename CharType>
+inline BOOL WINAPI QueryServiceConfigT(_In_ SC_HANDLE hService, _Out_ QUERY_SERVICE_CONFIGT<CharType> *lpServiceConfig,
                                        _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded);
 
 template <>
@@ -190,12 +190,12 @@ inline BOOL WINAPI QueryServiceConfigT<WCHAR>(_In_ SC_HANDLE hService,
     return QueryServiceConfigW(hService, lpServiceConfig, cbBufSize, pcbBytesNeeded);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI EnumServicesStatusExT(_In_ SC_HANDLE hSCManager, _In_ SC_ENUM_TYPE InfoLevel,
                                          _In_ DWORD dwServiceType, _In_ DWORD dwServiceState, _Out_ LPBYTE lpServices,
                                          _In_ DWORD cbBufSize, _Out_ LPDWORD pcbBytesNeeded,
                                          _Out_ LPDWORD lpServicesReturned, _Inout_opt_ LPDWORD lpResumeHandle,
-                                         _In_opt_ CONST _CharType *pszGroupName);
+                                         _In_opt_ CONST CharType *pszGroupName);
 
 template <>
 inline BOOL WINAPI EnumServicesStatusExT<CHAR>(_In_ SC_HANDLE hSCManager, _In_ SC_ENUM_TYPE InfoLevel,
@@ -219,9 +219,9 @@ inline BOOL WINAPI EnumServicesStatusExT<WCHAR>(_In_ SC_HANDLE hSCManager, _In_ 
                                  pcbBytesNeeded, lpServicesReturned, lpResumeHandle, pszGroupName);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI EnumDependentServicesT(_In_ SC_HANDLE hService, _In_ DWORD dwServiceState,
-                                          _Out_ ENUM_SERVICE_STATUST<_CharType> *lpServices, _In_ DWORD cbBufSize,
+                                          _Out_ ENUM_SERVICE_STATUST<CharType> *lpServices, _In_ DWORD cbBufSize,
                                           _Out_ LPDWORD pcbBytesNeeded, _Out_ LPDWORD lpServicesReturned);
 template <>
 inline BOOL WINAPI EnumDependentServicesT<CHAR>(_In_ SC_HANDLE hService, _In_ DWORD dwServiceState,
@@ -239,9 +239,9 @@ inline BOOL WINAPI EnumDependentServicesT<WCHAR>(_In_ SC_HANDLE hService, _In_ D
     return EnumDependentServicesW(hService, dwServiceState, lpServices, cbBufSize, pcbBytesNeeded, lpServicesReturned);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI StartServiceCtrlDispatcherT(_In_ CONST
-                                               typename SERVICE_TABLE_ENTRYT<_CharType>::Type *lpServiceStartTable);
+                                               typename SERVICE_TABLE_ENTRYT<CharType>::Type *lpServiceStartTable);
 
 template <>
 inline BOOL WINAPI StartServiceCtrlDispatcherT<CHAR>(_In_ CONST
@@ -257,8 +257,8 @@ inline BOOL WINAPI StartServiceCtrlDispatcherT<WCHAR>(_In_ CONST
     return StartServiceCtrlDispatcherW(lpServiceStartTable);
 }
 
-template <typename _CharType>
-inline SERVICE_STATUS_HANDLE WINAPI RegisterServiceCtrlHandlerExT(_In_ CONST _CharType *lpServiceName,
+template <typename CharType>
+inline SERVICE_STATUS_HANDLE WINAPI RegisterServiceCtrlHandlerExT(_In_ CONST CharType *lpServiceName,
                                                                   _In_ LPHANDLER_FUNCTION_EX lpHandlerProc,
                                                                   _In_opt_ LPVOID lpContext);
 template <>

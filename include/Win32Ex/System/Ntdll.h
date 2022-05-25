@@ -30,7 +30,7 @@ Environment:
 #define WIN32EX_SYSTEM_NTDLL_H_VERSION_MINOR WIN32EX_VERSION_MINOR
 #define WIN32EX_SYSTEM_NTDLL_H_VERSION_PATCH WIN32EX_VERSION_PATCH
 
-#include "../internal/misc.h"
+#include "../Internal/misc.h"
 
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN
@@ -333,7 +333,7 @@ static NTSTATUS(NTAPI *_NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS Syste
                                                   PULONG ReturnLength) = NULL;
 #endif
 
-STATIC_OR_INLINE ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
+WIN32EX_ALWAYS_INLINE ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
 {
     HMODULE hModule;
     if (_RtlNtStatusToDosError)
@@ -350,7 +350,7 @@ STATIC_OR_INLINE ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
     return (_RtlNtStatusToDosError ? _RtlNtStatusToDosError(Status) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-STATIC_OR_INLINE NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
 {
     HMODULE hModule;
     if (_NtMakeTemporaryObject)
@@ -367,7 +367,7 @@ STATIC_OR_INLINE NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
     return (_NtMakeTemporaryObject ? _NtMakeTemporaryObject(Handle) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-STATIC_OR_INLINE NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
 {
     HMODULE hModule;
     if (_NtMakePermanentObject)
@@ -384,7 +384,7 @@ STATIC_OR_INLINE NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
     return (_NtMakePermanentObject ? _NtMakePermanentObject(Handle) : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-STATIC_OR_INLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle,
+WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle,
                                               _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
                                               _Out_opt_ PVOID ObjectInformation, _In_ ULONG ObjectInformationLength,
                                               _Out_opt_ PULONG ReturnLength)
@@ -407,7 +407,7 @@ STATIC_OR_INLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle,
                            : STATUS_ENTRYPOINT_NOT_FOUND);
 }
 
-STATIC_OR_INLINE NTSTATUS NTAPI NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
+WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
                                                          _Out_ PVOID SystemInformation,
                                                          _In_ ULONG SystemInformationLength,
                                                          _Out_opt_ PULONG ReturnLength)

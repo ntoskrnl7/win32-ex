@@ -8,15 +8,15 @@
   - [Contents](#contents)
   - [Reference](#reference)
     - [Functions](#functions)
-      - [ShellExecuteExT\<_CharType\>](#shellexecuteext_chartype)
+      - [ShellExecuteExT\<CharType\>](#shellexecuteext_chartype)
     - [Structures](#structures)
-      - [SHELLEXECUTEINFOT\<_CharType\>](#shellexecuteinfot_chartype)
+      - [SHELLEXECUTEINFOT\<CharType\>](#shellexecuteinfot_chartype)
 
 ## Reference
 
 ### Functions
 
-#### ShellExecuteExT\<_CharType\>
+#### ShellExecuteExT\<CharType\>
 
 - Example
 
@@ -35,4 +35,4 @@
 
 ### Structures
 
-#### SHELLEXECUTEINFOT\<_CharType\>
+#### SHELLEXECUTEINFOT\<CharType\>

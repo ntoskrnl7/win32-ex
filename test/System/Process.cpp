@@ -200,8 +200,7 @@ TEST(ProcessTest, StdIn)
     process.StdIn() << "test 1\n";
     process.StdIn() << "test 2\ntest 3\n";
     process.StdIn().Close();
-    std::cout << process.ExecutablePath();
-    std::cout << process.StdOut().ReadAll();
+    EXPECT_STREQ(process.StdOut().ReadAll().c_str(), "test 1\r\ntest 2\r\ntest 3\r\n\r\n");
 }
 
 TEST(ProcessTest, StdOut)

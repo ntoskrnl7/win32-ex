@@ -52,12 +52,12 @@ Environment:
 #if defined(__cplusplus)
 #include "../T/processthreadsapi.hpp"
 
-template <typename _CharType>
-STATIC_OR_INLINE BOOL CreateUserAccountProcessT(
-    _In_opt_ DWORD dwSessionId, _In_opt_ const _CharType *lpApplicationName, _Inout_opt_ _CharType *lpCommandLine,
+template <typename CharType>
+WIN32EX_ALWAYS_INLINE BOOL CreateUserAccountProcessT(
+    _In_opt_ DWORD dwSessionId, _In_opt_ const CharType *lpApplicationName, _Inout_opt_ CharType *lpCommandLine,
     _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes, _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
     _In_ BOOL bInheritHandles, _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
-    _In_opt_ const _CharType *lpCurrentDirectory, _In_ typename Win32Ex::STARTUPINFOT<_CharType>::Type *lpStartupInfo,
+    _In_opt_ const CharType *lpCurrentDirectory, _In_ typename Win32Ex::STARTUPINFOT<CharType>::Type *lpStartupInfo,
     _Out_ LPPROCESS_INFORMATION lpProcessInformation)
 {
     BOOL bRet = FALSE;
@@ -77,7 +77,7 @@ STATIC_OR_INLINE BOOL CreateUserAccountProcessT(
     {
         if (dwSessionId == currentSessionId)
         {
-            return Win32Ex::CreateProcessT<_CharType>(
+            return Win32Ex::CreateProcessT<CharType>(
                 lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles,
                 dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
         }
@@ -197,7 +197,7 @@ STATIC_OR_INLINE BOOL CreateUserAccountProcessT(
         }
     }
 
-    bRet = Win32Ex::CreateProcessAsUserT<_CharType>(hNewToken, lpApplicationName, lpCommandLine, lpProcessAttributes,
+    bRet = Win32Ex::CreateProcessAsUserT<CharType>(hNewToken, lpApplicationName, lpCommandLine, lpProcessAttributes,
                                                     lpThreadAttributes, bInheritHandles, dwCreationFlags,
                                                     lpEnvironmentNew ? lpEnvironmentNew : lpEnvironment,
                                                     lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
@@ -233,12 +233,12 @@ STATIC_OR_INLINE BOOL CreateUserAccountProcessT(
     return bRet;
 }
 
-template <typename _CharType>
-STATIC_OR_INLINE BOOL CreateSystemAccountProcessT(
-    _In_opt_ DWORD dwSessionId, _In_opt_ const _CharType *lpApplicationName, _Inout_opt_ _CharType *lpCommandLine,
+template <typename CharType>
+WIN32EX_ALWAYS_INLINE BOOL CreateSystemAccountProcessT(
+    _In_opt_ DWORD dwSessionId, _In_opt_ const CharType *lpApplicationName, _Inout_opt_ CharType *lpCommandLine,
     _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes, _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
     _In_ BOOL bInheritHandles, _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
-    _In_opt_ const _CharType *lpCurrentDirectory, _In_ typename Win32Ex::STARTUPINFOT<_CharType>::Type *lpStartupInfo,
+    _In_opt_ const CharType *lpCurrentDirectory, _In_ typename Win32Ex::STARTUPINFOT<CharType>::Type *lpStartupInfo,
     _Out_ LPPROCESS_INFORMATION lpProcessInformation)
 {
     HANDLE hToken;
@@ -379,7 +379,7 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcessT(
         }
     }
 
-    bRet = Win32Ex::CreateProcessAsUserT<_CharType>(hNewToken, lpApplicationName, lpCommandLine, lpProcessAttributes,
+    bRet = Win32Ex::CreateProcessAsUserT<CharType>(hNewToken, lpApplicationName, lpCommandLine, lpProcessAttributes,
                                                     lpThreadAttributes, bInheritHandles, dwCreationFlags,
                                                     lpEnvironmentNew ? lpEnvironmentNew : lpEnvironment,
                                                     lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
@@ -426,7 +426,7 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcessT(
 #define CreateSystemAccountProcess CreateSystemAccountProcessT<CHAR>
 #endif // !UNICODE
 #else  // !defined(__cplusplus)
-STATIC_OR_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
+WIN32EX_ALWAYS_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
                                                _Inout_opt_ LPTSTR lpCommandLine,
                                                _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                                _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
@@ -607,7 +607,7 @@ STATIC_OR_INLINE BOOL CreateUserAccountProcess(_In_opt_ DWORD dwSessionId, _In_o
     return bRet;
 }
 
-STATIC_OR_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
+WIN32EX_ALWAYS_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In_opt_ LPCTSTR lpApplicationName,
                                                  _Inout_opt_ LPTSTR lpCommandLine,
                                                  _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                                  _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
@@ -793,7 +793,7 @@ STATIC_OR_INLINE BOOL CreateSystemAccountProcess(_In_opt_ DWORD dwSessionId, _In
 }
 #endif // !defined(__cplusplus)
 
-STATIC_OR_INLINE DWORD GetParentProcessId(DWORD ProcessId)
+WIN32EX_ALWAYS_INLINE DWORD GetParentProcessId(DWORD ProcessId)
 {
     DWORD parentProcessId = 0;
 

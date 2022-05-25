@@ -47,9 +47,9 @@ namespace Win32Ex
 {
 WIN32EX_API_DEFINE_STRUCT_T(WTS_SESSION_INFO);
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI WTSEnumerateSessionsT(_In_ HANDLE hServer, _In_ DWORD Reserved, _In_ DWORD Version,
-                                         _Out_ WTS_SESSION_INFOT<_CharType> **ppSessionInfo, _Out_ DWORD *pCount);
+                                         _Out_ WTS_SESSION_INFOT<CharType> **ppSessionInfo, _Out_ DWORD *pCount);
 
 template <>
 inline BOOL WINAPI WTSEnumerateSessionsT<WCHAR>(_In_ HANDLE hServer, _In_ DWORD Reserved, _In_ DWORD Version,
@@ -65,9 +65,9 @@ inline BOOL WINAPI WTSEnumerateSessionsT<CHAR>(_In_ HANDLE hServer, _In_ DWORD R
     return WTSEnumerateSessionsA(hServer, Reserved, Version, (WTS_SESSION_INFOT<CHAR>::Type **)ppSessionInfo, pCount);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI WTSEnumerateSessionsT(_In_ HANDLE hServer, _In_ DWORD Reserved, _In_ DWORD Version,
-                                         _Out_ typename WTS_SESSION_INFOT<_CharType>::Type **ppSessionInfo,
+                                         _Out_ typename WTS_SESSION_INFOT<CharType>::Type **ppSessionInfo,
                                          _Out_ DWORD *pCount);
 
 template <>
@@ -86,9 +86,9 @@ inline BOOL WINAPI WTSEnumerateSessionsT<CHAR>(_In_ HANDLE hServer, _In_ DWORD R
     return WTSEnumerateSessionsA(hServer, Reserved, Version, ppSessionInfo, pCount);
 }
 
-template <typename _CharType>
+template <typename CharType>
 inline BOOL WINAPI WTSQuerySessionInformationT(_In_ HANDLE hServer, _In_ DWORD SessionId,
-                                               _In_ WTS_INFO_CLASS WTSInfoClass, _Out_ _CharType **ppBuffer,
+                                               _In_ WTS_INFO_CLASS WTSInfoClass, _Out_ CharType **ppBuffer,
                                                _Out_ DWORD *pBytesReturned);
 
 template <>
