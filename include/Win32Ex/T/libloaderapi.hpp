@@ -40,8 +40,8 @@ Environment:
 
 namespace Win32Ex
 {
-template <typename _CharType>
-inline DWORD GetModuleFileNameT(_In_opt_ HMODULE hModule, _Out_ _CharType *lpFilename, _In_ DWORD nSize);
+template <typename CharType>
+inline DWORD GetModuleFileNameT(_In_opt_ HMODULE hModule, _Out_ CharType *lpFilename, _In_ DWORD nSize);
 
 template <> inline DWORD GetModuleFileNameT<CHAR>(_In_opt_ HMODULE hModule, _Out_ LPSTR lpFilename, _In_ DWORD nSize)
 {

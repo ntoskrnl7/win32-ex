@@ -14,7 +14,7 @@ add_library(win32ex INTERFACE)
 include(cmake/CPM.cmake)
 CPMAddPackage(
     GITHUB_REPOSITORY ntoskrnl7/ext
-    VERSION 0.5.8
+    VERSION 0.5.15
     OPTIONS "EXT_NO_WIN32_EX ON"
 )
 

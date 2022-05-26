@@ -46,8 +46,8 @@ WIN32EX_API_DEFINE_STRUCT_T(STARTUPINFO);
 
 WIN32EX_API_DEFINE_STRUCT_T(STARTUPINFOEX);
 
-template <typename _CharType>
-inline BOOL QueryFullProcessImageNameT(_In_ HANDLE hProcess, _In_ DWORD dwFlags, _Out_ _CharType *lpExeName,
+template <typename CharType>
+inline BOOL QueryFullProcessImageNameT(_In_ HANDLE hProcess, _In_ DWORD dwFlags, _Out_ CharType *lpExeName,
                                        _Inout_ PDWORD lpdwSize);
 
 template <>
@@ -63,13 +63,13 @@ inline BOOL QueryFullProcessImageNameT<WCHAR>(_In_ HANDLE hProcess, _In_ DWORD d
     return QueryFullProcessImageNameW(hProcess, dwFlags, lpExeName, lpdwSize);
 }
 
-template <typename _CharType>
-inline BOOL CreateProcessT(_In_opt_ const _CharType *lpApplicationName, _Inout_opt_ _CharType *lpCommandLine,
+template <typename CharType>
+inline BOOL CreateProcessT(_In_opt_ const CharType *lpApplicationName, _Inout_opt_ CharType *lpCommandLine,
                            _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
                            _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
                            _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
-                           _In_opt_ const _CharType *lpCurrentDirectory,
-                           _In_ typename Win32Ex::STARTUPINFOT<_CharType>::Type *lpStartupInfo,
+                           _In_opt_ const CharType *lpCurrentDirectory,
+                           _In_ typename Win32Ex::STARTUPINFOT<CharType>::Type *lpStartupInfo,
                            _Out_ LPPROCESS_INFORMATION lpProcessInformation);
 
 template <>
@@ -106,14 +106,14 @@ inline BOOL CreateProcessT<WCHAR>(_In_opt_ LPCWSTR lpApplicationName, _Inout_opt
         reinterpret_cast<::_PROCESS_INFORMATION *>(lpProcessInformation));
 }
 
-template <typename _CharType>
-inline BOOL CreateProcessAsUserT(_In_opt_ HANDLE hToken, _In_opt_ const _CharType *lpApplicationName,
-                                 _Inout_opt_ _CharType *lpCommandLine,
+template <typename CharType>
+inline BOOL CreateProcessAsUserT(_In_opt_ HANDLE hToken, _In_opt_ const CharType *lpApplicationName,
+                                 _Inout_opt_ CharType *lpCommandLine,
                                  _In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                  _In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes, _In_ BOOL bInheritHandles,
                                  _In_ DWORD dwCreationFlags, _In_opt_ LPVOID lpEnvironment,
-                                 _In_opt_ const _CharType *lpCurrentDirectory,
-                                 _In_ typename Win32Ex::STARTUPINFOT<_CharType>::Type *lpStartupInfo,
+                                 _In_opt_ const CharType *lpCurrentDirectory,
+                                 _In_ typename Win32Ex::STARTUPINFOT<CharType>::Type *lpStartupInfo,
                                  _Out_ LPPROCESS_INFORMATION lpProcessInformation);
 
 template <>

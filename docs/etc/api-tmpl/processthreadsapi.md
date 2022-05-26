@@ -8,18 +8,18 @@
   - [Contents](#contents)
   - [Reference](#reference)
     - [Functions](#functions)
-      - [CreateProcessT\<_CharType\>](#createprocesst_chartype)
-      - [CreateProcessAsUserT\<_CharType\>](#createprocessasusert_chartype)
-      - [QueryFullProcessImageNameT\<_CharType\>](#queryfullprocessimagenamet_chartype)
+      - [CreateProcessT\<CharType\>](#createprocesst_chartype)
+      - [CreateProcessAsUserT\<CharType\>](#createprocessasusert_chartype)
+      - [QueryFullProcessImageNameT\<CharType\>](#queryfullprocessimagenamet_chartype)
     - [Structures](#structures)
 
 ## Reference
 
 ### Functions
 
-#### CreateProcessT\<_CharType\>
+#### CreateProcessT\<CharType\>
 
-#### CreateProcessAsUserT\<_CharType\>
+#### CreateProcessAsUserT\<CharType\>
 
 - Example
 
@@ -33,9 +33,9 @@
     Win32Ex::CreateProcessAsUserT<CHAR>(..., &si, ..);
     ```
 
-#### QueryFullProcessImageNameT\<_CharType\>
+#### QueryFullProcessImageNameT\<CharType\>
 
 ### Structures
 
-- STARTUPINFOT\<_CharType\>
-- STARTUPINFOEXT\<_CharType\>
+- STARTUPINFOT\<CharType\>
+- STARTUPINFOEXT\<CharType\>

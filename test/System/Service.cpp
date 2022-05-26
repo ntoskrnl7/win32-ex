@@ -101,14 +101,14 @@ TEST(ServiceTest, DependentServices)
     }
 #elif defined(_MSC_VER)
     // clang-format off
-    for each (const System::Service &dep in service.Dependencies())
-    {
-        std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
-        for each (const System::Service &dep2 in dep.Dependencies())
-            std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
-                      << dep2.BinaryPathName() << '\n';
-    }
-        // clang-format on
+   for each (const System::Service &dep in service.Dependencies())
+   {
+       std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+       for each (const System::Service &dep2 in dep.Dependencies())
+           std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
+                     << dep2.BinaryPathName() << '\n';
+   }
+    // clang-format on
 #endif
     std::cout << "\n\n-----------------ProfSvc.DependentServices-------------------\n";
 #if defined(__cpp_range_based_for) && defined(__cpp_initializer_lists)
@@ -121,13 +121,13 @@ TEST(ServiceTest, DependentServices)
     }
 #elif defined(_MSC_VER)
     // clang-format off
-    for each (const System::Service &dep in service.DependentServices().Get(std::list<System::Service>()))
-    {
-            std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
-        for each (const System::Service &dep2 in dep.DependentServices().Get(std::list<System::Service>()))
-            std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
-                      << dep2.BinaryPathName() << '\n';
-    }
+   for each (const System::Service &dep in service.DependentServices().Get(std::list<System::Service>()))
+   {
+           std::cout << dep.Name() << "\n\t" << dep.DisplayName() << "\n\t" << dep.BinaryPathName() << '\n';
+       for each (const System::Service &dep2 in dep.DependentServices().Get(std::list<System::Service>()))
+           std::cout << "\t\t" << dep2.Name() << "\n\t\t\t" << dep2.DisplayName() << "\n\t\t\t"
+                     << dep2.BinaryPathName() << '\n';
+   }
 #endif
     // clang-format on
 }
@@ -142,8 +142,8 @@ TEST(ServiceTest, RequiredPrivileges)
         std::cout << privilege << '\n';
 #elif defined(_MSC_VER)
     // clang-format off
-    for each (const Win32Ex::String &privilege in service.RequiredPrivileges().Get(std::list<Win32Ex::String>()))
-        std::cout << privilege << '\n';
+   for each (const Win32Ex::String &privilege in service.RequiredPrivileges().Get(std::list<Win32Ex::String>()))
+       std::cout << privilege << '\n';
         // clang-format on
 #endif
 }
@@ -230,7 +230,7 @@ const char *ActionString(DWORD dwAction)
     }
 }
 
-template <typename _CharType> const _CharType *TriggerTypeStringT(DWORD dwTriggerType);
+template <typename CharType> const CharType *TriggerTypeStringT(DWORD dwTriggerType);
 
 template <> const char *TriggerTypeStringT<char>(DWORD dwTriggerType)
 {
@@ -241,7 +241,7 @@ template <> const wchar_t *TriggerTypeStringT<wchar_t>(DWORD dwTriggerType)
     return TriggerTypeStringW(dwTriggerType);
 }
 
-template <typename _CharType> const _CharType *ActionStringT(DWORD dwTriggerType);
+template <typename CharType> const CharType *ActionStringT(DWORD dwTriggerType);
 
 template <> const char *ActionStringT<char>(DWORD dwTriggerType)
 {
@@ -256,67 +256,67 @@ TEST(ServiceTest, ServiceTAll)
 {
     // clang-format off
 #if defined(UNICODE)
-    std::wostream &tcout = std::wcout;
+   std::wostream &tcout = std::wcout;
 #else
-    std::ostream &tcout = std::cout;
+   std::ostream &tcout = std::cout;
 #endif
 #if defined(__cpp_range_based_for)
-    for (auto service : Win32Ex::System::ServiceT<>::All())
+   for (auto service : Win32Ex::System::ServiceT<>::All())
 #else
-    for each (Win32Ex::System::ServiceT<> service in Win32Ex::System::ServiceT<>::All())
+   for each (Win32Ex::System::ServiceT<> service in Win32Ex::System::ServiceT<>::All())
 #endif
-    {
-        tcout << TEXT("Name : ") << service.Name() << TEXT('\n');
-        tcout << TEXT("BinPath : ") << service.BinaryPathName() << TEXT('\n');
-        tcout << TEXT("Description : ") << service.Description() << TEXT('\n');
+   {
+       tcout << TEXT("Name : ") << service.Name() << TEXT('\n');
+       tcout << TEXT("BinPath : ") << service.BinaryPathName() << TEXT('\n');
+       tcout << TEXT("Description : ") << service.Description() << TEXT('\n');
 
-        Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
-        if (preshutdownInfo.IsOk())
-            std::cout << "Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << "ms\n";
-        
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONS>> failureAction = service.FailureActions();
-        if (failureAction.IsOk() && failureAction.Ref())
-        {
-            SERVICE_FAILURE_ACTIONS &actions = *failureAction.Ref();
-            if (actions.lpRebootMsg)
-                tcout << TEXT("Failrue RebootMsg: ") << actions.lpRebootMsg << TEXT('\n');
-            if (actions.lpRebootMsg)
-                tcout << TEXT("Failrue Command: ") << actions.lpCommand << TEXT('\n');
-            if (actions.cActions)
-                std::cout << "Failrue Actions : " << actions.cActions << "\n";
-        }
+       Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
+       if (preshutdownInfo.IsOk())
+           std::cout << "Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << "ms\n";
+       
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONS>> failureAction = service.FailureActions();
+       if (failureAction.IsOk() && failureAction.Ref())
+       {
+           SERVICE_FAILURE_ACTIONS &actions = *failureAction.Ref();
+           if (actions.lpRebootMsg)
+               tcout << TEXT("Failrue RebootMsg: ") << actions.lpRebootMsg << TEXT('\n');
+           if (actions.lpRebootMsg)
+               tcout << TEXT("Failrue Command: ") << actions.lpCommand << TEXT('\n');
+           if (actions.cActions)
+               std::cout << "Failrue Actions : " << actions.cActions << "\n";
+       }
 #if defined(SERVICE_CONFIG_TRIGGER_INFO)
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
-        if (result.IsOk() && result.Ref())
-        {
-            {
-                SERVICE_TRIGGER_INFO &triggers = *result.Ref();
-                if (triggers.cTriggers)
-                {
-                    tcout << TEXT("Triggers\n");
-                    for (DWORD i = 0; i < triggers.cTriggers; i++)
-                        tcout << TEXT("\t- Type : ") << TriggerTypeStringT<TCHAR>(triggers.pTriggers[i].dwTriggerType)
-                              << TEXT("\t Action : ") << ActionStringT<TCHAR>(triggers.pTriggers[i].dwAction) << TEXT('\n');
-                }
-            }
-        }
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
+       if (result.IsOk() && result.Ref())
+       {
+           {
+               SERVICE_TRIGGER_INFO &triggers = *result.Ref();
+               if (triggers.cTriggers)
+               {
+                   tcout << TEXT("Triggers\n");
+                   for (DWORD i = 0; i < triggers.cTriggers; i++)
+                       tcout << TEXT("\t- Type : ") << TriggerTypeStringT<TCHAR>(triggers.pTriggers[i].dwTriggerType)
+                             << TEXT("\t Action : ") << ActionStringT<TCHAR>(triggers.pTriggers[i].dwAction) << TEXT('\n');
+               }
+           }
+       }
 #endif
 #if defined(__cpp_initializer_lists)
-        auto privileges = service.RequiredPrivileges().Get({});
+       auto privileges = service.RequiredPrivileges().Get({});
 #else
-        std::list<Win32Ex::StringT> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::StringT>());
+       std::list<Win32Ex::StringT> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::StringT>());
 #endif
-        if (!privileges.empty())
-        {
-            tcout << TEXT("Privileges\n");
+       if (!privileges.empty())
+       {
+           tcout << TEXT("Privileges\n");
 #if defined(__cpp_range_based_for)
-            for (auto privilege : privileges)
+           for (auto privilege : privileges)
 #else
-            for each (const Win32Ex::StringT &privilege in privileges)
+           for each (const Win32Ex::StringT &privilege in privileges)
 #endif
-                tcout << TEXT("\t- ") << privilege << TEXT('\n');
-        }
-    }
+               tcout << TEXT("\t- ") << privilege << TEXT('\n');
+       }
+   }
     // clang-format on
 }
 
@@ -324,62 +324,62 @@ TEST(ServiceTest, ServiceAll)
 {
     // clang-format off
 #if defined(__cpp_range_based_for)
-    for (auto service : Win32Ex::System::Service::All())
+   for (auto service : Win32Ex::System::Service::All())
 #else
-    for each (Win32Ex::System::Service service in Win32Ex::System::Service::All())
+   for each (Win32Ex::System::Service service in Win32Ex::System::Service::All())
 #endif
-    {
-        std::cout << "Name : " << service.Name() << '\n';
-        std::cout << "BinPath : " << service.BinaryPathName() << '\n';
-        std::cout << "Description : " << service.Description() << '\n';
+   {
+       std::cout << "Name : " << service.Name() << '\n';
+       std::cout << "BinPath : " << service.BinaryPathName() << '\n';
+       std::cout << "Description : " << service.Description() << '\n';
 
-        Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
-        if (preshutdownInfo.IsOk())
-            std::cout << "Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << "ms\n";
+       Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
+       if (preshutdownInfo.IsOk())
+           std::cout << "Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << "ms\n";
 
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONSA>> failureAction = service.FailureActions();
-        if (failureAction.IsOk() && failureAction.Ref())
-        {
-            SERVICE_FAILURE_ACTIONSA &actions = *failureAction.Ref();
-            if (actions.lpRebootMsg)
-                std::cout << "Failrue RebootMsg: " << actions.lpRebootMsg << "\n";
-            if (actions.lpRebootMsg)
-                std::cout << "Failrue Command: " << actions.lpCommand << "\n";
-            if (actions.cActions)
-                std::cout << "Failrue Actions : " << actions.cActions << "\n";
-        }
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONSA>> failureAction = service.FailureActions();
+       if (failureAction.IsOk() && failureAction.Ref())
+       {
+           SERVICE_FAILURE_ACTIONSA &actions = *failureAction.Ref();
+           if (actions.lpRebootMsg)
+               std::cout << "Failrue RebootMsg: " << actions.lpRebootMsg << "\n";
+           if (actions.lpRebootMsg)
+               std::cout << "Failrue Command: " << actions.lpCommand << "\n";
+           if (actions.cActions)
+               std::cout << "Failrue Actions : " << actions.cActions << "\n";
+       }
 #if defined(SERVICE_CONFIG_TRIGGER_INFO)
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
-        if (result.IsOk() && result.Ref())
-        {
-            SERVICE_TRIGGER_INFO &triggers = *result.Ref();
-            if (triggers.cTriggers)
-            {
-                std::cout << "Triggers\n";
-                for (DWORD i = 0; i < triggers.cTriggers; i++)
-                {
-                    std::cout << "\t- Type : " << TriggerTypeString(triggers.pTriggers[i].dwTriggerType)
-                              << "\t Action : " << ActionString(triggers.pTriggers[i].dwAction) << '\n';
-                }
-            }
-        }
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
+       if (result.IsOk() && result.Ref())
+       {
+           SERVICE_TRIGGER_INFO &triggers = *result.Ref();
+           if (triggers.cTriggers)
+           {
+               std::cout << "Triggers\n";
+               for (DWORD i = 0; i < triggers.cTriggers; i++)
+               {
+                   std::cout << "\t- Type : " << TriggerTypeString(triggers.pTriggers[i].dwTriggerType)
+                             << "\t Action : " << ActionString(triggers.pTriggers[i].dwAction) << '\n';
+               }
+           }
+       }
 #endif
 #if defined(__cpp_initializer_lists)
-        auto privileges = service.RequiredPrivileges().Get({});
+       auto privileges = service.RequiredPrivileges().Get({});
 #else
-        std::list<Win32Ex::String> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::String>());
+       std::list<Win32Ex::String> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::String>());
 #endif
-        if (!privileges.empty())
-        {
-            std::cout << "Privileges\n";
+       if (!privileges.empty())
+       {
+           std::cout << "Privileges\n";
 #if defined(__cpp_range_based_for)
-            for (auto privilege : privileges)
+           for (auto privilege : privileges)
 #else
-            for each (const Win32Ex::String &privilege in privileges)
+           for each (const Win32Ex::String &privilege in privileges)
 #endif
-                std::cout << "\t- " << privilege << '\n';
-        }
-    }
+               std::cout << "\t- " << privilege << '\n';
+       }
+   }
     // clang-format on
 }
 
@@ -387,62 +387,62 @@ TEST(ServiceTest, ServiceWAll)
 {
     // clang-format off
 #if defined(__cpp_range_based_for)
-    for (auto service : Win32Ex::System::ServiceW::All())
+   for (auto service : Win32Ex::System::ServiceW::All())
 #else
-    for each (Win32Ex::System::ServiceW service in Win32Ex::System::ServiceW::All())
+   for each (Win32Ex::System::ServiceW service in Win32Ex::System::ServiceW::All())
 #endif
-    {
-        std::wcout << L"Name : " << service.Name() << L'\n';
-        std::wcout << L"BinPath : " << service.BinaryPathName() << L'\n';
-        std::wcout << L"Description : " << service.Description() << L'\n';
+   {
+       std::wcout << L"Name : " << service.Name() << L'\n';
+       std::wcout << L"BinPath : " << service.BinaryPathName() << L'\n';
+       std::wcout << L"Description : " << service.Description() << L'\n';
 
-        Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
-        if (preshutdownInfo.IsOk())
-            std::wcout << L"Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << L"ms\n";
+       Win32Ex::Result<SERVICE_PRESHUTDOWN_INFO> preshutdownInfo = service.PreshutdownTimeout();
+       if (preshutdownInfo.IsOk())
+           std::wcout << L"Preshutdown : " << preshutdownInfo.Get().dwPreshutdownTimeout << L"ms\n";
 
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONSW>> failureAction = service.FailureActions();
-        if (failureAction.IsOk() && failureAction.Ref())
-        {
-            SERVICE_FAILURE_ACTIONSW &actions = *failureAction.Ref();
-            if (actions.lpRebootMsg)
-                std::wcout << L"Failrue RebootMsg: " << actions.lpRebootMsg << L"\n";
-            if (actions.lpRebootMsg)
-                std::wcout << L"Failrue Command: " << actions.lpCommand << L"\n";
-            if (actions.cActions)
-                std::wcout << L"Failrue Actions : " << actions.cActions << L"\n";
-        }
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_FAILURE_ACTIONSW>> failureAction = service.FailureActions();
+       if (failureAction.IsOk() && failureAction.Ref())
+       {
+           SERVICE_FAILURE_ACTIONSW &actions = *failureAction.Ref();
+           if (actions.lpRebootMsg)
+               std::wcout << L"Failrue RebootMsg: " << actions.lpRebootMsg << L"\n";
+           if (actions.lpRebootMsg)
+               std::wcout << L"Failrue Command: " << actions.lpCommand << L"\n";
+           if (actions.cActions)
+               std::wcout << L"Failrue Actions : " << actions.cActions << L"\n";
+       }
 #if defined(SERVICE_CONFIG_TRIGGER_INFO)
-        Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
-        if (result.IsOk() && result.Ref())
-        {
-            SERVICE_TRIGGER_INFO &triggers = *result.Ref();
-            if (triggers.cTriggers)
-            {
-                std::wcout << L"Triggers\n";
-                for (DWORD i = 0; i < triggers.cTriggers; i++)
-                {
-                    std::wcout << L"\t- Type : " << TriggerTypeStringW(triggers.pTriggers[i].dwTriggerType)
-                               << L"\t Action : " << ActionStringW(triggers.pTriggers[i].dwAction) << L'\n';
-                }
-            }
-        }
+       Win32Ex::Result<Win32Ex::SharedPtr<SERVICE_TRIGGER_INFO>> result = service.Trigger();
+       if (result.IsOk() && result.Ref())
+       {
+           SERVICE_TRIGGER_INFO &triggers = *result.Ref();
+           if (triggers.cTriggers)
+           {
+               std::wcout << L"Triggers\n";
+               for (DWORD i = 0; i < triggers.cTriggers; i++)
+               {
+                   std::wcout << L"\t- Type : " << TriggerTypeStringW(triggers.pTriggers[i].dwTriggerType)
+                              << L"\t Action : " << ActionStringW(triggers.pTriggers[i].dwAction) << L'\n';
+               }
+           }
+       }
 #endif
 #if defined(__cpp_initializer_lists)
-        auto privileges = service.RequiredPrivileges().Get({});
+       auto privileges = service.RequiredPrivileges().Get({});
 #else
-        std::list<Win32Ex::StringW> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::StringW>());
+       std::list<Win32Ex::StringW> privileges = service.RequiredPrivileges().Get(std::list<Win32Ex::StringW>());
 #endif
-        if (!privileges.empty())
-        {
-            std::wcout << L"Privileges\n";
+       if (!privileges.empty())
+       {
+           std::wcout << L"Privileges\n";
 #if defined(__cpp_range_based_for)
-            for (auto privilege : privileges)
+           for (auto privilege : privileges)
 #else
-            for each (const Win32Ex::StringW &privilege in privileges)
+           for each (const Win32Ex::StringW &privilege in privileges)
 #endif
-                std::wcout << L"\t- " << privilege << L'\n';
-        }
-    }
+               std::wcout << L"\t- " << privilege << L'\n';
+       }
+   }
     // clang-format on
 }
 

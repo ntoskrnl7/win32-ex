@@ -53,7 +53,7 @@ namespace Win32Ex
 {
 namespace System
 {
-template <class _StringType = StringT> class SessionT
+template <class StringType = StringT> class SessionT
 {
     WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(SessionT)
 
@@ -82,7 +82,6 @@ template <class _StringType = StringT> class SessionT
     }
 
   public:
-    typedef _StringType StringType;
     typedef typename StringType::value_type CharType;
     typedef RunnableProcessT<StringType> RunnableProcess;
     typedef SharedPtr<RunnableProcess> RunnableProcessPtr;
@@ -233,13 +232,13 @@ DWORD Id()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-_StringType NameT()
+StringType NameT()
 {
-    return System::SessionT<_StringType>(ThisSession::Id()).Name();
+    return System::SessionT<StringType>(ThisSession::Id()).Name();
 }
 
 String Name()
@@ -253,13 +252,13 @@ StringW NameW()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-_StringType UserNameT()
+StringType UserNameT()
 {
-    return System::SessionT<_StringType>(ThisSession::Id()).UserName();
+    return System::SessionT<StringType>(ThisSession::Id()).UserName();
 }
 
 String UserName()
@@ -278,18 +277,18 @@ WTS_CONNECTSTATE_CLASS State()
 }
 
 #if defined(WIN32EX_USE_TEMPLATE_FUNCTION_DEFAULT_ARGUMENT_STRING_T)
-template <class _StringType = StringT>
+template <class StringType = StringT>
 #else
-template <class _StringType>
+template <class StringType>
 #endif
-Result<typename System::SessionT<_StringType>::RunnableProcessPtr> NewProcessT(
-    System::ProcessAccountType Type, const std::basic_string<typename _StringType::value_type> &Command,
-    const Optional<const _StringType &> &Arguments = None(),
-    const Optional<const _StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
-    const typename STARTUPINFOT<typename _StringType::value_type>::Type *StartupInfo = NULL,
+Result<typename System::SessionT<StringType>::RunnableProcessPtr> NewProcessT(
+    System::ProcessAccountType Type, const std::basic_string<typename StringType::value_type> &Command,
+    const Optional<const StringType &> &Arguments = None(),
+    const Optional<const StringType &> &CurrentDirectory = None(), DWORD CreationFlags = 0L,
+    const typename STARTUPINFOT<typename StringType::value_type>::Type *StartupInfo = NULL,
     BOOL InheritHandles = FALSE, LPVOID EnvironmentBlock = NULL)
 {
-    return System::SessionT<_StringType>(ThisSession::Id())
+    return System::SessionT<StringType>(ThisSession::Id())
         .NewProcess(Type, Command, Arguments, CurrentDirectory, CreationFlags, StartupInfo, InheritHandles,
                     EnvironmentBlock);
 }

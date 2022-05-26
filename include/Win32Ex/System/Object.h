@@ -38,7 +38,7 @@ Environment:
 
 #include "Ntdll.h"
 
-STATIC_OR_INLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
 {
     PUBLIC_OBJECT_BASIC_INFORMATION basicInfo;
     if (NT_SUCCESS(NtQueryObject(Handle, ObjectBasicInformation, &basicInfo, sizeof(basicInfo), NULL)))
@@ -48,12 +48,12 @@ STATIC_OR_INLINE BOOL IsPermanentObject(_In_ HANDLE Handle)
     return FALSE;
 }
 
-STATIC_OR_INLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
 {
     return IsPermanentObject(Handle) == FALSE;
 }
 
-STATIC_OR_INLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
 {
     BOOL result = FALSE;
     PPRIVILEGE_SET privilegeSet = (PPRIVILEGE_SET)Context;
@@ -62,7 +62,7 @@ STATIC_OR_INLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hTo
     return result;
 }
 
-STATIC_OR_INLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
+WIN32EX_ALWAYS_INLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_In_ DWORD ProcessId, _In_ HANDLE hToken,
                                                                                _In_ PVOID Context)
 {
     if (!IsLocalSystemToken(hToken))
@@ -70,7 +70,7 @@ STATIC_OR_INLINE BOOL __FindLocalSystemTokenAndAcquireCreatePermanentPrivilege(_
     return EnablePrivilege(TRUE, SE_CREATE_PERMANENT_NAME, (PREVIOUS_TOKEN_PRIVILEGES *)Context, hToken);
 }
 
-STATIC_OR_INLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
 {
     BOOL privilegeAqcuired = FALSE;
 
@@ -210,7 +210,7 @@ STATIC_OR_INLINE BOOL MakePermanentObject(_In_ HANDLE Handle)
     return NT_SUCCESS(status);
 }
 
-STATIC_OR_INLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
+WIN32EX_ALWAYS_INLINE BOOL MakeTemporaryObject(_In_ HANDLE Handle)
 {
     return NT_SUCCESS(NtMakeTemporaryObject(Handle));
 }

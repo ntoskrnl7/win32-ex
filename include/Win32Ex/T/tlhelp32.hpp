@@ -53,8 +53,8 @@ namespace Win32Ex
 {
 WIN32EX_API_DEFINE_STRUCT_T_EX(PROCESSENTRY32, PROCESSENTRY32T, PROCESSENTRY32, PROCESSENTRY32W);
 
-template <typename _CharType>
-inline BOOL Process32FirstT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType>::Type *lppe);
+template <typename CharType>
+inline BOOL Process32FirstT(HANDLE hSnapshot, typename PROCESSENTRY32T<CharType>::Type *lppe);
 
 template <> inline BOOL Process32FirstT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {
@@ -66,8 +66,8 @@ template <> inline BOOL Process32FirstT<WCHAR>(HANDLE hSnapshot, LPPROCESSENTRY3
     return ::Process32FirstW(hSnapshot, lppe);
 }
 
-template <typename _CharType>
-inline BOOL Process32NextT(HANDLE hSnapshot, typename PROCESSENTRY32T<_CharType>::Type *lppe);
+template <typename CharType>
+inline BOOL Process32NextT(HANDLE hSnapshot, typename PROCESSENTRY32T<CharType>::Type *lppe);
 
 template <> inline BOOL Process32NextT<CHAR>(HANDLE hSnapshot, LPPROCESSENTRY32 lppe)
 {

@@ -34,7 +34,7 @@ Environment:
 
 namespace Win32Ex
 {
-template <typename _CharType>
+template <typename CharType>
 inline HDEVNOTIFY WINAPI RegisterDeviceNotificationT(_In_ HANDLE hRecipient, _In_ LPVOID NotificationFilter,
                                                      _In_ DWORD Flags);
 

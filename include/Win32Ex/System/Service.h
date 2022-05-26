@@ -42,7 +42,7 @@ Environment:
 
 #include "../Internal/misc.h"
 
-STATIC_OR_INLINE LPENUM_SERVICE_STATUS_PROCESSW LookupServiceStatusProcessByProcessIdW(_In_ DWORD dwProcessId,
+WIN32EX_ALWAYS_INLINE LPENUM_SERVICE_STATUS_PROCESSW LookupServiceStatusProcessByProcessIdW(_In_ DWORD dwProcessId,
                                                                                        _In_ DWORD dwServiceType,
                                                                                        _In_ DWORD dwServiceState)
 {
@@ -89,7 +89,7 @@ STATIC_OR_INLINE LPENUM_SERVICE_STATUS_PROCESSW LookupServiceStatusProcessByProc
     return NULL;
 }
 
-STATIC_OR_INLINE VOID ReleaseServiceStatusProcess(_In_ LPENUM_SERVICE_STATUS_PROCESSW lpStatus)
+WIN32EX_ALWAYS_INLINE VOID ReleaseServiceStatusProcess(_In_ LPENUM_SERVICE_STATUS_PROCESSW lpStatus)
 {
     if (lpStatus == NULL)
         return;

@@ -4,7 +4,9 @@ Win32 API Experimental(or Extension) features.
 
 [![CMake](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml/badge.svg)](https://github.com/ntoskrnl7/win32-ex/actions/workflows/cmake.yml) [![MSYS2](https://github.com/ntoskrnl7/win32-ex/actions/workflows/msys2.yml/badge.svg)](https://github.com/ntoskrnl7/win32-ex/actions/workflows/msys2.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/ntoskrnl7/win32-ex)
 
-This library is designed for use in legacy development environments also. Because of that, we will support Visual Studio 2008 SP1 (probably C++03).
+It is a library that helps to more easily implement tasks such as service program creation and process creation for each user account in Windows environment.
+
+It is implemented with outdated syntax and features because it is also designed for use in legacy development environments (Visual Studio 2008 SP1).
 
 ---
 
@@ -198,7 +200,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.19")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.20")
 
 # link dependencies
 target_link_libraries(tests win32ex)

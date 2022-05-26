@@ -42,19 +42,19 @@ struct None
 
 namespace Details
 {
-template <class _StringType> class OptionalString;
+template <class StringType> class OptionalString;
 
-template <class _StringType> class OptionalConstStringRef
+template <class StringType> class OptionalConstStringRef
 {
-    friend class Optional<const _StringType &>;
-    friend class OptionalString<_StringType>;
+    friend class Optional<const StringType &>;
+    friend class OptionalString<StringType>;
 
   public:
-    typedef _StringType Type;
+    typedef StringType Type;
     typedef const Type &ConstTypeRefType;
     typedef const Type *ConstTypePtrType;
 
-    typedef typename _StringType::value_type CharType;
+    typedef typename StringType::value_type CharType;
     typedef const CharType *ConstPtrType;
 
     WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(OptionalConstStringRef)
@@ -237,11 +237,11 @@ template <class _StringType> class OptionalConstStringRef
     bool isNone_;
 };
 
-template <class _StringType> class OptionalString
+template <class StringType> class OptionalString
 {
-    friend class Optional<_StringType>;
-    friend class OptionalConstStringRef<_StringType>;
-    friend class OptionalConstStringRef<typename std::remove_const<_StringType>::type>;
+    friend class Optional<StringType>;
+    friend class OptionalConstStringRef<StringType>;
+    friend class OptionalConstStringRef<typename std::remove_const<StringType>::type>;
 
     WIN32EX_MOVE_ONLY_CLASS_WITH_IS_MOVED(OptionalString)
 
@@ -274,7 +274,7 @@ template <class _StringType> class OptionalString
         isMoved_ = true;
     }
 
-    void Move(OptionalConstStringRef<_StringType> &To)
+    void Move(OptionalConstStringRef<StringType> &To)
     {
         To.isMoved_ = isMoved_;
         if (isMoved_)
@@ -284,7 +284,7 @@ template <class _StringType> class OptionalString
         if (To.isNone_)
             return;
 
-        To.ref_ = (isNull_) ? NULL : new _StringType(value_);
+        To.ref_ = (isNull_) ? NULL : new StringType(value_);
         To.value_ = NULL;
         value_.clear();
         isNone_ = true;
@@ -292,10 +292,10 @@ template <class _StringType> class OptionalString
     }
 
   public:
-    typedef _StringType Type;
+    typedef StringType Type;
     typedef const Type &ConstRefType;
 
-    typedef typename _StringType::value_type CharType;
+    typedef typename StringType::value_type CharType;
     typedef const CharType *ConstPtrType;
 
     OptionalString() : isNone_(true), isMoved_(false)
@@ -1099,7 +1099,7 @@ template <typename T> class Optional<T, typename std::enable_if<!std::is_referen
 };
 
 #if defined(__cpp_variadic_templates)
-template <typename... Args> bool IsAll(const Optional<Args> &... args)
+template <typename... Args> bool IsAll(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsNone()...,
@@ -1113,7 +1113,7 @@ template <typename... Args> bool IsAll(const Optional<Args> &... args)
     return true;
 }
 
-template <typename... Args> bool IsSome(const Optional<Args> &... args)
+template <typename... Args> bool IsSome(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsSome()...,
@@ -1127,12 +1127,12 @@ template <typename... Args> bool IsSome(const Optional<Args> &... args)
     return false;
 }
 
-template <typename... Args> bool IsAny(const Optional<Args> &... args)
+template <typename... Args> bool IsAny(const Optional<Args> &...args)
 {
     return IsSome(args...);
 }
 
-template <typename... Args> bool IsNone(const Optional<Args> &... args)
+template <typename... Args> bool IsNone(const Optional<Args> &...args)
 {
     for (auto val : {
              args.IsSome()...,

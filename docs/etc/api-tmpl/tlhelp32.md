@@ -9,15 +9,15 @@
   - [Contents](#contents)
   - [Reference](#reference)
     - [Functions](#functions)
-      - [Process32FirstT\<_CharType\>](#process32firstt_chartype)
-      - [Process32NextT<\_CharType\>](#process32nextt_chartype)
+      - [Process32FirstT\<CharType\>](#process32firstt_chartype)
+      - [Process32NextT<\CharType\>](#process32nextt_chartype)
     - [Structures](#structures)
 
 ## Reference
 
 ### Functions
 
-#### Process32FirstT\<_CharType\>
+#### Process32FirstT\<CharType\>
 
 - Example
 
@@ -43,8 +43,8 @@
 
   ```
 
-#### Process32NextT<\_CharType\>
+#### Process32NextT<\CharType\>
 
 ### Structures
 
-- PROCESSENTRY32T\<_CharType\>
+- PROCESSENTRY32T\<CharType\>
