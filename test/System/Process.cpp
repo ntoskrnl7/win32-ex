@@ -197,8 +197,8 @@ TEST(ProcessTest, StdIn)
 {
     Win32Ex::System::UserAccountProcess process("cmd /c more");
     process.RunAsync();
-    process.StdIn() << "test 1\n";
-    process.StdIn() << "test 2\ntest 3\n";
+    process.StdIn() << "test 1\r\n";
+    process.StdIn() << "test 2\r\ntest 3\r\n";
     process.StdIn().Close();
     EXPECT_STREQ(process.StdOut().ReadAll().c_str(), "test 1\r\ntest 2\r\ntest 3\r\n\r\n");
 }
