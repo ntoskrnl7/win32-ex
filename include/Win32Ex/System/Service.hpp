@@ -534,6 +534,9 @@ template <class _StringType = StringT> class ServiceT
         }
         dependencies.push_back(0);
 
+        if (binaryPathName_.empty())
+            this->BinaryPathName();
+
         if (!handle.Attach(CreateServiceT<CharType>(
                 handle.hSCManager, name_.c_str(), displayName_.empty() ? NULL : displayName_.c_str(),
                 SERVICE_CHANGE_CONFIG, ServiceType, StartType, ErrorControl, binaryPathName_.c_str(),
