@@ -213,7 +213,7 @@ add_executable(tests tests.cpp)
 
 # add dependencies
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.20")
+CPMAddPackage("gh:ntoskrnl7/win32-ex@0.8.21")
 
 # link dependencies
 target_link_libraries(tests win32ex)
@@ -223,13 +223,35 @@ target_link_libraries(tests win32ex)
 
 ```C++
 #include <iostream>
+
 #include <Win32Ex/System/Process.hpp>
+#include <Win32Ex/System/Service.hpp>
 // or #include <Win32Ex.h>
 // or #include <Win32Ex/System.h>
+
+Win32Ex::System::Service SimpleService("SimpleSvc");
 
 int main()
 {
     std::cout << Win32Ex::System::Process::All().size();
+
+    Win32Ex::System::Service::Instance<SimpleService>::Get()
+        .OnStart([]() {
+            // TODO
+        })
+        .OnStop([]() {
+            // TODO
+        })
+        .OnPause([]() {
+            // TODO
+        })
+        .OnContinue([]() {
+            // TODO
+        })
+        .OnError([](DWORD ErrorCode, PCSTR Message) {
+            // TODO
+        })
+        .Run();
     return 0;
 }
 ```
