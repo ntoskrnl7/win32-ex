@@ -1128,13 +1128,13 @@ static DWORD mainThreadId = GetCurrentThreadId();
 static HANDLE OpenMainThread();
 static HANDLE mainThreadHandle = OpenMainThread();
 
-static VOID CloseMainThread()
+WIN32EX_ALWAYS_INLINE VOID CloseMainThread()
 {
     if (mainThreadHandle != NULL)
         CloseHandle(mainThreadHandle);
 }
 
-static HANDLE OpenMainThread()
+WIN32EX_ALWAYS_INLINE HANDLE OpenMainThread()
 {
     HANDLE handle = OpenThread(MAXIMUM_ALLOWED, FALSE, GetCurrentThreadId());
     if (handle != NULL)
@@ -1143,27 +1143,27 @@ static HANDLE OpenMainThread()
 }
 } // namespace Details
 
-static DWORD MainThreadId()
+WIN32EX_ALWAYS_INLINE DWORD MainThreadId()
 {
     return Details::mainThreadId;
 }
 
-static HANDLE MainThreadHandle()
+WIN32EX_ALWAYS_INLINE HANDLE MainThreadHandle()
 {
     return Details::mainThreadHandle;
 }
 
-static DWORD Id()
+WIN32EX_ALWAYS_INLINE DWORD Id()
 {
     return GetCurrentProcessId();
 }
 
-static HANDLE Handle()
+WIN32EX_ALWAYS_INLINE HANDLE Handle()
 {
     return GetCurrentProcess();
 }
 
-static bool IsAdmin()
+WIN32EX_ALWAYS_INLINE bool IsAdmin()
 {
     return IsUserAdmin(GetCurrentProcessToken()) == TRUE;
 }
@@ -1173,7 +1173,7 @@ template <class StringType = StringT>
 #else
 template <class StringType>
 #endif
-static StringType &ExecutablePathT()
+WIN32EX_ALWAYS_INLINE StringType &ExecutablePathT()
 {
     static StringType executablePath_(MAX_PATH, 0);
     size_t returnSize =
@@ -1197,11 +1197,11 @@ static StringType &ExecutablePathT()
     }
     return executablePath_;
 }
-static String ExecutablePath()
+WIN32EX_ALWAYS_INLINE String ExecutablePath()
 {
     return ExecutablePathT<String>();
 }
-static StringW ExecutablePathW()
+WIN32EX_ALWAYS_INLINE StringW ExecutablePathW()
 {
     return ExecutablePathT<StringW>();
 }
@@ -1211,17 +1211,17 @@ template <class StringType = StringT>
 #else
 template <class StringType>
 #endif
-static StringType &CommandLineT()
+WIN32EX_ALWAYS_INLINE StringType &CommandLineT()
 {
     static StringType cmdline_(MAX_PATH, 0);
     cmdline_ = GetCommandLineT<typename StringType::value_type>();
     return cmdline_;
 }
-static String CommandLine()
+WIN32EX_ALWAYS_INLINE String CommandLine()
 {
     return CommandLineT<String>();
 }
-static StringW CommandLineW()
+WIN32EX_ALWAYS_INLINE StringW CommandLineW()
 {
     return CommandLineT<StringW>();
 }
@@ -1231,7 +1231,7 @@ template <class StringType = StringT>
 #else
 template <class StringType>
 #endif
-static StringType CurrentDirectoryT()
+WIN32EX_ALWAYS_INLINE StringType CurrentDirectoryT()
 {
     StringType cwd(MAX_PATH, 0);
     size_t length = Win32Ex::GetCurrentDirectoryT<typename StringType::value_type>((DWORD)cwd.size(), &cwd[0]);
@@ -1243,11 +1243,11 @@ static StringType CurrentDirectoryT()
     cwd.resize(length);
     return cwd;
 }
-static String CurrentDirectory()
+WIN32EX_ALWAYS_INLINE String CurrentDirectory()
 {
     return CurrentDirectoryT<String>();
 }
-static StringW CurrentDirectoryW()
+WIN32EX_ALWAYS_INLINE StringW CurrentDirectoryW()
 {
     return CurrentDirectoryT<StringW>();
 }
@@ -1257,15 +1257,15 @@ template <class StringType = StringT>
 #else
 template <class StringType>
 #endif
-inline System::ProcessT<StringType> ParentT()
+WIN32EX_ALWAYS_INLINE System::ProcessT<StringType> ParentT()
 {
     return System::ProcessT<StringType>(GetParentProcessId(ThisProcess::Id()));
 }
-inline System::Process Parent()
+WIN32EX_ALWAYS_INLINE System::Process Parent()
 {
     return System::Process(GetParentProcessId(ThisProcess::Id()));
 }
-inline System::ProcessW ParentW()
+WIN32EX_ALWAYS_INLINE System::ProcessW ParentW()
 {
     return System::ProcessW(GetParentProcessId(ThisProcess::Id()));
 }

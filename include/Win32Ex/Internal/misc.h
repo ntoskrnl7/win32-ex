@@ -73,7 +73,7 @@ Environment:
 #define IS_ALIGNED(_pointer, _alignment) ((((ULONG_PTR)(_pointer)) & ((_alignment)-1)) == 0)
 #endif
 
-#if defined(__cplusplus) || !defined(__GNUC__)
+#if defined(_MSC_VER)
 #define WIN32EX_ALWAYS_INLINE FORCEINLINE
 #else
 #define WIN32EX_ALWAYS_INLINE __inline__ static //__attribute__((always_inline))

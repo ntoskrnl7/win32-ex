@@ -310,9 +310,10 @@ WIN32EX_ALWAYS_INLINE BOOL EnablePrivilegesEx(_In_ BOOL Enabled, _In_ DWORD Numb
     return bRet;
 }
 
-static BOOL EnablePrivilegesExV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
-                                _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
-                                /* LUID Privileges... */...)
+WIN32EX_ALWAYS_INLINE BOOL EnablePrivilegesExV(_In_ BOOL Enabled,
+                                               _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                               _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                                               /* LUID Privileges... */...)
 {
     va_list Privileges;
     va_start(Privileges, NumberOfPrivileges);
@@ -336,9 +337,9 @@ WIN32EX_ALWAYS_INLINE BOOL EnablePrivileges(_In_ BOOL Enabled, _In_ DWORD Number
     return ret;
 }
 
-static BOOL EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
-                              _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                              /* LPCTSTR PrivilegeNames... */...)
+WIN32EX_ALWAYS_INLINE BOOL EnablePrivilegesV(_In_ BOOL Enabled, _Out_opt_ PPREVIOUS_TOKEN_PRIVILEGES PreviousPrivileges,
+                                             _In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                                             /* LPCTSTR PrivilegeNames... */...)
 {
     va_list PrivilegeNames;
     va_start(PrivilegeNames, NumberOfPrivilegeNames);
@@ -466,16 +467,16 @@ WIN32EX_ALWAYS_INLINE BOOL IsPrivilegesEnabled(_In_ DWORD NumberOfPrivilegeNames
     return ret;
 }
 
-static BOOL IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
-                                 /* LPCTSTR PrivilegeName... */...)
+WIN32EX_ALWAYS_INLINE BOOL IsPrivilegesEnabledV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivilegeNames,
+                                                /* LPCTSTR PrivilegeName... */...)
 {
     va_list PrivilegeName;
     va_start(PrivilegeName, NumberOfPrivilegeNames);
     return IsPrivilegesEnabled(NumberOfPrivilegeNames, (PCTSTR *)PrivilegeName, TokenHandle);
 }
 
-static BOOL IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
-                                   /* LUID Privileges... */...)
+WIN32EX_ALWAYS_INLINE BOOL IsPrivilegesEnabledExV(_In_opt_ HANDLE TokenHandle, _In_ DWORD NumberOfPrivileges,
+                                                  /* LUID Privileges... */...)
 {
     va_list Privileges;
     va_start(Privileges, NumberOfPrivileges);
