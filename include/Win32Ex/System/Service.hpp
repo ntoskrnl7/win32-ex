@@ -1462,8 +1462,9 @@ template <class _StringType = StringT> class ServiceT
 #endif
                 return true;
             }
-#endif
+#else
             return false;
+#endif
         }
 
       protected:
