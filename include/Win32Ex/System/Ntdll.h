@@ -49,9 +49,9 @@ Environment:
 //// Visual Studio 2010 이상일때는 ntdll.lib를 기본으로 정적 링크하도록 합니다.
 ////
 //
-//#if !defined(USE_NTDLL_STATIC_LINK) && defined(_MSC_VER) && (_MSC_VER > 1600)
-//#define USE_NTDLL_STATIC_LINK
-//#endif
+// #if !defined(USE_NTDLL_STATIC_LINK) && defined(_MSC_VER) && (_MSC_VER > 1600)
+// #define USE_NTDLL_STATIC_LINK
+// #endif
 
 //
 //  Native API를 사용할때, 자주 사용하는 매크로.
@@ -343,11 +343,11 @@ WIN32EX_ALWAYS_INLINE ULONG NTAPI RtlNtStatusToDosError(_In_ NTSTATUS Status)
 
     hModule = GetModuleHandleA("ntdll.dll");
     if (!hModule)
-        return STATUS_ENTRYPOINT_NOT_FOUND;
+        return ERROR_NOT_FOUND;
 
     _RtlNtStatusToDosError = (ULONG(NTAPI *)(NTSTATUS))GetProcAddress(hModule, "RtlNtStatusToDosError");
 
-    return (_RtlNtStatusToDosError ? _RtlNtStatusToDosError(Status) : STATUS_ENTRYPOINT_NOT_FOUND);
+    return (_RtlNtStatusToDosError ? _RtlNtStatusToDosError(Status) : ERROR_NOT_FOUND);
 }
 
 WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtMakeTemporaryObject(_In_ HANDLE Handle)
@@ -385,9 +385,9 @@ WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtMakePermanentObject(_In_ HANDLE Handle)
 }
 
 WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle,
-                                              _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
-                                              _Out_opt_ PVOID ObjectInformation, _In_ ULONG ObjectInformationLength,
-                                              _Out_opt_ PULONG ReturnLength)
+                                                   _In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
+                                                   _Out_opt_ PVOID ObjectInformation,
+                                                   _In_ ULONG ObjectInformationLength, _Out_opt_ PULONG ReturnLength)
 {
     HMODULE hModule;
     if (_NtQueryObject)
@@ -408,9 +408,9 @@ WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtQueryObject(_In_opt_ HANDLE Handle,
 }
 
 WIN32EX_ALWAYS_INLINE NTSTATUS NTAPI NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
-                                                         _Out_ PVOID SystemInformation,
-                                                         _In_ ULONG SystemInformationLength,
-                                                         _Out_opt_ PULONG ReturnLength)
+                                                              _Out_ PVOID SystemInformation,
+                                                              _In_ ULONG SystemInformationLength,
+                                                              _Out_opt_ PULONG ReturnLength)
 {
     HMODULE hModule;
     if (_NtQuerySystemInformation)

@@ -34,6 +34,7 @@ Environment:
 #include "T/processenv.hpp"
 #include "T/processthreadsapi.hpp"
 #include "T/shellapi.hpp"
+#include "T/sysinfoapi.hpp"
 #include "T/tlhelp32.hpp"
 #include "T/winbase.hpp"
 #include "T/winsvc.hpp"

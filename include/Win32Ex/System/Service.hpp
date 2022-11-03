@@ -535,7 +535,7 @@ template <class _StringType = StringT> class ServiceT
         dependencies.push_back(0);
 
         if (binaryPathName_.empty())
-            this->BinaryPathName();
+            binaryPathName_ = ThisProcess::ExecutablePathT<StringType>();
 
         if (!handle.Attach(CreateServiceT<CharType>(
                 handle.hSCManager, name_.c_str(), displayName_.empty() ? NULL : displayName_.c_str(),
@@ -809,9 +809,6 @@ template <class _StringType = StringT> class ServiceT
 
     const StringType &BinaryPathName() const
     {
-        if (binaryPathName_.empty())
-            binaryPathName_ = ThisProcess::ExecutablePathT<StringType>();
-
         return binaryPathName_;
     }
 
@@ -1518,8 +1515,8 @@ template <class _StringType = StringT> class ServiceT
       public:
         static Instance &Get()
         {
-            static Instance service;
-            return service;
+            static Instance instance_;
+            return instance_;
         }
 
       private:
@@ -1651,36 +1648,36 @@ template <class _StringType = StringT> class ServiceT
         static DWORD WINAPI ServiceHandlerEx_(DWORD dwControl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
         {
             DWORD result = NO_ERROR;
-            Instance &service = Get();
+            Instance &instance_ = Get();
 
             UNREFERENCED_PARAMETER(lpContext);
 
             switch (dwControl)
             {
             case SERVICE_CONTROL_STOP:
-                service.SetStatus(SERVICE_STOP_PENDING);
+                instance_.SetStatus(SERVICE_STOP_PENDING);
 
-                if (service.stopCallback_)
-                    service.stopCallback_();
+                if (instance_.stopCallback_)
+                    instance_.stopCallback_();
 
-                SetEvent(service.hStopedEvent_);
-                service.SetStatus(SERVICE_STOPPED);
-                WaitForSingleObject(service.hCleanupCompleteEvent_, INFINITE);
+                SetEvent(instance_.hStopedEvent_);
+                instance_.SetStatus(SERVICE_STOPPED);
+                WaitForSingleObject(instance_.hCleanupCompleteEvent_, INFINITE);
                 result = NO_ERROR;
                 break;
 
             case SERVICE_CONTROL_PAUSE:
-                service.SetStatus(SERVICE_PAUSE_PENDING);
-                if (service.pauseCallback_)
-                    service.pauseCallback_();
-                service.SetStatus(SERVICE_PAUSED);
+                instance_.SetStatus(SERVICE_PAUSE_PENDING);
+                if (instance_.pauseCallback_)
+                    instance_.pauseCallback_();
+                instance_.SetStatus(SERVICE_PAUSED);
                 break;
 
             case SERVICE_CONTROL_CONTINUE:
-                service.SetStatus(SERVICE_CONTINUE_PENDING);
-                if (service.continueCallback_)
-                    service.continueCallback_();
-                service.SetStatus(SERVICE_RUNNING);
+                instance_.SetStatus(SERVICE_CONTINUE_PENDING);
+                if (instance_.continueCallback_)
+                    instance_.continueCallback_();
+                instance_.SetStatus(SERVICE_RUNNING);
                 break;
 
             case SERVICE_CONTROL_INTERROGATE:
@@ -1688,79 +1685,79 @@ template <class _StringType = StringT> class ServiceT
                 break;
 
             case SERVICE_CONTROL_SHUTDOWN:
-                if (service.shutdownCallback_)
-                    service.shutdownCallback_();
+                if (instance_.shutdownCallback_)
+                    instance_.shutdownCallback_();
                 result = NO_ERROR;
                 break;
 
             case SERVICE_CONTROL_PARAMCHANGE:
-                if (service.paramChangeCallback_)
-                    service.paramChangeCallback_();
+                if (instance_.paramChangeCallback_)
+                    instance_.paramChangeCallback_();
                 break;
 
             case SERVICE_CONTROL_NETBINDADD:
-                if (service.netbindAddCallback_)
-                    service.netbindAddCallback_();
+                if (instance_.netbindAddCallback_)
+                    instance_.netbindAddCallback_();
                 break;
 
             case SERVICE_CONTROL_NETBINDREMOVE:
-                if (service.netbindRemoveCallback_)
-                    service.netbindRemoveCallback_();
+                if (instance_.netbindRemoveCallback_)
+                    instance_.netbindRemoveCallback_();
                 break;
 
             case SERVICE_CONTROL_NETBINDENABLE:
-                if (service.netbindEnableCallback_)
-                    service.netbindEnableCallback_();
+                if (instance_.netbindEnableCallback_)
+                    instance_.netbindEnableCallback_();
                 break;
 
             case SERVICE_CONTROL_NETBINDDISABLE:
-                if (service.netbindDisableCallback_)
-                    service.netbindDisableCallback_();
+                if (instance_.netbindDisableCallback_)
+                    instance_.netbindDisableCallback_();
                 break;
 
             case SERVICE_CONTROL_DEVICEEVENT:
-                if (service.deviceEventCallback_)
-                    result = service.deviceEventCallback_(dwEventType, (PDEV_BROADCAST_HDR)lpEventData);
+                if (instance_.deviceEventCallback_)
+                    result = instance_.deviceEventCallback_(dwEventType, (PDEV_BROADCAST_HDR)lpEventData);
                 break;
 
             case SERVICE_CONTROL_HARDWAREPROFILECHANGE:
-                if (service.hardwareProfileChangeCallback_)
-                    result = service.hardwareProfileChangeCallback_(dwEventType);
+                if (instance_.hardwareProfileChangeCallback_)
+                    result = instance_.hardwareProfileChangeCallback_(dwEventType);
                 break;
 
             case SERVICE_CONTROL_POWEREVENT:
-                if (service.powerEventCallback_)
-                    result = service.powerEventCallback_(dwEventType, (PPOWERBROADCAST_SETTING)lpEventData);
+                if (instance_.powerEventCallback_)
+                    result = instance_.powerEventCallback_(dwEventType, (PPOWERBROADCAST_SETTING)lpEventData);
                 break;
 
             case SERVICE_CONTROL_SESSIONCHANGE:
-                if (service.sessionChangeCallback_)
-                    service.sessionChangeCallback_(dwEventType, (PWTSSESSION_NOTIFICATION)lpEventData);
+                if (instance_.sessionChangeCallback_)
+                    instance_.sessionChangeCallback_(dwEventType, (PWTSSESSION_NOTIFICATION)lpEventData);
                 break;
 #ifdef SERVICE_CONTROL_PRESHUTDOWN
             case SERVICE_CONTROL_PRESHUTDOWN:
-                if (service.preShutdownCallback_)
-                    service.preShutdownCallback_();
+                if (instance_.preShutdownCallback_)
+                    instance_.preShutdownCallback_();
                 break;
 #endif
 #ifdef SERVICE_CONTROL_TIMECHANGE
             case SERVICE_CONTROL_TIMECHANGE:
-                if (service.timeChangeCallback_)
-                    service.timeChangeCallback_((PSERVICE_TIMECHANGE_INFO)lpEventData);
+                if (instance_.timeChangeCallback_)
+                    instance_.timeChangeCallback_((PSERVICE_TIMECHANGE_INFO)lpEventData);
                 break;
 #endif
 #ifdef SERVICE_CONTROL_TRIGGEREVENT
             case SERVICE_CONTROL_TRIGGEREVENT:
-                if (service.triggerEventCallback_)
-                    service.triggerEventCallback_();
+                if (instance_.triggerEventCallback_)
+                    instance_.triggerEventCallback_();
                 break;
 #endif
             default:
-                if (service.otherCallbackExMap_[dwControl])
-                    return service.otherCallbackExMap_[dwControl](dwEventType, lpEventData);
+                if (instance_.otherCallbackExMap_[dwControl])
+                    return instance_.otherCallbackExMap_[dwControl](dwEventType, lpEventData);
 
-                if (service.otherCallbackMap_[dwControl])
-                    service.otherCallbackMap_[dwControl]();
+                if (instance_.otherCallbackMap_[dwControl])
+                    instance_.otherCallbackMap_[dwControl]();
                 break;
             }
 
