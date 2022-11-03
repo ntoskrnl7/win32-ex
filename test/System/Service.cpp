@@ -519,9 +519,9 @@ TEST(ServiceTest, ServiceInstall)
         return;
     Win32Ex::String path =
 #ifdef _INC__MINGW_H
-        testSvcPath.empty() ? TestService.BinaryPathName() : testSvcPath;
+        testSvcPath.empty() ? Win32Ex::ThisProcess::ExecutablePath() : testSvcPath;
 #else
-        TestService.BinaryPathName();
+        Win32Ex::ThisProcess::ExecutablePath();
 #endif
     path.append(" " TEST_SVC_NAME);
     EXPECT_TRUE(TestService.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
@@ -624,9 +624,9 @@ TEST(ServiceTest, ServiceWInstall)
 
     std::wstring path =
 #ifdef _INC__MINGW_H
-        testSvcPath.empty() ? TestServiceW.BinaryPathName() : !testSvcPath;
+        testSvcPath.empty() ? Win32Ex::ThisProcess::ExecutablePathW() : !testSvcPath;
 #else
-        TestServiceW.BinaryPathName();
+        Win32Ex::ThisProcess::ExecutablePathW();
 #endif
     path.append(L" " _W(TEST_SVC_NAME) L" W");
     EXPECT_TRUE(TestServiceW.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));
@@ -729,14 +729,14 @@ TEST(ServiceTest, ServiceTInstall)
 
     Win32Ex::StringT path =
 #ifdef _INC__MINGW_H
-        testSvcPath.empty() ? TestServiceT.BinaryPathName()
+        testSvcPath.empty() ? Win32Ex::ThisProcess::ExecutablePathT<Win32Ex::StringT>()
 #ifdef UNICODE
                             : !testSvcPath;
 #else
                             : testSvcPath;
 #endif
 #else
-        TestServiceT.BinaryPathName();
+        Win32Ex::ThisProcess::ExecutablePathT<Win32Ex::StringT>();
 #endif
     path.append(TEXT(" ") TEXT(TEST_SVC_NAME) TEXT(" W"));
     EXPECT_TRUE(TestServiceT.Install(SERVICE_WIN32_OWN_PROCESS, SERVICE_AUTO_START, path));

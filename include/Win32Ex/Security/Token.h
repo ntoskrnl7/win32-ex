@@ -153,7 +153,6 @@ WIN32EX_ALWAYS_INLINE PSID DuplicateTokenUserSid(_In_ PSID Sid, _In_ DWORD SidLe
 WIN32EX_ALWAYS_INLINE PSID GetProcessTokenUserSid(_In_ HANDLE hProcess)
 {
     HANDLE TokenHandle;
-    PSID sid = NULL;
 
     if (OpenProcessToken(hProcess, MAXIMUM_ALLOWED, &TokenHandle))
     {
@@ -316,7 +315,7 @@ WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition2(DWORD ProcessId, HANDL
 
 WIN32EX_ALWAYS_INLINE HANDLE LookupToken2(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE_2 TokenCondition)
 {
-    return LookupTokenEx2(DesireAccess, __DefaultLookupTokenCondition2, TokenCondition);
+    return LookupTokenEx2(DesireAccess, __DefaultLookupTokenCondition2, (PVOID)TokenCondition);
 }
 #endif
 
@@ -327,7 +326,7 @@ typedef struct
     PVOID Context;
 } __DefaultLookupTokenExConditionContext_cpp;
 
-WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition_cpp(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
+WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition_cpp(DWORD, HANDLE TokenHandle, PVOID Context)
 {
     __DefaultLookupTokenExConditionContext_cpp *ctx = (__DefaultLookupTokenExConditionContext_cpp *)Context;
     return (ctx->TokenCondition) ? (ctx->TokenCondition)(TokenHandle, ctx->Context) : TRUE;
@@ -340,7 +339,7 @@ WIN32EX_ALWAYS_INLINE HANDLE LookupTokenEx(_In_ DWORD DesireAccess,
 #ifdef __cpp_lambdas
     return LookupTokenEx2(
         DesireAccess,
-        [&](DWORD ProcessId, HANDLE TokenHandle, PVOID Context) {
+        [&](DWORD, HANDLE TokenHandle, PVOID Context) {
             return (TokenCondition) ? TokenCondition(TokenHandle, Context) : TRUE;
         },
         Context);
@@ -362,6 +361,7 @@ typedef struct
 
 WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
+    UNREFERENCED_PARAMETER(ProcessId);
     __DefaultLookupTokenExConditionContext *ctx = (__DefaultLookupTokenExConditionContext *)Context;
     return (ctx->TokenCondition) ? ctx->TokenCondition(TokenHandle, ctx->Context) : TRUE;
 }
@@ -403,12 +403,13 @@ WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenCondition(HANDLE TokenHandle, PVO
 
 WIN32EX_ALWAYS_INLINE HANDLE LookupToken(_In_ DWORD DesireAccess, _In_ PTOKEN_CONDITION_ROUTINE TokenCondition)
 {
-    return LookupTokenEx(DesireAccess, __DefaultLookupTokenCondition, TokenCondition);
+    return LookupTokenEx(DesireAccess, __DefaultLookupTokenCondition, (PVOID)TokenCondition);
 }
 #endif
 
 WIN32EX_ALWAYS_INLINE BOOL __IsLocalSystemTokenCondition(DWORD ProcessId, HANDLE TokenHandle)
 {
+    UNREFERENCED_PARAMETER(ProcessId);
     return IsLocalSystemToken(TokenHandle);
 }
 

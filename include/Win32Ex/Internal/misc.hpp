@@ -409,12 +409,27 @@ class FailureException : public Exception
         return errorCode_;
     }
 
+    template <class StringType>
+    StringType message(HMODULE hModule, DWORD LanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)) const
+    {
+        typename StringType::value_type *buffer = NULL;
+        size_t size = FormatMessageT<typename StringType::value_type>(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS |
+                (hModule ? FORMAT_MESSAGE_FROM_HMODULE : FORMAT_MESSAGE_FROM_SYSTEM),
+            hModule, errorCode_, LanguageId, (typename StringType::value_type *)&buffer, 0, NULL);
+        if (size == 0)
+            return StringType();
+        StringType message(buffer, size);
+        LocalFree(buffer);
+        return message;
+    }
+
     template <class StringType> StringType message(DWORD LanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)) const
     {
         typename StringType::value_type *buffer = NULL;
         size_t size = FormatMessageT<typename StringType::value_type>(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-            errorCode_, LanguageId, &buffer, 0, NULL);
+            errorCode_, LanguageId, (typename StringType::value_type *)&buffer, 0, NULL);
         if (size == 0)
             return StringType();
         StringType message(buffer, size);
