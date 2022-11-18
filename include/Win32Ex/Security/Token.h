@@ -361,8 +361,8 @@ typedef struct
 
 WIN32EX_ALWAYS_INLINE BOOL __DefaultLookupTokenExCondition(DWORD ProcessId, HANDLE TokenHandle, PVOID Context)
 {
-    UNREFERENCED_PARAMETER(ProcessId);
     __DefaultLookupTokenExConditionContext *ctx = (__DefaultLookupTokenExConditionContext *)Context;
+    UNREFERENCED_PARAMETER(ProcessId);
     return (ctx->TokenCondition) ? ctx->TokenCondition(TokenHandle, ctx->Context) : TRUE;
 }
 
