@@ -310,6 +310,10 @@ class WaitableObject
     virtual bool Wait(Duration Timeout) = 0;
 };
 
+#if _MSC_VER <= 1600
+#pragma warning(disable : 4512)
+#endif
+
 class Waitable
 {
     friend class WaitableObject;

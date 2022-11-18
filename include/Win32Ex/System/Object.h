@@ -55,9 +55,11 @@ WIN32EX_ALWAYS_INLINE BOOL IsTemporaryObject(_In_ HANDLE Handle)
 
 WIN32EX_ALWAYS_INLINE BOOL __IsPrivilegeEnabled(_In_ DWORD ProcessId, _In_ HANDLE hToken, _In_ PVOID Context)
 {
-    UNREFERENCED_PARAMETER(ProcessId);
     BOOL result = FALSE;
     PPRIVILEGE_SET privilegeSet = (PPRIVILEGE_SET)Context;
+    
+    UNREFERENCED_PARAMETER(ProcessId);
+
     privilegeSet->Control = PRIVILEGE_SET_ALL_NECESSARY;
     PrivilegeCheck(hToken, privilegeSet, &result);
     return result;
